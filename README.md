@@ -29,6 +29,7 @@ Deploy from agent SDKs, like the [Google Gen AI SDK](https://ai.google.dev/gemin
 - `deploy-file-contents`: Deploys files to Cloud Run by providing their contents directly.
 - `list-services`: Lists Cloud Run services in a given project and region.
 - `get-service`: Gets details for a specific Cloud Run service.
+- `get-service-log`: Gets Logs and Error Messages for a specific Cloud Run service.
 - `deploy-local-files`*: Deploys files from the local file system to a Google Cloud Run service.
 - `deploy-local-folder`*: Deploys a local folder to a Google Cloud Run service.
 - `list-projects`*: Lists available GCP projects.

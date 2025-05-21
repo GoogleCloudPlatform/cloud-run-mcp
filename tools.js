@@ -16,9 +16,10 @@ limitations under the License.
 
 import { z } from "zod";
 import { deploy } from './lib/cloud-run-deploy.js';
-import { listServices, getService } from './lib/cloud-run-services.js';
+import { listServices, getService, getServiceLogs } from './lib/cloud-run-services.js';
 import { listProjects, createProjectAndAttachBilling } from './lib/gcp-projects.js';
 import { checkGCP } from './lib/gcp-metadata.js';
+import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 export const registerTools = (server) => {
   // Tool to list GCP projects
@@ -154,6 +155,36 @@ export const registerTools = (server) => {
           content: [{
             type: 'text',
             text: `Error getting service ${service} in project ${project} (region ${region}): ${error.message}`
+          }]
+        };
+      }
+    }
+  );
+
+  // Logs for a service
+  server.tool(
+    "get_service_log",
+    "Gets Logs and Error Messages for a specific Cloud Run service.",
+    {
+      project: z.string().describe("Google Cloud project ID containing the service"),
+      region: z.string().describe("Region where the service is located").default('europe-west1'),
+      service: z.string().describe("Name of the Cloud Run service"),
+    },
+    async ({ project, region, service }) => {
+      try {
+        console.log("teste")
+        const logs = await getServiceLogs(project, region, service);
+        return {
+          content: [{
+            type: 'text',
+            text: logs
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{
+            type: 'text',
+            text: `Error getting Logs for service ${service} in project ${project} (region ${region}): ${error.message}`
           }]
         };
       }
@@ -394,6 +425,36 @@ export const registerToolsRemote = async (server) => {
     }
   );
 
+  // Logs for a service
+  server.tool(
+    "get_service_log",
+    "Gets Logs and Error Messages for a specific Cloud Run service.",
+    {
+      project: z.string().describe("Google Cloud project ID containing the service"),
+      region: z.string().describe("Region where the service is located").default('europe-west1'),
+      service: z.string().describe("Name of the Cloud Run service"),
+    },
+    async ({ project, region, service }) => {
+      try {
+        console.log("teste")
+        const logs = await getServiceLogs(project, region, service);
+        return {
+          content: [{
+            type: 'text',
+            text: logs
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{
+            type: 'text',
+            text: `Error getting Logs for service ${service} in project ${project} (region ${region}): ${error.message}`
+          }]
+        };
+      }
+    }
+  );
+
   // Deploy file contents to Cloud Run (Remote)
   server.tool(
     'deploy_file_contents',
@@ -446,5 +507,5 @@ export const registerToolsRemote = async (server) => {
           ],
         };
       }
-  });
+    });
 };
