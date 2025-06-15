@@ -2,6 +2,10 @@
 
 Enable MCP-compatible AI agents to deploy apps to Cloud Run.
 
+<a href="https://glama.ai/mcp/servers/@GoogleCloudPlatform/cloud-run-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@GoogleCloudPlatform/cloud-run-mcp/badge" alt="Cloud Run Server MCP server" />
+</a>
+
 ```json
 "mcpServers":{
   "cloud-run": {
