@@ -25,6 +25,7 @@ import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerTools, registerToolsRemote } from './tools.js';
 import { checkGCP } from './lib/gcp-metadata.js';
+import 'dotenv/config';
 
 const gcpInfo = await checkGCP();
 
@@ -70,6 +71,8 @@ async function getServer () {
   // Determine the effective project and region based on priority: Env Var > GCP Metadata > Hardcoded default
   const effectiveProjectId = envProjectId || (gcpInfo && gcpInfo.project) || undefined;
   const effectiveRegion = envRegion || (gcpInfo && gcpInfo.region) || 'europe-west1';
+  console.log(effectiveProjectId)
+  console.log(effectiveRegion)
 
   if (shouldStartStdio() || !(gcpInfo && gcpInfo.project)) {
     console.log('Using tools optimized for local or stdio mode.');

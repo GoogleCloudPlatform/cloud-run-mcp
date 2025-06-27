@@ -39,6 +39,7 @@
     "@google-cloud/storage": "^7.16.0",
     "@modelcontextprotocol/sdk": "^1.11.0",
     "archiver": "^7.0.1",
+    "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "google-proto-files": "^4.2.0",
     "zod": "^3.24.4"
