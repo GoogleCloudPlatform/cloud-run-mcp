@@ -62,6 +62,20 @@ Run the Cloud Run MCP server on your local machine using local Google Cloud cred
         "args": ["-y", "https://github.com/GoogleCloudPlatform/cloud-run-mcp"]
       }
    ```
+5. Add optional default configurations
+
+   ```json 
+      "cloud-run": {
+         "command": "npx",
+         "args": ["-y", "https://github.com/GoogleCloudPlatform/cloud-run-mcp"],
+         "env": {
+               "GOOGLE_CLOUD_PROJECT": "PROJECT_NAME",
+               "GOOGLE_CLOUD_REGION": "PROJECT_REGION",
+               "DEFAULT_SERVICE_NAME": "SERVICE_NAME",
+               "SKIP_IAM_CHECK": "true"
+            }
+      }
+   ```
 
 ## Use as remote MCP server
 
@@ -90,13 +104,19 @@ With this option, you will only be able to deploy code to the same Google Cloud 
 
    Note that the MCP server is *not* publicly accessible, it requires authentication via IAM.
 
-5. Run a Cloud Run proxy on your local machine to connect securely using your identity to the remote MCP server running on Cloud Run:
+5. Add optional default configurations
+
+   ```bash 
+   gcloud run services update cloud-run-mcp --region=REGION --update-env-vars GOOGLE_CLOUD_PROJECT=PROJECT_NAME,GOOGLE_CLOUD_REGION=PROJECT_REGION,DEFAULT_SERVICE_NAME=SERVICE_NAME,SKIP_IAM_CHECK=true
+   ```
+
+6. Run a Cloud Run proxy on your local machine to connect securely using your identity to the remote MCP server running on Cloud Run:
    ```bash
    gcloud run services proxy cloud-run-mcp --port=3000 --region=REGION --project=PROJECT_ID
    ```
    This will create a local proxy on port 3000 that forwards requests to the remote MCP server and injects your identity.
 
-6. Update the MCP configuration file of your MCP client with the following:
+7. Update the MCP configuration file of your MCP client with the following:
 
    ```json 
       "cloud-run": {
