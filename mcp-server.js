@@ -54,8 +54,8 @@ if(shouldStartStdio()) {
 
 // Read default configurations from environment variables
 const envProjectId = process.env.GOOGLE_CLOUD_PROJECT || undefined;
-const envRegion = process.env.GOOGLE_CLOUD_REGION || 'europe-west1'; // Retain existing default if not set
-const defaultServiceName = process.env.DEFAULT_SERVICE_NAME || 'app'; // Retain existing default if not set
+const envRegion = process.env.GOOGLE_CLOUD_REGION; 
+const defaultServiceName = process.env.DEFAULT_SERVICE_NAME; 
 const skipIamCheck = process.env.SKIP_IAM_CHECK === 'false'; // Convert string to boolean
 
 async function getServer () {

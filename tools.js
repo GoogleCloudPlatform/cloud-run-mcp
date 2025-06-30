@@ -23,9 +23,9 @@ import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 export const registerTools = (server, {
   defaultProjectId,
-  defaultRegion = 'us-west1',
-  defaultServiceName = 'app',
-  skipIamCheck = false,
+  defaultRegion,
+  defaultServiceName,
+  skipIamCheck,
 } = {}) => {
   // Tool to list GCP projects
   server.tool(
@@ -368,9 +368,9 @@ export const registerTools = (server, {
 };
 
 export const registerToolsRemote = async (server, {
-  defaultProjectId, // This is now the effectiveProjectId passed from mcp-server.js
-  defaultRegion = 'europe-west1', // This is now the effectiveRegion passed from mcp-server.js
-  defaultServiceName = 'app',
+  defaultProjectId, 
+  defaultRegion, 
+  defaultServiceName,
   skipIamCheck = false,
 } = {}) => {
   // We no longer call checkGCP here; the effective defaults are passed in.
