@@ -56,7 +56,7 @@ if(shouldStartStdio()) {
 const envProjectId = process.env.GOOGLE_CLOUD_PROJECT || undefined;
 const envRegion = process.env.GOOGLE_CLOUD_REGION || 'europe-west1'; // Retain existing default if not set
 const defaultServiceName = process.env.DEFAULT_SERVICE_NAME || 'app'; // Retain existing default if not set
-const skipIamCheck = process.env.SKIP_IAM_CHECK === 'true'; // Convert string to boolean
+const skipIamCheck = process.env.SKIP_IAM_CHECK === 'false'; // Convert string to boolean
 
 async function getServer () {
   // Create an MCP server with implementation details

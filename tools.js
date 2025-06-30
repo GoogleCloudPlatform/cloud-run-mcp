@@ -129,7 +129,7 @@ export const registerTools = (server, {
     {
       project: z.string().describe("Google Cloud project ID containing the service").default(defaultProjectId),
       region: z.string().describe("Region where the service is located").default(defaultRegion),
-      service: z.string().describe("Name of the Cloud Run service"),
+      service: z.string().describe("Name of the Cloud Run service").default(defaultServiceName),
     },
     async ({ project, region, service }) => {
       if (typeof project !== 'string') {
@@ -173,7 +173,7 @@ export const registerTools = (server, {
     {
       project: z.string().describe("Google Cloud project ID containing the service").default(defaultProjectId),
       region: z.string().describe("Region where the service is located").default(defaultRegion),
-      service: z.string().describe("Name of the Cloud Run service"),
+      service: z.string().describe("Name of the Cloud Run service").default(defaultServiceName),
     },
     async ({ project, region, service }) => {
       let allLogs = [];
@@ -418,7 +418,7 @@ export const registerToolsRemote = async (server, {
     `Gets details for a specific Cloud Run service in GCP project ${currentProject}.`,
     {
       region: z.string().describe("Region where the service is located").default(currentRegion),
-      service: z.string().describe("Name of the Cloud Run service"),
+      service: z.string().describe("Name of the Cloud Run service").default(defaultServiceName),
     },
     async ({ region, service }) => {
       if (typeof service !== 'string') {
@@ -459,7 +459,7 @@ export const registerToolsRemote = async (server, {
     {
       project: z.string().describe("Google Cloud project ID containing the service").default(currentProject), // Use currentProject
       region: z.string().describe("Region where the service is located").default(currentRegion), // Use currentRegion
-      service: z.string().describe("Name of the Cloud Run service"),
+      service: z.string().describe("Name of the Cloud Run service").default(defaultServiceName),
     },
     async ({ project, region, service }) => {
       let allLogs = [];
