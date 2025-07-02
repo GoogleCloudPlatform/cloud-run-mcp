@@ -62,7 +62,7 @@ Run the Cloud Run MCP server on your local machine using local Google Cloud cred
         "args": ["-y", "https://github.com/GoogleCloudPlatform/cloud-run-mcp"]
       }
    ```
-5. Add optional default configurations
+5. [Optional] Add default configurations
 
    ```json 
       "cloud-run": {
@@ -73,7 +73,7 @@ Run the Cloud Run MCP server on your local machine using local Google Cloud cred
                "GOOGLE_CLOUD_REGION": "PROJECT_REGION",
                "DEFAULT_SERVICE_NAME": "SERVICE_NAME",
                "SKIP_IAM_CHECK": "true"
-            }
+         }
       }
    ```
 
@@ -104,7 +104,7 @@ With this option, you will only be able to deploy code to the same Google Cloud 
 
    Note that the MCP server is *not* publicly accessible, it requires authentication via IAM.
 
-5. Add optional default configurations
+5. [Optional] Add default configurations
 
    ```bash 
    gcloud run services update cloud-run-mcp --region=REGION --update-env-vars GOOGLE_CLOUD_PROJECT=PROJECT_NAME,GOOGLE_CLOUD_REGION=PROJECT_REGION,DEFAULT_SERVICE_NAME=SERVICE_NAME,SKIP_IAM_CHECK=true
