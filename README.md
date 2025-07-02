@@ -72,7 +72,7 @@ Run the Cloud Run MCP server on your local machine using local Google Cloud cred
                "GOOGLE_CLOUD_PROJECT": "PROJECT_NAME",
                "GOOGLE_CLOUD_REGION": "PROJECT_REGION",
                "DEFAULT_SERVICE_NAME": "SERVICE_NAME",
-               "SKIP_IAM_CHECK": "true"
+               "SKIP_IAM_CHECK": "false"
          }
       }
    ```
@@ -107,7 +107,7 @@ With this option, you will only be able to deploy code to the same Google Cloud 
 5. [Optional] Add default configurations
 
    ```bash 
-   gcloud run services update cloud-run-mcp --region=REGION --update-env-vars GOOGLE_CLOUD_PROJECT=PROJECT_NAME,GOOGLE_CLOUD_REGION=PROJECT_REGION,DEFAULT_SERVICE_NAME=SERVICE_NAME,SKIP_IAM_CHECK=true
+   gcloud run services update cloud-run-mcp --region=REGION --update-env-vars GOOGLE_CLOUD_PROJECT=PROJECT_NAME,GOOGLE_CLOUD_REGION=PROJECT_REGION,DEFAULT_SERVICE_NAME=SERVICE_NAME,SKIP_IAM_CHECK=false
    ```
 
 6. Run a Cloud Run proxy on your local machine to connect securely using your identity to the remote MCP server running on Cloud Run:
