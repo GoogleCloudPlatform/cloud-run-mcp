@@ -11,6 +11,7 @@
     "test:deploy": "node test/test-deploy.js",
     "test:create-project": "node test/test-create-project.js",
     "test:service-logs": "node test/test-service-logs.js",
+    "test:adc": "node test/test-adc.js",
     "start": "node mcp-server.js"
   },
   "repository": {

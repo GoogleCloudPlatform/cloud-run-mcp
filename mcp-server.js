@@ -25,6 +25,8 @@ import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerTools, registerToolsRemote } from './tools.js';
 import { checkGCP } from './lib/gcp-metadata.js';
+import { exec as childProcessExec } from 'child_process';
+import { ensureAdcCredentials } from './lib/adc-check.js';
 import 'dotenv/config';
 
 const gcpInfo = await checkGCP();
@@ -39,7 +41,7 @@ function makeLoggingCompatibleWithStdio() {
 }
 
 function shouldStartStdio() {
-  if(process.env.GCP_STDIO){
+  if (process.env.GCP_STDIO) {
     return true;
   }
   if (gcpInfo && gcpInfo.project) {
@@ -48,17 +50,18 @@ function shouldStartStdio() {
   return true;
 }
 
-if(shouldStartStdio()) {
+if (shouldStartStdio()) {
   makeLoggingCompatibleWithStdio();
+  await ensureAdcCredentials(childProcessExec);
 };
 
 // Read default configurations from environment variables
 const envProjectId = process.env.GOOGLE_CLOUD_PROJECT || undefined;
-const envRegion = process.env.GOOGLE_CLOUD_REGION; 
-const defaultServiceName = process.env.DEFAULT_SERVICE_NAME; 
+const envRegion = process.env.GOOGLE_CLOUD_REGION;
+const defaultServiceName = process.env.DEFAULT_SERVICE_NAME;
 const skipIamCheck = process.env.SKIP_IAM_CHECK !== 'false';
 
-async function getServer () {
+async function getServer() {
   // Create an MCP server with implementation details
   const server = new McpServer({
     name: 'cloud-run',
@@ -170,11 +173,11 @@ if (shouldStartStdio()) {
     // Create SSE transport for legacy clients
     const transport = new SSEServerTransport('/messages', res);
     sseTransports[transport.sessionId] = transport;
-    
+
     res.on("close", () => {
       delete sseTransports[transport.sessionId];
     });
-    
+
     await server.connect(transport);
   });
 
