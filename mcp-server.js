@@ -25,8 +25,8 @@ import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerTools, registerToolsRemote } from './tools.js';
 import { checkGCP } from './lib/gcp-metadata.js';
-import { exec as childProcessExec } from 'child_process';
-import { ensureAdcCredentials } from './lib/adc-check.js';
+import { ensureBillingEnabled } from './lib/gcp-projects.js';
+import { ensureGCPCredentials } from './lib/gcp-auth-check.js';
 import 'dotenv/config';
 
 const gcpInfo = await checkGCP();
@@ -52,7 +52,7 @@ function shouldStartStdio() {
 
 if (shouldStartStdio()) {
   makeLoggingCompatibleWithStdio();
-  await ensureAdcCredentials(childProcessExec);
+  await ensureGCPCredentials();
 };
 
 // Read default configurations from environment variables
@@ -106,7 +106,7 @@ if (shouldStartStdio()) {
   console.log('Cloud Run MCP server stdio transport connected');
 } else {
   console.log('Running on GCP, stdio transport will not be started.');
-
+  await ensureGCPCredentials();
   const app = express();
   app.use(express.json());
 
