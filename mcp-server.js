@@ -25,7 +25,6 @@ import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerTools, registerToolsRemote } from './tools.js';
 import { checkGCP } from './lib/gcp-metadata.js';
-import { ensureBillingEnabled } from './lib/gcp-projects.js';
 import { ensureGCPCredentials } from './lib/gcp-auth-check.js';
 import 'dotenv/config';
 
