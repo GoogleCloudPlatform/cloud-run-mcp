@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { deploy } from '../lib/cloud-run-deploy.js';
+import { deploy, deployImage } from '../lib/cloud-run-deploy.js';
 import readline from 'readline/promises';
 import { stdin as input, stdout as output } from 'process';
 import fs from 'fs/promises';
@@ -90,9 +90,21 @@ const configFailingBuild = {
   ]
 };
 
+// Configuration for deploying a container image
+const configImageDeploy = {
+  projectId: projectIdToUse,
+  serviceName: 'hello-from-image',
+  region: 'europe-west1',
+  imageUrl: 'gcr.io/cloudrun/hello'
+};
+
 
 try {
-  console.log("\\n--- Testing intentionally failing build ---");
+  console.log("\n--- Testing container image deployment ---");
+  await deployImage(configImageDeploy);
+  console.log("--- Container image deployment test completed ---");
+
+  console.log("\n--- Testing intentionally failing build ---");
   try {
     await deploy(configFailingBuild);
     // If deploy doesn't throw an error, then the test has failed because it was expected to fail.

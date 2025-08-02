@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import { z } from "zod";
-import { deploy } from './lib/cloud-run-deploy.js';
+import { deploy, deployImage } from './lib/cloud-run-deploy.js';
 import { listServices, getService, getServiceLogs } from './lib/cloud-run-services.js';
 import { listProjects, createProjectAndAttachBilling } from './lib/gcp-projects.js';
 import { checkGCP } from './lib/gcp-metadata.js';
@@ -350,7 +350,53 @@ export const registerTools = (server, {
           content: [
             {
               type: 'text',
-              text: `Cloud Run service ${service} deployed in project ${project}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
+              text: `Cloud Run service ${service} deployed in project ${project}\nCloud Console: https://console.cloud. google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
+            }
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error deploying to Cloud Run: ${error.message || error}`,
+            }
+          ],
+        };
+      }
+    });
+
+  server.tool(
+    'deploy_container_image',
+    'Deploys a container image to Cloud Run. Use this tool if the user provides a container image URL.',
+    {
+      project: z.string().describe('Google Cloud project ID. Do not select it yourself, make sure the user provides or confirms the project ID.').default(defaultProjectId),
+      region: z.string().optional().default(defaultRegion).describe('Region to deploy the service to'),
+      service: z.string().optional().default(defaultServiceName).describe('Name of the Cloud Run service to deploy to'),
+      imageUrl: z.string().describe('The URL of the container image to deploy (e.g. "gcr.io/cloudrun/hello")'),
+    },
+    async ({ project, region, service, imageUrl }) => {
+      if (typeof project !== 'string') {
+        throw new Error('Project must specified, please prompt the user for a valid existing Google Cloud project ID.');
+      }
+      if (typeof imageUrl !== 'string' || imageUrl.trim() === '') {
+        throw new Error('Container image URL must be specified and be a non-empty string.');
+      }
+
+      // Deploy to Cloud Run
+      try {
+        const response = await deployImage({
+          projectId: project,
+          serviceName: service,
+          region: region,
+          imageUrl: imageUrl,
+          skipIamCheck: skipIamCheck,
+        });
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Cloud Run service ${service} deployed in project ${project}\nCloud Console: https://console.cloud. google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
             }
           ],
         };
@@ -534,7 +580,49 @@ export const registerToolsRemote = async (server, {
           content: [
             {
               type: 'text',
-              text: `Cloud Run service ${service} deployed in project ${currentProject}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${currentProject}\nService URL: ${response.uri}`,
+              text: `Cloud Run service ${service} deployed in project ${currentProject}\nCloud Console: https://console.cloud. google.com/run/detail/${region}/${service}?project=${currentProject}\nService URL: ${response.uri}`,
+            }
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error deploying to Cloud Run: ${error.message || error}`,
+            }
+          ],
+        };
+      }
+    });
+
+  server.tool(
+    'deploy_container_image',
+    `Deploys a container image to Cloud Run in the GCP project ${currentProject}. Use this tool if the user provides a container image URL.`,
+    {
+      region: z.string().optional().default(currentRegion).describe('Region to deploy the service to'),
+      service: z.string().optional().default(defaultServiceName).describe('Name of the Cloud Run service to deploy to'),
+      imageUrl: z.string().describe('The URL of the container image to deploy (e.g. "gcr.io/cloudrun/hello")'),
+    },
+    async ({ region, service, imageUrl }) => {
+      if (typeof imageUrl !== 'string' || imageUrl.trim() === '') {
+        throw new Error('Container image URL must be specified and be a non-empty string.');
+      }
+
+      // Deploy to Cloud Run
+      try {
+        const response = await deployImage({
+          projectId: currentProject,
+          serviceName: service,
+          region: region,
+          imageUrl: imageUrl,
+          skipIamCheck: skipIamCheck,
+        });
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Cloud Run service ${service} deployed in project ${currentProject}\nCloud Console: https://console.cloud. google.com/run/detail/${region}/${service}?project=${currentProject}\nService URL: ${response.uri}`,
             }
           ],
         };
