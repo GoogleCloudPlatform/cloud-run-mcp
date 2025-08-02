@@ -123,8 +123,8 @@ try {
   console.log("--- Go deployment without Dockerfile (Buildpacks) test completed ---");
 
   console.log("\n--- Testing Go deployment with file content (Buildpacks) ---");
-  const mainGoContent = await fs.readFile(path.resolve('../example-sources-to-deploy/main.go'), 'utf-8');
-  const goModContent = await fs.readFile(path.resolve('../example-sources-to-deploy/go.mod'), 'utf-8');
+  const mainGoContent = await fs.readFile(path.resolve('example-sources-to-deploy/main.go'), 'utf-8');
+  const goModContent = await fs.readFile(path.resolve('example-sources-to-deploy/go.mod'), 'utf-8');
   configGoWithContent.files = [
     { filename: 'main.go', content: mainGoContent },
     { filename: 'go.mod', content: goModContent }
