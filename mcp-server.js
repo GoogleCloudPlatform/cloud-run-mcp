@@ -24,6 +24,7 @@ import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 // Support stdio, as it is easier to use locally
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerTools, registerToolsRemote } from './tools.js';
+import { registerPrompts } from './prompts.js';
 import { checkGCP } from './lib/gcp-metadata.js';
 import { ensureGCPCredentials } from './lib/gcp-auth-check.js';
 import 'dotenv/config';
@@ -93,6 +94,9 @@ async function getServer() {
       skipIamCheck
     });
   }
+
+  // Register prompts with the server
+  registerPrompts(server);
 
   return server;
 }
