@@ -35,7 +35,14 @@ Deploy from agent SDKs, like the [Google Gen AI SDK](https://ai.google.dev/gemin
 - `list-projects`*: Lists available GCP projects.
 - `create-project`*: Creates a new GCP project and attach it to the first available billing account. A project ID can be optionally specified.
 
-_\* only available when running locally_
+_\* only available when running locally_ 
+
+## Prompts
+
+Prompts are natural language commands that can be used to perform common tasks. They are shortcuts for executing tool calls with pre-filled arguments.
+
+- `deploy`: Deploys the current working directory to Cloud Run. If a service name is not provided, it will use the `DEFAULT_SERVICE_NAME` environment variable, or the name of the current working directory.
+- `logs`: Gets the logs for a Cloud Run service. If a service name is not provided, it will use the `DEFAULT_SERVICE_NAME` environment variable, or the name of the current working directory.
 
 ## Use as local MCP server
 

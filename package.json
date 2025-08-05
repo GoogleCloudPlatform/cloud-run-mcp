@@ -12,6 +12,7 @@
     "test:create-project": "node test/test-create-project.js",
     "test:service-logs": "node test/test-service-logs.js",
     "test:gcp-auth": "node test/test-gcp-auth.js",
+    "test:prompts": "node --test test/test-prompts.js",
     "test": "node test/run-all-tests.js",
     "start": "node mcp-server.js"
   },

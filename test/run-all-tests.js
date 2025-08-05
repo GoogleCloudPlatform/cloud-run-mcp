@@ -6,6 +6,7 @@ const tests = [
   'npm run test:service-logs',
   'npm run test:gcp-auth',
   'npm run test:create-project',
+  'npm run test:prompts',
 ];
 
 for (const test of tests) {
