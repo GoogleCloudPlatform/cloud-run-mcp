@@ -83,7 +83,7 @@ describe('registerPrompts', () => {
           role: "user",
           content: {
             type: 'text',
-            text: `deploy_local_folder({folderPath: '.', service: '/path/to/my-project'})`
+            text: `deploy_local_folder({folderPath: '.', service: 'my-project'})`
           }
         }]
       });
@@ -143,7 +143,7 @@ describe('registerPrompts', () => {
           role: "user",
           content: {
             type: 'text',
-            text: `get_service_log({service: '/path/to/my-project'})`
+            text: `get_service_log({service: 'my-project'})`
           }
         }]
       });

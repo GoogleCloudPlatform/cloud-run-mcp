@@ -25,7 +25,7 @@ export const registerPrompts = (server) => {
       name: z.string().describe("Name of the Cloud Run service to deploy to.  Defaults to the name of the current directory").optional(),
     },
     async ({ name }) => {
-      const serviceName = name || process.env.DEFAULT_SERVICE_NAME || process.env.PWD;
+      const serviceName = name || process.env.DEFAULT_SERVICE_NAME || basename(process.env.PWD);
       return {
         messages: [{
           role: "user",
@@ -45,7 +45,7 @@ export const registerPrompts = (server) => {
       service: z.string().describe("Name of the Cloud Run service. Defaults to the name of the current directory.").optional(),
     },
     async ({ service }) => {
-      const serviceName = service || process.env.DEFAULT_SERVICE_NAME || process.env.PWD;
+      const serviceName = service || process.env.DEFAULT_SERVICE_NAME || basename(process.env.PWD);
       return {
         messages: [{
           role: "user",
