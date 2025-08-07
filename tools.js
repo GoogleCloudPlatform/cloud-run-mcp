@@ -28,9 +28,12 @@ export const registerTools = (server, {
   skipIamCheck,
 } = {}) => {
   // Tool to list GCP projects
-  server.tool(
+  server.registerTool(
     "list_projects",
-    "Lists available GCP projects",
+    {
+      description: "Lists available GCP projects",
+      inputSchema: {}
+    },
     async () => {
       try {
         const projects = await listProjects();
@@ -52,11 +55,13 @@ export const registerTools = (server, {
   );
 
   // Tool to create a new GCP project
-  server.tool(
+  server.registerTool(
     "create_project",
-    "Creates a new GCP project and attempts to attach it to the first available billing account. A project ID can be optionally specified; otherwise it will be automatically generated.",
     {
-      projectId: z.string().optional().describe("Optional. The desired ID for the new GCP project. If not provided, an ID will be auto-generated."),
+      description: "Creates a new GCP project and attempts to attach it to the first available billing account. A project ID can be optionally specified; otherwise it will be automatically generated.",
+      inputSchema: {
+        projectId: z.string().optional().describe("Optional. The desired ID for the new GCP project. If not provided, an ID will be auto-generated."),
+      }
     },
     async ({ projectId }) => {
       if (projectId !== undefined && (typeof projectId !== 'string' || projectId.trim() === '')) {
@@ -87,12 +92,14 @@ export const registerTools = (server, {
   );
 
   // Listing Cloud Run services
-  server.tool(
+  server.registerTool(
     "list_services",
-    "Lists Cloud Run services in a given project and region.",
     {
-      project: z.string().describe("Google Cloud project ID").default(defaultProjectId),
-      region: z.string().describe("Region where the services are located").default(defaultRegion),
+      description: "Lists Cloud Run services in a given project and region.",
+      inputSchema: {
+        project: z.string().describe("Google Cloud project ID").default(defaultProjectId),
+        region: z.string().describe("Region where the services are located").default(defaultRegion),
+      }
     },
     async ({ project, region }) => {
       if (typeof project !== 'string') {
@@ -123,13 +130,15 @@ export const registerTools = (server, {
   );
 
   // Dynamic resource for getting a specific service
-  server.tool(
+  server.registerTool(
     "get_service",
-    "Gets details for a specific Cloud Run service.",
     {
-      project: z.string().describe("Google Cloud project ID containing the service").default(defaultProjectId),
-      region: z.string().describe("Region where the service is located").default(defaultRegion),
-      service: z.string().describe("Name of the Cloud Run service").default(defaultServiceName),
+      description: "Gets details for a specific Cloud Run service.",
+      inputSchema: {
+        project: z.string().describe("Google Cloud project ID containing the service").default(defaultProjectId),
+        region: z.string().describe("Region where the service is located").default(defaultRegion),
+        service: z.string().describe("Name of the Cloud Run service").default(defaultServiceName),
+      }
     },
     async ({ project, region, service }) => {
       if (typeof project !== 'string') {
@@ -167,13 +176,15 @@ export const registerTools = (server, {
   );
 
   // Logs for a service
-  server.tool(
+  server.registerTool(
     "get_service_log",
-    "Gets Logs and Error Messages for a specific Cloud Run service.",
     {
-      project: z.string().describe("Google Cloud project ID containing the service").default(defaultProjectId),
-      region: z.string().describe("Region where the service is located").default(defaultRegion),
-      service: z.string().describe("Name of the Cloud Run service").default(defaultServiceName),
+      description: "Gets Logs and Error Messages for a specific Cloud Run service.",
+      inputSchema: {
+        project: z.string().describe("Google Cloud project ID containing the service").default(defaultProjectId),
+        region: z.string().describe("Region where the service is located").default(defaultRegion),
+        service: z.string().describe("Name of the Cloud Run service").default(defaultServiceName),
+      }
     },
     async ({ project, region, service }) => {
       let allLogs = [];
@@ -209,14 +220,16 @@ export const registerTools = (server, {
     }
   );
 
-  server.tool(
+  server.registerTool(
     'deploy_local_files',
-    'Deploy local files to Cloud Run. Takes an array of absolute file paths from the local filesystem that will be deployed. Use this tool if the files exists on the user local filesystem.',
     {
-      project: z.string().describe('Google Cloud project ID. Do not select it yourself, make sure the user provides or confirms the project ID.').default(defaultProjectId),
-      region: z.string().optional().default(defaultRegion).describe('Region to deploy the service to'),
-      service: z.string().optional().default(defaultServiceName).describe('Name of the Cloud Run service to deploy to'),
-      files: z.array(z.string()).describe('Array of absolute file paths to deploy (e.g. ["/home/user/project/src/index.js", "/home/user/project/package.json"])'),
+      description: 'Deploy local files to Cloud Run. Takes an array of absolute file paths from the local filesystem that will be deployed. Use this tool if the files exists on the user local filesystem.',
+      inputSchema: {
+        project: z.string().describe('Google Cloud project ID. Do not select it yourself, make sure the user provides or confirms the project ID.').default(defaultProjectId),
+        region: z.string().optional().default(defaultRegion).describe('Region to deploy the service to'),
+        service: z.string().optional().default(defaultServiceName).describe('Name of the Cloud Run service to deploy to'),
+        files: z.array(z.string()).describe('Array of absolute file paths to deploy (e.g. ["/home/user/project/src/index.js", "/home/user/project/package.json"])'),
+      }
     },
     async ({ project, region, service, files }) => {
       if (typeof project !== 'string') {
@@ -260,14 +273,16 @@ export const registerTools = (server, {
     });
 
 
-  server.tool(
+  server.registerTool(
     'deploy_local_folder',
-    'Deploy a local folder to Cloud Run. Takes an absolute folder path from the local filesystem that will be deployed. Use this tool if the entire folder content needs to be deployed.',
     {
-      project: z.string().describe('Google Cloud project ID. Do not select it yourself, make sure the user provides or confirms the project ID.').default(defaultProjectId),
-      region: z.string().optional().default(defaultRegion).describe('Region to deploy the service to'),
-      service: z.string().optional().default(defaultServiceName).describe('Name of the Cloud Run service to deploy to'),
-      folderPath: z.string().describe('Absolute path to the folder to deploy (e.g. "/home/user/project/src")'),
+      description: 'Deploy a local folder to Cloud Run. Takes an absolute folder path from the local filesystem that will be deployed. Use this tool if the entire folder content needs to be deployed.',
+      inputSchema: {
+        project: z.string().describe('Google Cloud project ID. Do not select it yourself, make sure the user provides or confirms the project ID.').default(defaultProjectId),
+        region: z.string().optional().default(defaultRegion).describe('Region to deploy the service to'),
+        service: z.string().optional().default(defaultServiceName).describe('Name of the Cloud Run service to deploy to'),
+        folderPath: z.string().describe('Absolute path to the folder to deploy (e.g. "/home/user/project/src")'),
+      }
     },
     async ({ project, region, service, folderPath }) => {
       if (typeof project !== 'string') {
@@ -307,17 +322,19 @@ export const registerTools = (server, {
     }
   );
 
-  server.tool(
+  server.registerTool(
     'deploy_file_contents',
-    'Deploy files to Cloud Run by providing their contents directly. Takes an array of file objects containing filename and content. Use this tool if the files only exist in the current chat context.',
     {
-      project: z.string().describe('Google Cloud project ID. Leave unset for the app to be deployed in a new project. If provided, make sure the user confirms the project ID they want to deploy to.').default(defaultProjectId),
-      region: z.string().optional().default(defaultRegion).describe('Region to deploy the service to'),
-      service: z.string().optional().default(defaultServiceName).describe('Name of the Cloud Run service to deploy to'),
-      files: z.array(z.object({
-        filename: z.string().describe('Name and path of the file (e.g. "src/index.js" or "data/config.json")'),
-        content: z.string().optional().describe('Text content of the file'),
-      })).describe('Array of file objects containing filename and content'),
+      description: 'Deploy files to Cloud Run by providing their contents directly. Takes an array of file objects containing filename and content. Use this tool if the files only exist in the current chat context.',
+      inputSchema: {
+        project: z.string().describe('Google Cloud project ID. Leave unset for the app to be deployed in a new project. If provided, make sure the user confirms the project ID they want to deploy to.').default(defaultProjectId),
+        region: z.string().optional().default(defaultRegion).describe('Region to deploy the service to'),
+        service: z.string().optional().default(defaultServiceName).describe('Name of the Cloud Run service to deploy to'),
+        files: z.array(z.object({
+          filename: z.string().describe('Name and path of the file (e.g. "src/index.js" or "data/config.json")'),
+          content: z.string().optional().describe('Text content of the file'),
+        })).describe('Array of file objects containing filename and content'),
+      }
     },
     async ({ project, region, service, files }) => {
       if (typeof project !== 'string') {
@@ -366,14 +383,16 @@ export const registerTools = (server, {
       }
     });
 
-  server.tool(
+  server.registerTool(
     'deploy_container_image',
-    'Deploys a container image to Cloud Run. Use this tool if the user provides a container image URL.',
     {
-      project: z.string().describe('Google Cloud project ID. Do not select it yourself, make sure the user provides or confirms the project ID.').default(defaultProjectId),
-      region: z.string().optional().default(defaultRegion).describe('Region to deploy the service to'),
-      service: z.string().optional().default(defaultServiceName).describe('Name of the Cloud Run service to deploy to'),
-      imageUrl: z.string().describe('The URL of the container image to deploy (e.g. "gcr.io/cloudrun/hello")'),
+      description: 'Deploys a container image to Cloud Run. Use this tool if the user provides a container image URL.',
+      inputSchema: {
+        project: z.string().describe('Google Cloud project ID. Do not select it yourself, make sure the user provides or confirms the project ID.').default(defaultProjectId),
+        region: z.string().optional().default(defaultRegion).describe('Region to deploy the service to'),
+        service: z.string().optional().default(defaultServiceName).describe('Name of the Cloud Run service to deploy to'),
+        imageUrl: z.string().describe('The URL of the container image to deploy (e.g. "gcr.io/cloudrun/hello")'),
+      }
     },
     async ({ project, region, service, imageUrl }) => {
       if (typeof project !== 'string') {
@@ -428,11 +447,13 @@ export const registerToolsRemote = async (server, {
   }
 
   // Listing Cloud Run services (Remote)
-  server.tool(
+  server.registerTool(
     "list_services",
-    `Lists Cloud Run services in GCP project ${currentProject} and a given region.`,
     {
-      region: z.string().describe("Region where the services are located").default(currentRegion),
+      description: `Lists Cloud Run services in GCP project ${currentProject} and a given region.`,
+      inputSchema: {
+        region: z.string().describe("Region where the services are located").default(currentRegion),
+      }
     },
     async ({ region }) => {
       try {
@@ -459,12 +480,14 @@ export const registerToolsRemote = async (server, {
   );
 
   // Dynamic resource for getting a specific service (Remote)
-  server.tool(
+  server.registerTool(
     "get_service",
-    `Gets details for a specific Cloud Run service in GCP project ${currentProject}.`,
     {
-      region: z.string().describe("Region where the service is located").default(currentRegion),
-      service: z.string().describe("Name of the Cloud Run service").default(defaultServiceName),
+      description: `Gets details for a specific Cloud Run service in GCP project ${currentProject}.`,
+      inputSchema: {
+        region: z.string().describe("Region where the service is located").default(currentRegion),
+        service: z.string().describe("Name of the Cloud Run service").default(defaultServiceName),
+      }
     },
     async ({ region, service }) => {
       if (typeof service !== 'string') {
@@ -499,13 +522,15 @@ export const registerToolsRemote = async (server, {
   );
 
   // Logs for a service
-  server.tool(
+  server.registerTool(
     "get_service_log",
-    "Gets Logs and Error Messages for a specific Cloud Run service.",
     {
-      project: z.string().describe("Google Cloud project ID containing the service").default(currentProject), // Use currentProject
-      region: z.string().describe("Region where the service is located").default(currentRegion), // Use currentRegion
-      service: z.string().describe("Name of the Cloud Run service").default(defaultServiceName),
+      description: "Gets Logs and Error Messages for a specific Cloud Run service.",
+      inputSchema: {
+        project: z.string().describe("Google Cloud project ID containing the service").default(currentProject), // Use currentProject
+        region: z.string().describe("Region where the service is located").default(currentRegion), // Use currentRegion
+        service: z.string().describe("Name of the Cloud Run service").default(defaultServiceName),
+      }
     },
     async ({ project, region, service }) => {
       let allLogs = [];
@@ -542,16 +567,18 @@ export const registerToolsRemote = async (server, {
   );
 
   // Deploy file contents to Cloud Run (Remote)
-  server.tool(
+  server.registerTool(
     'deploy_file_contents',
-    `Deploy files to Cloud Run by providing their contents directly to the GCP project ${currentProject}.`,
     {
-      region: z.string().optional().default(currentRegion).describe('Region to deploy the service to'),
-      service: z.string().optional().default(defaultServiceName).describe('Name of the Cloud Run service to deploy to'), // Use defaultServiceName
-      files: z.array(z.object({
-        filename: z.string().describe('Name and path of the file (e.g. "src/index.js" or "data/config.json")'),
-        content: z.string().describe('Text content of the file'),
-      })).describe('Array of file objects containing filename and content'),
+      description: `Deploy files to Cloud Run by providing their contents directly to the GCP project ${currentProject}.`,
+      inputSchema: {
+        region: z.string().optional().default(currentRegion).describe('Region to deploy the service to'),
+        service: z.string().optional().default(defaultServiceName).describe('Name of the Cloud Run service to deploy to'), // Use defaultServiceName
+        files: z.array(z.object({
+          filename: z.string().describe('Name and path of the file (e.g. "src/index.js" or "data/config.json")'),
+          content: z.string().describe('Text content of the file'),
+        })).describe('Array of file objects containing filename and content'),
+      }
     },
     async ({ region, service, files }) => {
       console.log(`New deploy request (remote): ${JSON.stringify({ project: currentProject, region, service, files })}`);
@@ -596,13 +623,15 @@ export const registerToolsRemote = async (server, {
       }
     });
 
-  server.tool(
+  server.registerTool(
     'deploy_container_image',
-    `Deploys a container image to Cloud Run in the GCP project ${currentProject}. Use this tool if the user provides a container image URL.`,
     {
-      region: z.string().optional().default(currentRegion).describe('Region to deploy the service to'),
-      service: z.string().optional().default(defaultServiceName).describe('Name of the Cloud Run service to deploy to'),
-      imageUrl: z.string().describe('The URL of the container image to deploy (e.g. "gcr.io/cloudrun/hello")'),
+      description: `Deploys a container image to Cloud Run in the GCP project ${currentProject}. Use this tool if the user provides a container image URL.`,
+      inputSchema: {
+        region: z.string().optional().default(currentRegion).describe('Region to deploy the service to'),
+        service: z.string().optional().default(defaultServiceName).describe('Name of the Cloud Run service to deploy to'),
+        imageUrl: z.string().describe('The URL of the container image to deploy (e.g. "gcr.io/cloudrun/hello")'),
+      }
     },
     async ({ region, service, imageUrl }) => {
       if (typeof imageUrl !== 'string' || imageUrl.trim() === '') {
