@@ -27,13 +27,13 @@ export const registerPrompts = (server) => {
       }
     },
     async ({ name }) => {
-      const serviceName = name || process.env.DEFAULT_SERVICE_NAME || basename(process.env.PWD);
+      const serviceNamePrompt = name || "a name for the application based on the current working directory."
       return {
         messages: [{
           role: "user",
           content: {
             type: 'text',
-            text: `deploy_local_folder({folderPath: '.', service: '${serviceName}'})`
+            text: `Use the deploy_local_folder tool to deploy the current folder. The service name should be ${serviceNamePrompt}`
           }
         }]
       };
@@ -49,13 +49,13 @@ export const registerPrompts = (server) => {
       }
     },
     async ({ service }) => {
-      const serviceName = service || process.env.DEFAULT_SERVICE_NAME || basename(process.env.PWD);
+      const serviceNamePrompt = service || "named for the current working directory"
       return {
         messages: [{
           role: "user",
           content: {
             type: 'text',
-            text: `get_service_log({service: '${serviceName}'})`
+            text: `Use get_service_log to get logs for the service ${serviceNamePrompt}`
           }
         }]
       };
