@@ -48,8 +48,6 @@ Prompts are natural language commands that can be used to perform common tasks. 
 
 Run the Cloud Run MCP server on your local machine using local Google Cloud credentials. This is best if you are using an AI-assisted IDE (e.g. Cursor) or a desktop AI application (e.g. Claude).
 
-0. Install [Node.js](https://nodejs.org/en/download/) (LTS version recommended).
-
 1. Install the [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) and authenticate with your Google account.
 
 2. Log in to your Google Cloud account using the command:
@@ -61,7 +59,14 @@ Run the Cloud Run MCP server on your local machine using local Google Cloud cred
    ```bash
    gcloud auth application-default login
    ```
-4. Update the MCP configuration file of your MCP client with the following:
+
+Then configure the MCP server using either Node.js or Docker:
+
+### Using Node.js
+
+0. Install [Node.js](https://nodejs.org/en/download/) (LTS version recommended).
+
+1. Update the MCP configuration file of your MCP client with the following:
 
    ```json 
       "cloud-run": {
@@ -69,7 +74,7 @@ Run the Cloud Run MCP server on your local machine using local Google Cloud cred
         "args": ["-y", "https://github.com/GoogleCloudPlatform/cloud-run-mcp"]
       }
    ```
-5. [Optional] Add default configurations
+2. [Optional] Add default configurations
 
    ```json 
       "cloud-run": {
@@ -78,9 +83,35 @@ Run the Cloud Run MCP server on your local machine using local Google Cloud cred
          "env": {
                "GOOGLE_CLOUD_PROJECT": "PROJECT_NAME",
                "GOOGLE_CLOUD_REGION": "PROJECT_REGION",
-               "DEFAULT_SERVICE_NAME": "SERVICE_NAME",
-               "SKIP_IAM_CHECK": "false"
+               "DEFAULT_SERVICE_NAME": "SERVICE_NAME"
          }
+      }
+   ```
+### Using Docker
+
+See Docker's [MCP catalog](https://hub.docker.com/mcp/server/cloud-run-mcp/overview), or use these manual instructions:
+
+0. Install [Docker](https://www.docker.com/get-started/)
+
+1. Update the MCP configuration file of your MCP client with the following:
+
+   ```json 
+      "cloud-run": {
+        "command": "docker",
+        "args": [
+          "run",
+          "-i",
+          "--rm",
+          "-e",
+          "GOOGLE_APPLICATION_CREDENTIALS",
+          "-v",
+          "/local-directory:/local-directory",
+          "mcp/cloud-run-mcp:latest"
+        ],
+        "env": {
+          "GOOGLE_APPLICATION_CREDENTIALS": "/Users/slim/.config/gcloud/application_default-credentials.json",
+          "DEFAULT_SERVICE_NAME": "SERVICE_NAME"
+        }
       }
    ```
 
