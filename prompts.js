@@ -18,11 +18,13 @@ import { basename } from 'path';
 
 export const registerPrompts = (server) => {
   // Prompts will be registered here.
-  server.prompt(
+  server.registerPrompt(
     "deploy",
-    "Deploys the current working directory to Cloud Run.",
     {
-      name: z.string().describe("Name of the Cloud Run service to deploy to.  Defaults to the name of the current directory").optional(),
+      description: "Deploys the current working directory to Cloud Run.",
+      argsSchema: {
+        name: z.string().describe("Name of the Cloud Run service to deploy to.  Defaults to the name of the current directory").optional(),
+      }
     },
     async ({ name }) => {
       const serviceName = name || process.env.DEFAULT_SERVICE_NAME || basename(process.env.PWD);
@@ -38,11 +40,13 @@ export const registerPrompts = (server) => {
     }
   );
 
-  server.prompt(
+  server.registerPrompt(
     "logs",
-    "Gets the logs for a Cloud Run service.",
     {
-      service: z.string().describe("Name of the Cloud Run service. Defaults to the name of the current directory.").optional(),
+      description:  "Gets the logs for a Cloud Run service.",
+      argsSchema: {
+        service: z.string().describe("Name of the Cloud Run service. Defaults to the name of the current directory.").optional(),
+      }
     },
     async ({ service }) => {
       const serviceName = service || process.env.DEFAULT_SERVICE_NAME || basename(process.env.PWD);
