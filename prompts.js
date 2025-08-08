@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import { z } from "zod";
-import { basename } from 'path';
 
 export const registerPrompts = (server) => {
   // Prompts will be registered here.
