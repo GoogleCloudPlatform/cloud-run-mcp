@@ -17,137 +17,96 @@ limitations under the License.
 import assert from 'node:assert/strict';
 import { describe, it, mock } from 'node:test';
 import { registerPrompts } from '../prompts.js';
+import { basename } from 'path';
 
 describe('registerPrompts', () => {
   it('should register deploy and logs prompts', () => {
     const server = {
-      prompt: mock.fn(),
+      registerPrompt: mock.fn(),
     };
 
     registerPrompts(server);
 
-    assert.strictEqual(server.prompt.mock.callCount(), 2);
-    assert.strictEqual(server.prompt.mock.calls[0].arguments[0], 'deploy');
-    assert.strictEqual(server.prompt.mock.calls[1].arguments[0], 'logs');
+    assert.strictEqual(server.registerPrompt.mock.callCount(), 2);
+    assert.strictEqual(server.registerPrompt.mock.calls[0].arguments[0], 'deploy');
+    assert.strictEqual(server.registerPrompt.mock.calls[1].arguments[0], 'logs');
   });
 
   describe('deploy prompt', () => {
     it('should use the provided name', async () => {
       const server = {
-        prompt: mock.fn(),
+        registerPrompt: mock.fn(),
       };
       registerPrompts(server);
-      const handler = server.prompt.mock.calls[0].arguments[3];
+      const handler = server.registerPrompt.mock.calls[0].arguments[2];
       const result = await handler({ name: 'my-service' });
       assert.deepStrictEqual(result, {
         messages: [{
           role: "user",
           content: {
             type: 'text',
-            text: `deploy_local_folder({folderPath: '.', service: 'my-service'})`
+            text: `Use the deploy_local_folder tool to deploy the current folder. The service name should be my-service`
           }
         }]
       });
     });
 
-    it('should use DEFAULT_SERVICE_NAME env var', async () => {
+    it('should use the current directory name', async () => {
       const server = {
-        prompt: mock.fn(),
+        registerPrompt: mock.fn(),
       };
-      process.env.DEFAULT_SERVICE_NAME = 'default-service';
       registerPrompts(server);
-      const handler = server.prompt.mock.calls[0].arguments[3];
-      const result = await handler({});
+      const handler = server.registerPrompt.mock.calls[0].arguments[2];
+      const result = await handler({ });
+      const serviceName = "a name for the application based on the current working directory."
       assert.deepStrictEqual(result, {
         messages: [{
           role: "user",
           content: {
             type: 'text',
-            text: `deploy_local_folder({folderPath: '.', service: 'default-service'})`
+            text: `Use the deploy_local_folder tool to deploy the current folder. The service name should be ${serviceName}`
           }
         }]
       });
-      delete process.env.DEFAULT_SERVICE_NAME;
-    });
-
-    it('should use PWD env var', async () => {
-      const server = {
-        prompt: mock.fn(),
-      };
-      process.env.PWD = '/path/to/my-project';
-      registerPrompts(server);
-      const handler = server.prompt.mock.calls[0].arguments[3];
-      const result = await handler({});
-      assert.deepStrictEqual(result, {
-        messages: [{
-          role: "user",
-          content: {
-            type: 'text',
-            text: `deploy_local_folder({folderPath: '.', service: 'my-project'})`
-          }
-        }]
-      });
-      delete process.env.PWD;
     });
   });
 
   describe('logs prompt', () => {
     it('should use the provided service name', async () => {
       const server = {
-        prompt: mock.fn(),
+        registerPrompt: mock.fn(),
       };
       registerPrompts(server);
-      const handler = server.prompt.mock.calls[1].arguments[3];
+      const handler = server.registerPrompt.mock.calls[1].arguments[2];
       const result = await handler({ service: 'my-service' });
       assert.deepStrictEqual(result, {
         messages: [{
           role: "user",
           content: {
             type: 'text',
-            text: `get_service_log({service: 'my-service'})`
+            text: `Use get_service_log to get logs for the service my-service`
           }
         }]
       });
     });
 
-    it('should use DEFAULT_SERVICE_NAME env var', async () => {
+    it('should use the current directory name for the service name', async () => {
       const server = {
-        prompt: mock.fn(),
+        registerPrompt: mock.fn(),
       };
-      process.env.DEFAULT_SERVICE_NAME = 'default-service';
       registerPrompts(server);
-      const handler = server.prompt.mock.calls[1].arguments[3];
+      const handler = server.registerPrompt.mock.calls[1].arguments[2];
       const result = await handler({});
+      const serviceName = "named for the current working directory";
       assert.deepStrictEqual(result, {
         messages: [{
           role: "user",
           content: {
             type: 'text',
-            text: `get_service_log({service: 'default-service'})`
+            text: `Use get_service_log to get logs for the service ${serviceName}`
           }
         }]
       });
-      delete process.env.DEFAULT_SERVICE_NAME;
-    });
-
-    it('should use PWD env var', async () => {
-      const server = {
-        prompt: mock.fn(),
-      };
-      process.env.PWD = '/path/to/my-project';
-      registerPrompts(server);
-      const handler = server.prompt.mock.calls[1].arguments[3];
-      const result = await handler({});
-      assert.deepStrictEqual(result, {
-        messages: [{
-          role: "user",
-          content: {
-            type: 'text',
-            text: `get_service_log({service: 'my-project'})`
-          }
-        }]
-      });
-      delete process.env.PWD;
     });
   });
 });
