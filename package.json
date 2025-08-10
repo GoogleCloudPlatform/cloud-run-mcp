@@ -12,9 +12,10 @@
     "test:service-logs": "node test/test-service-logs.js",
     "test:gcp-auth": "node test/test-gcp-auth.js",
     "test:prompts": "node --test test/test-prompts.js",
-    "test:mcp": "node test/test-mcp-server.js",
-    "mcp-inspector": "npx @modelcontextprotocol/inspector node mcp-server.js",
+    "test:mcp": "node --test test/test-mcp-server.js",
+    "test:tools": "node --test test/test-tools.js",
     "test": "node test/run-all-tests.js",
+    "mcp-inspector": "npx @modelcontextprotocol/inspector node mcp-server.js",
     "start": "node mcp-server.js"
   },
   "repository": {
@@ -47,5 +48,8 @@
     "express": "^5.1.0",
     "google-proto-files": "^5.0.0",
     "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "esmock": "^2.7.1"
   }
 }
