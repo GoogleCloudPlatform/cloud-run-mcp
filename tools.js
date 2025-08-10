@@ -3,7 +3,7 @@ Copyright 2025 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+you may obtain a copy of the License at
 
     https://www.apache.org/licenses/LICENSE-2.0
 
@@ -77,7 +77,7 @@ export const registerTools = (server, {
         return {
           content: [{
             type: 'text',
-            text: `Successfully created GCP project with ID "${newProjectId}". You can now use this project ID for deployments.`
+            text: `Successfully created GCP project with ID "${result.projectId}". You can now use this project ID for deployments.`
           }]
         };
       } catch (error) {
