@@ -1,3 +1,4 @@
+
 import assert from 'node:assert/strict';
 import { describe, it, mock } from 'node:test';
 import esmock from 'esmock';
@@ -165,9 +166,9 @@ describe('registerTools', () => {
       const getServiceLogs = () => {
         callCount++;
         if (callCount === 1) {
-          return Promise.resolve({ logs: ['log1', 'log2'], requestOptions: { pageToken: 'nextPage' } });
+          return Promise.resolve({ logs: 'log1\nlog2', requestOptions: { pageToken: 'nextPage' } });
         }
-        return Promise.resolve({ logs: ['log3', 'log4'], requestOptions: null });
+        return Promise.resolve({ logs: 'log3\nlog4', requestOptions: null });
       };
 
       const { registerTools } = await esmock('../tools.js', {

@@ -195,7 +195,7 @@ export const registerTools = (server, {
           const response = await getServiceLogs(project, region, service, requestOptions);
 
           if (response.logs) {
-            allLogs.push(...response.logs);
+            allLogs.push(response.logs);
           }
 
           // Set the requestOptions incl pagintion token for the next iteration
@@ -541,7 +541,7 @@ export const registerToolsRemote = async (server, {
           const response = await getServiceLogs(project, region, service, requestOptions);
 
           if (response.logs) {
-            allLogs.push(...response.logs);
+            allLogs.push(response.logs);
           }
 
           // Set the requestOptions incl pagintion token for the next iteration
