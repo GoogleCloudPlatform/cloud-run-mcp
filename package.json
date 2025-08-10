@@ -12,6 +12,7 @@
     "test:service-logs": "node test/test-service-logs.js",
     "test:gcp-auth": "node test/test-gcp-auth.js",
     "test:prompts": "node --test test/test-prompts.js",
+    "test:tools": "node --test test/test-tools.js",
     "test:mcp": "node test/test-mcp-server.js",
     "mcp-inspector": "npx @modelcontextprotocol/inspector node mcp-server.js",
     "test": "node test/run-all-tests.js",
