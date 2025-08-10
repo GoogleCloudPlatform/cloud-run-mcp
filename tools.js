@@ -195,7 +195,7 @@ export const registerTools = (server, {
           const response = await getServiceLogs(project, region, service, requestOptions);
 
           if (response.logs) {
-            allLogs.push(response.logs);
+            allLogs.push(...response.logs);
           }
 
           // Set the requestOptions incl pagintion token for the next iteration
@@ -367,7 +367,7 @@ export const registerTools = (server, {
           content: [
             {
               type: 'text',
-              text: `Cloud Run service ${service} deployed in project ${project}\nCloud Console: https://console.cloud. google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
+              text: `Cloud Run service ${service} deployed in project ${project}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
             }
           ],
         };
@@ -415,7 +415,7 @@ export const registerTools = (server, {
           content: [
             {
               type: 'text',
-              text: `Cloud Run service ${service} deployed in project ${project}\nCloud Console: https://console.cloud. google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
+              text: `Cloud Run service ${service} deployed in project ${project}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
             }
           ],
         };
@@ -541,7 +541,7 @@ export const registerToolsRemote = async (server, {
           const response = await getServiceLogs(project, region, service, requestOptions);
 
           if (response.logs) {
-            allLogs.push(response.logs);
+            allLogs.push(...response.logs);
           }
 
           // Set the requestOptions incl pagintion token for the next iteration

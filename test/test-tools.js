@@ -102,4 +102,195 @@ describe('registerTools', () => {
       });
     });
   });
+
+  describe('list_services', () => {
+    it('should list services', async () => {
+      const server = {
+        registerTool: mock.fn(),
+      };
+
+      const { registerTools } = await esmock('../tools.js', {
+        '../lib/cloud-run-services.js': {
+          listServices: () => Promise.resolve([{ name: 'service1', uri: 'uri1' }, { name: 'service2', uri: 'uri2' }]),
+        },
+      });
+
+      registerTools(server);
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'list_services').arguments[2];
+      const result = await handler({ project: 'my-project', region: 'my-region' });
+
+      assert.deepStrictEqual(result, {
+        content: [{
+          type: 'text',
+          text: 'Services in project my-project (location my-region):\n- service1 (URL: uri1)\n- service2 (URL: uri2)'
+        }]
+      });
+    });
+  });
+
+  describe('get_service', () => {
+    it('should get a service', async () => {
+      const server = {
+        registerTool: mock.fn(),
+      };
+
+      const { registerTools } = await esmock('../tools.js', {
+        '../lib/cloud-run-services.js': {
+          getService: () => Promise.resolve({ name: 'my-service', uri: 'my-uri', lastModifier: 'me' }),
+        },
+      });
+
+      registerTools(server);
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_service').arguments[2];
+      const result = await handler({ project: 'my-project', region: 'my-region', service: 'my-service' });
+
+      assert.deepStrictEqual(result, {
+        content: [{
+          type: 'text',
+          text: 'Name: my-service\nRegion: my-region\nProject: my-project\nURL: my-uri\nLast deployed by: me'
+        }]
+      });
+    });
+  });
+
+  describe('get_service_log', () => {
+    it('should get service logs', async () => {
+      const server = {
+        registerTool: mock.fn(),
+      };
+
+      let callCount = 0;
+      const getServiceLogs = () => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve({ logs: ['log1', 'log2'], requestOptions: { pageToken: 'nextPage' } });
+        }
+        return Promise.resolve({ logs: ['log3', 'log4'], requestOptions: null });
+      };
+
+      const { registerTools } = await esmock('../tools.js', {
+        '../lib/cloud-run-services.js': {
+          getServiceLogs: getServiceLogs,
+        },
+      });
+
+      registerTools(server);
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_service_log').arguments[2];
+      const result = await handler({ project: 'my-project', region: 'my-region', service: 'my-service' });
+
+      assert.deepStrictEqual(result, {
+        content: [{
+          type: 'text',
+          text: 'log1\nlog2\nlog3\nlog4'
+        }]
+      });
+    });
+  });
+
+  describe('deploy_local_files', () => {
+    it('should deploy local files', async () => {
+      const server = {
+        registerTool: mock.fn(),
+      };
+
+      const { registerTools } = await esmock('../tools.js', {
+        '../lib/cloud-run-deploy.js': {
+          deploy: () => Promise.resolve({ uri: 'my-uri' }),
+        },
+      });
+
+      registerTools(server);
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'deploy_local_files').arguments[2];
+      const result = await handler({ project: 'my-project', region: 'my-region', service: 'my-service', files: ['file1', 'file2'] });
+
+      assert.deepStrictEqual(result, {
+        content: [{
+          type: 'text',
+          text: 'Cloud Run service my-service deployed in project my-project\nCloud Console: https://console.cloud.google.com/run/detail/my-region/my-service?project=my-project\nService URL: my-uri'
+        }]
+      });
+    });
+  });
+
+  describe('deploy_local_folder', () => {
+    it('should deploy local folder', async () => {
+      const server = {
+        registerTool: mock.fn(),
+      };
+
+      const { registerTools } = await esmock('../tools.js', {
+        '../lib/cloud-run-deploy.js': {
+          deploy: () => Promise.resolve({ uri: 'my-uri' }),
+        },
+      });
+
+      registerTools(server);
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'deploy_local_folder').arguments[2];
+      const result = await handler({ project: 'my-project', region: 'my-region', service: 'my-service', folderPath: '/my/folder' });
+
+      assert.deepStrictEqual(result, {
+        content: [{
+          type: 'text',
+          text: 'Cloud Run service my-service deployed from folder /my/folder in project my-project\nCloud Console: https://console.cloud.google.com/run/detail/my-region/my-service?project=my-project\nService URL: my-uri'
+        }]
+      });
+    });
+  });
+
+  describe('deploy_file_contents', () => {
+    it('should deploy file contents', async () => {
+      const server = {
+        registerTool: mock.fn(),
+      };
+
+      const { registerTools } = await esmock('../tools.js', {
+        '../lib/cloud-run-deploy.js': {
+          deploy: () => Promise.resolve({ uri: 'my-uri' }),
+        },
+      });
+
+      registerTools(server);
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'deploy_file_contents').arguments[2];
+      const result = await handler({ project: 'my-project', region: 'my-region', service: 'my-service', files: [{ filename: 'file1', content: 'content1' }] });
+
+      assert.deepStrictEqual(result, {
+        content: [{
+          type: 'text',
+          text: 'Cloud Run service my-service deployed in project my-project\nCloud Console: https://console.cloud.google.com/run/detail/my-region/my-service?project=my-project\nService URL: my-uri'
+        }]
+      });
+    });
+  });
+
+  describe('deploy_container_image', () => {
+    it('should deploy container image', async () => {
+      const server = {
+        registerTool: mock.fn(),
+      };
+
+      const { registerTools } = await esmock('../tools.js', {
+        '../lib/cloud-run-deploy.js': {
+          deployImage: () => Promise.resolve({ uri: 'my-uri' }),
+        },
+      });
+
+      registerTools(server);
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'deploy_container_image').arguments[2];
+      const result = await handler({ project: 'my-project', region: 'my-region', service: 'my-service', imageUrl: 'gcr.io/my-project/my-image' });
+
+      assert.deepStrictEqual(result, {
+        content: [{
+          type: 'text',
+          text: 'Cloud Run service my-service deployed in project my-project\nCloud Console: https://console.cloud.google.com/run/detail/my-region/my-service?project=my-project\nService URL: my-uri'
+        }]
+      });
+    });
+  });
 });
