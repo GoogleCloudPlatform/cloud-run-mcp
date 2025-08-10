@@ -7,12 +7,13 @@
   "bin": "mcp-server.js",
   "scripts": {
     "deploy": "gcloud run deploy cloud-run-mcp --source . --no-invoker-iam-check",
-    "test:mcp": "npx @modelcontextprotocol/inspector node mcp-server.js",
     "test:deploy": "node test/test-deploy.js",
     "test:create-project": "node test/test-create-project.js",
     "test:service-logs": "node test/test-service-logs.js",
     "test:gcp-auth": "node test/test-gcp-auth.js",
     "test:prompts": "node --test test/test-prompts.js",
+    "test:mcp": "node test/test-mcp-server.js",
+    "mcp-inspector": "npx @modelcontextprotocol/inspector node mcp-server.js",
     "test": "node test/run-all-tests.js",
     "start": "node mcp-server.js"
   },
