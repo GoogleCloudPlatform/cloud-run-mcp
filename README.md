@@ -118,7 +118,17 @@ See Docker's [MCP catalog](https://hub.docker.com/mcp/server/cloud-run-mcp/overv
       }
    ```
 
+## Use as a `gemini-cli` extension
+
+To install this as a `gemini-cli` extension, run the following command:
+
+```bash
+mkdir -p ~/.gemini/extensions/cloud-run && \
+  curl -s -L https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/main/gemini-extension.json > ~/.gemini/extensions/cloud-run/gemini-extension.json
+```
+
 ## Use as remote MCP server
+
 
 > [!WARNING]  
 > Do not use the remote MCP server without authentication. In the following instructions, we will use IAM authentication to secure the connection to the MCP server from your local machine. This is important to prevent unauthorized access to your Google Cloud resources.

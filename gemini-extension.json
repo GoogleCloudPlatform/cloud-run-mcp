@@ -1,0 +1,10 @@
+{
+  "name": "cloud-run",
+  "version": "1.0.0",
+  "mcpServers": {
+    "cloud-run": {
+      "command": "npx",
+      "args": ["-y", "https://github.com/GoogleCloudPlatform/cloud-run-mcp"]
+    }
+  }
+}
