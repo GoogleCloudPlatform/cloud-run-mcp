@@ -1,20 +1,24 @@
 
 import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
-const tests = [
-  'npm run test:deploy',
-  'npm run test:service-logs',
-  'npm run test:gcp-auth',
-  'npm run test:create-project',
-  'npm run test:prompts',
-];
-
-for (const test of tests) {
-  try {
-    console.log(`Running: ${test}`);
-    execSync(test, { stdio: 'inherit' });
-  } catch (error) {
-    console.error(`Failed to run: ${test}`);
-    process.exit(1);
+const runTestsInDir = (dir) => {
+  const testFiles = fs.readdirSync(dir).filter(file => file.endsWith('.js'));
+  for (const file of testFiles) {
+    const test = path.join(dir, file);
+    try {
+      console.log(`Running: ${test}`);
+      execSync(`node ${test}`, { stdio: 'inherit' });
+    } catch (error) {
+      console.error(`Failed to run: ${test}`);
+      process.exit(1);
+    }
   }
-}
+};
+
+console.log('Running unit tests...');
+runTestsInDir('test/unit');
+
+console.log('Running integration tests...');
+runTestsInDir('test/integration');

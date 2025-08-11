@@ -17,7 +17,7 @@ limitations under the License.
 import assert from 'node:assert/strict';
 import { describe, it, mock, beforeEach, afterEach } from 'node:test';
 import { GoogleAuth } from 'google-auth-library';
-import { ensureGCPCredentials } from '../lib/gcp-auth-check.js';
+import { ensureGCPCredentials } from '../../lib/gcp-auth-check.js';
 
 describe('ensureGCPCredentials', () => {
     let originalConsoleLog;
@@ -105,23 +105,24 @@ describe('ensureGCPCredentials', () => {
             throw errorWithStack;
         });
 
-        try {
-            await ensureGCPCredentials();
-        } catch (err) {
-            assert.ok(err.message.includes('Mocked process.exit called with code 1'), 'Error message from mocked process.exit should be caught');
-        }
-        // Add `await Promise.resolve()` here too for consistency, if needed
-        await Promise.resolve();
+        await assert.rejects(
+            ensureGCPCredentials,
+            (err) => {
+                assert.match(err.message, /Mocked process.exit called with code 1/);
+                return true;
+            },
+            'Expected ensureGCPCredentials to reject'
+        );
 
         const expectedOutput = [
-            'Checking for Google Cloud Application Default Credentials...',
+            'Checking for Google Cloud Application Default Credentials...', 
             'ERROR: Google Cloud Application Default Credentials are not set up.',
             'An unexpected error occurred during credential verification.',
             '\nFor more details or alternative setup methods, consider:',
             '1. If running locally, run: gcloud auth application-default login.',
             '2. Ensuring the `GOOGLE_APPLICATION_CREDENTIALS` environment variable points to a valid service account key file.',
             '3. If on a Google Cloud environment (e.g., GCE, Cloud Run), verify the associated service account has necessary permissions.',
-            `\nOriginal error message from Google Auth Library: ${errorMessage}`,
+            `\nOriginal error message from Google Auth Library: ${errorMessage}`, 
             `Error stack: ${errorWithStack.stack}`
         ];
         assert.deepStrictEqual(capturedConsoleOutput, expectedOutput, 'Console output should match generic error messages');
@@ -140,18 +141,20 @@ describe('ensureGCPCredentials', () => {
             throw httpError;
         });
 
-        try {
-            await ensureGCPCredentials();
-        } catch (err) {
-            assert.ok(err.message.includes('Mocked process.exit called with code 1'), 'Error message from mocked process.exit should be caught');
-        }
-        await Promise.resolve();
+        await assert.rejects(
+            ensureGCPCredentials,
+            (err) => {
+                assert.match(err.message, /Mocked process.exit called with code 1/);
+                return true;
+            },
+            'Expected ensureGCPCredentials to reject'
+        );
 
 
         const expectedOutput = [
-            'Checking for Google Cloud Application Default Credentials...',
+            'Checking for Google Cloud Application Default Credentials...', 
             'ERROR: Google Cloud Application Default Credentials are not set up.',
-            `An HTTP error occurred (Status: 401). This often means misconfigured, expired credentials, or a network issue.`,
+            `An HTTP error occurred (Status: 401). This often means misconfigured, expired credentials, or a network issue.`, 
             '\nFor more details or alternative setup methods, consider:',
             '1. If running locally, run: gcloud auth application-default login.',
             '2. Ensuring the `GOOGLE_APPLICATION_CREDENTIALS` environment variable points to a valid service account key file.',
@@ -174,22 +177,24 @@ describe('ensureGCPCredentials', () => {
             throw typeError;
         });
 
-        try {
-            await ensureGCPCredentials();
-        } catch (err) {
-            assert.ok(err.message.includes('Mocked process.exit called with code 1'), 'Error message from mocked process.exit should be caught');
-        }
-        await Promise.resolve();
+        await assert.rejects(
+            ensureGCPCredentials,
+            (err) => {
+                assert.match(err.message, /Mocked process.exit called with code 1/);
+                return true;
+            },
+            'Expected ensureGCPCredentials to reject'
+        );
 
         const expectedOutput = [
-            'Checking for Google Cloud Application Default Credentials...',
+            'Checking for Google Cloud Application Default Credentials...', 
             'ERROR: Google Cloud Application Default Credentials are not set up.',
             'An unexpected error occurred during credential verification (e.g., malformed response or invalid type).',
             '\nFor more details or alternative setup methods, consider:',
             '1. If running locally, run: gcloud auth application-default login.',
             '2. Ensuring the `GOOGLE_APPLICATION_CREDENTIALS` environment variable points to a valid service account key file.',
             '3. If on a Google Cloud environment (e.g., GCE, Cloud Run), verify the associated service account has necessary permissions.',
-            `\nOriginal error message from Google Auth Library: ${typeErrorMessage}`,
+            `\nOriginal error message from Google Auth Library: ${typeErrorMessage}`, 
             `Error stack: ${errorWithStack.stack}`
         ];
         assert.deepStrictEqual(capturedConsoleOutput, expectedOutput, 'Console output should match TypeError messages');
@@ -207,22 +212,24 @@ describe('ensureGCPCredentials', () => {
             throw unknownError;
         });
 
-        try {
-            await ensureGCPCredentials();
-        } catch (err) {
-            assert.ok(err.message.includes('Mocked process.exit called with code 1'), 'Error message from mocked process.exit should be caught');
-        }
-        await Promise.resolve();
+        await assert.rejects(
+            ensureGCPCredentials,
+            (err) => {
+                assert.match(err.message, /Mocked process.exit called with code 1/);
+                return true;
+            },
+            'Expected ensureGCPCredentials to reject'
+        );
 
         const expectedOutput = [
-            'Checking for Google Cloud Application Default Credentials...',
+            'Checking for Google Cloud Application Default Credentials...', 
             'ERROR: Google Cloud Application Default Credentials are not set up.',
             'An unexpected error occurred during credential verification.',
             '\nFor more details or alternative setup methods, consider:',
             '1. If running locally, run: gcloud auth application-default login.',
             '2. Ensuring the `GOOGLE_APPLICATION_CREDENTIALS` environment variable points to a valid service account key file.',
             '3. If on a Google Cloud environment (e.g., GCE, Cloud Run), verify the associated service account has necessary permissions.',
-            `\nOriginal error message from Google Auth Library: ${unknownErrorMessage}`,
+            `\nOriginal error message from Google Auth Library: ${unknownErrorMessage}`, 
             `Error stack: ${errorWithStack.stack}`
         ];
         assert.deepStrictEqual(capturedConsoleOutput, expectedOutput, 'Console output should match general error messages');
