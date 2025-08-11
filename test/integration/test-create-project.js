@@ -16,7 +16,7 @@ limitations under the License.
 
 import readline from 'readline/promises';
 import { stdin as input, stdout as output } from 'process';
-import { createProjectAndAttachBilling } from '../lib/gcp-projects.js';
+import { createProjectAndAttachBilling } from '../../lib/gcp-projects.js';
 
 /**
  * Prompts the user for an optional project ID or allows them to proceed with auto-generation.

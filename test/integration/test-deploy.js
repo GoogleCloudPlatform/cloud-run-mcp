@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { deploy, deployImage } from '../lib/cloud-run-deploy.js';
+import { deploy, deployImage } from '../../lib/cloud-run-deploy.js';
 import readline from 'readline/promises';
 import { stdin as input, stdout as output } from 'process';
 import fs from 'fs/promises';
