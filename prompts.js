@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { z } from "zod";
+import { z } from 'zod';
 
 export const registerPrompts = (server) => {
   // Prompts will be registered here.
   server.registerPrompt(
-    "deploy",
+    'deploy',
     {
-      description: "Deploys the current working directory to Cloud Run.",
+      description: 'Deploys the current working directory to Cloud Run.',
       argsSchema: {
         name: z.string().describe("Name of the Cloud Run service to deploy to.  Defaults to the name of the current directory").optional(),
         project: z.string().describe("Google Cloud project ID").optional(),
@@ -45,9 +45,9 @@ export const registerPrompts = (server) => {
   );
 
   server.registerPrompt(
-    "logs",
+    'logs',
     {
-      description:  "Gets the logs for a Cloud Run service.",
+      description: 'Gets the logs for a Cloud Run service.',
       argsSchema: {
         service: z.string().describe("Name of the Cloud Run service. Defaults to the name of the current directory.").optional(),
         project: z.string().describe("Google Cloud project ID").optional(),

@@ -27,16 +27,22 @@ async function getOptionalProjectId() {
   let projectIdInput = process.argv[2]; // Get the third element (index 2) which is the first argument
 
   if (projectIdInput && projectIdInput.trim() !== '') {
-    console.log(`Using Project ID from command line argument: ${projectIdInput.trim()}`);
+    console.log(
+      `Using Project ID from command line argument: ${projectIdInput.trim()}`
+    );
     return projectIdInput.trim();
   }
 
   const rl = readline.createInterface({ input, output });
-  projectIdInput = await rl.question('Enter a specific Project ID to use (or press Enter to auto-generate): ');
+  projectIdInput = await rl.question(
+    'Enter a specific Project ID to use (or press Enter to auto-generate): '
+  );
   rl.close();
 
   if (projectIdInput && projectIdInput.trim() !== '') {
-    console.log(`Attempting to create project with specified ID: ${projectIdInput.trim()}`);
+    console.log(
+      `Attempting to create project with specified ID: ${projectIdInput.trim()}`
+    );
     return projectIdInput.trim();
   }
   console.log('No Project ID specified. An ID will be auto-generated.');
@@ -47,14 +53,19 @@ async function main() {
   try {
     const optionalProjectId = await getOptionalProjectId();
     console.log('Attempting to create a new project and attach billing...');
-    const newProjectResult = await createProjectAndAttachBilling(optionalProjectId);
+    const newProjectResult =
+      await createProjectAndAttachBilling(optionalProjectId);
 
     if (newProjectResult && newProjectResult.projectId) {
-      console.log(`Successfully created project: ${newProjectResult.projectId}`);
+      console.log(
+        `Successfully created project: ${newProjectResult.projectId}`
+      );
       console.log(newProjectResult.billingMessage);
-      console.log("\nProject creation test completed successfully.");
+      console.log('\nProject creation test completed successfully.');
     } else {
-      console.error('Failed to create a new project or retrieve project details.');
+      console.error(
+        'Failed to create a new project or retrieve project details.'
+      );
       process.exit(1);
     }
   } catch (error) {
