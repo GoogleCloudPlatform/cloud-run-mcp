@@ -17,12 +17,12 @@ limitations under the License.
 */
 
 import express from 'express';
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 // Support SSE for backward compatibility
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 // Support stdio, as it is easier to use locally
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerTools, registerToolsRemote } from './tools.js';
 import { registerPrompts } from './prompts.js';
 import { checkGCP } from './lib/gcp-metadata.js';
@@ -53,7 +53,7 @@ function shouldStartStdio() {
 if (shouldStartStdio()) {
   makeLoggingCompatibleWithStdio();
   await ensureGCPCredentials();
-};
+}
 
 // Read default configurations from environment variables
 const envProjectId = process.env.GOOGLE_CLOUD_PROJECT || undefined;
@@ -63,17 +63,22 @@ const skipIamCheck = process.env.SKIP_IAM_CHECK !== 'false';
 
 async function getServer() {
   // Create an MCP server with implementation details
-  const server = new McpServer({
-    name: 'cloud-run',
-    version: '1.0.0',
-  }, { capabilities: { logging: {} } });
+  const server = new McpServer(
+    {
+      name: 'cloud-run',
+      version: '1.0.0',
+    },
+    { capabilities: { logging: {} } }
+  );
 
   // Get GCP metadata info once
   const gcpInfo = await checkGCP();
 
   // Determine the effective project and region based on priority: Env Var > GCP Metadata > Hardcoded default
-  const effectiveProjectId = envProjectId || (gcpInfo && gcpInfo.project) || undefined;
-  const effectiveRegion = envRegion || (gcpInfo && gcpInfo.region) || 'europe-west1';
+  const effectiveProjectId =
+    envProjectId || (gcpInfo && gcpInfo.project) || undefined;
+  const effectiveRegion =
+    envRegion || (gcpInfo && gcpInfo.region) || 'europe-west1';
 
   if (shouldStartStdio() || !(gcpInfo && gcpInfo.project)) {
     console.log('Using tools optimized for local or stdio mode.');
@@ -82,16 +87,18 @@ async function getServer() {
       defaultProjectId: effectiveProjectId,
       defaultRegion: effectiveRegion,
       defaultServiceName,
-      skipIamCheck
+      skipIamCheck,
     });
   } else {
-    console.log(`Running on GCP project: ${effectiveProjectId}, region: ${effectiveRegion}. Using tools optimized for remote use.`);
+    console.log(
+      `Running on GCP project: ${effectiveProjectId}, region: ${effectiveRegion}. Using tools optimized for remote use.`
+    );
     // Pass the determined defaults to the remote tool registration
     await registerToolsRemote(server, {
       defaultProjectId: effectiveProjectId,
       defaultRegion: effectiveRegion,
       defaultServiceName,
-      skipIamCheck
+      skipIamCheck,
     });
   }
 
@@ -144,26 +151,30 @@ if (shouldStartStdio()) {
 
   app.get('/mcp', async (req, res) => {
     console.log('Received GET MCP request');
-    res.writeHead(405).end(JSON.stringify({
-      jsonrpc: "2.0",
-      error: {
-        code: -32000,
-        message: "Method not allowed."
-      },
-      id: null
-    }));
+    res.writeHead(405).end(
+      JSON.stringify({
+        jsonrpc: '2.0',
+        error: {
+          code: -32000,
+          message: 'Method not allowed.',
+        },
+        id: null,
+      })
+    );
   });
 
   app.delete('/mcp', async (req, res) => {
     console.log('Received DELETE MCP request');
-    res.writeHead(405).end(JSON.stringify({
-      jsonrpc: "2.0",
-      error: {
-        code: -32000,
-        message: "Method not allowed."
-      },
-      id: null
-    }));
+    res.writeHead(405).end(
+      JSON.stringify({
+        jsonrpc: '2.0',
+        error: {
+          code: -32000,
+          message: 'Method not allowed.',
+        },
+        id: null,
+      })
+    );
   });
 
   // Support SSE for baackward compatibility
@@ -177,7 +188,7 @@ if (shouldStartStdio()) {
     const transport = new SSEServerTransport('/messages', res);
     sseTransports[transport.sessionId] = transport;
 
-    res.on("close", () => {
+    res.on('close', () => {
       delete sseTransports[transport.sessionId];
     });
 

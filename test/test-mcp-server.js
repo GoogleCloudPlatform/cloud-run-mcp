@@ -10,11 +10,11 @@ describe('MCP Server in stdio mode', () => {
   before(async () => {
     transport = new StdioClientTransport({
       command: 'node',
-      args: ['mcp-server.js']
+      args: ['mcp-server.js'],
     });
-    client = new Client({ 
+    client = new Client({
       name: 'test-client',
-      version: '1.0.0'
+      version: '1.0.0',
     });
     await client.connect(transport);
   });
@@ -28,18 +28,21 @@ describe('MCP Server in stdio mode', () => {
 
     const tools = response.tools;
     assert(Array.isArray(tools));
-    const toolNames = tools.map(t => t.name);
-    assert.deepStrictEqual(toolNames.sort(), [
-      'create_project',
-      'deploy_container_image',
-      'deploy_file_contents',
-      'deploy_local_files',
-      'deploy_local_folder',
-      'get_service',
-      'get_service_log',
-      'list_projects',
-      'list_services'
-    ].sort());
+    const toolNames = tools.map((t) => t.name);
+    assert.deepStrictEqual(
+      toolNames.sort(),
+      [
+        'create_project',
+        'deploy_container_image',
+        'deploy_file_contents',
+        'deploy_local_files',
+        'deploy_local_folder',
+        'get_service',
+        'get_service_log',
+        'list_projects',
+        'list_services',
+      ].sort()
+    );
   });
 
   test('should list prompts', async () => {
@@ -47,7 +50,7 @@ describe('MCP Server in stdio mode', () => {
 
     const prompts = response.prompts;
     assert(Array.isArray(prompts));
-    const promptNames = prompts.map(p => p.name);
+    const promptNames = prompts.map((p) => p.name);
     assert.deepStrictEqual(promptNames.sort(), ['deploy', 'logs'].sort());
   });
 });

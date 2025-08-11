@@ -27,8 +27,14 @@ describe('registerPrompts', () => {
     registerPrompts(server);
 
     assert.strictEqual(server.registerPrompt.mock.callCount(), 2);
-    assert.strictEqual(server.registerPrompt.mock.calls[0].arguments[0], 'deploy');
-    assert.strictEqual(server.registerPrompt.mock.calls[1].arguments[0], 'logs');
+    assert.strictEqual(
+      server.registerPrompt.mock.calls[0].arguments[0],
+      'deploy'
+    );
+    assert.strictEqual(
+      server.registerPrompt.mock.calls[1].arguments[0],
+      'logs'
+    );
   });
 
   describe('deploy prompt', () => {
@@ -40,13 +46,15 @@ describe('registerPrompts', () => {
       const handler = server.registerPrompt.mock.calls[0].arguments[2];
       const result = await handler({ name: 'my-service' });
       assert.deepStrictEqual(result, {
-        messages: [{
-          role: "user",
-          content: {
-            type: 'text',
-            text: `Use the deploy_local_folder tool to deploy the current folder. The service name should be my-service`
-          }
-        }]
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: `Use the deploy_local_folder tool to deploy the current folder. The service name should be my-service`,
+            },
+          },
+        ],
       });
     });
 
@@ -56,16 +64,19 @@ describe('registerPrompts', () => {
       };
       registerPrompts(server);
       const handler = server.registerPrompt.mock.calls[0].arguments[2];
-      const result = await handler({ });
-      const serviceName = "a name for the application based on the current working directory."
+      const result = await handler({});
+      const serviceName =
+        'a name for the application based on the current working directory.';
       assert.deepStrictEqual(result, {
-        messages: [{
-          role: "user",
-          content: {
-            type: 'text',
-            text: `Use the deploy_local_folder tool to deploy the current folder. The service name should be ${serviceName}`
-          }
-        }]
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: `Use the deploy_local_folder tool to deploy the current folder. The service name should be ${serviceName}`,
+            },
+          },
+        ],
       });
     });
   });
@@ -79,13 +90,15 @@ describe('registerPrompts', () => {
       const handler = server.registerPrompt.mock.calls[1].arguments[2];
       const result = await handler({ service: 'my-service' });
       assert.deepStrictEqual(result, {
-        messages: [{
-          role: "user",
-          content: {
-            type: 'text',
-            text: `Use get_service_log to get logs for the service my-service`
-          }
-        }]
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: `Use get_service_log to get logs for the service my-service`,
+            },
+          },
+        ],
       });
     });
 
@@ -96,15 +109,17 @@ describe('registerPrompts', () => {
       registerPrompts(server);
       const handler = server.registerPrompt.mock.calls[1].arguments[2];
       const result = await handler({});
-      const serviceName = "named for the current working directory";
+      const serviceName = 'named for the current working directory';
       assert.deepStrictEqual(result, {
-        messages: [{
-          role: "user",
-          content: {
-            type: 'text',
-            text: `Use get_service_log to get logs for the service ${serviceName}`
-          }
-        }]
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: `Use get_service_log to get logs for the service ${serviceName}`,
+            },
+          },
+        ],
       });
     });
   });

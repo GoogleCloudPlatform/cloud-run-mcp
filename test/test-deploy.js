@@ -30,7 +30,9 @@ async function getProjectId() {
 
   if (!projectIdInput) {
     const rl = readline.createInterface({ input, output });
-    projectIdInput = await rl.question('Please enter your Google Cloud project ID: ');
+    projectIdInput = await rl.question(
+      'Please enter your Google Cloud project ID: '
+    );
     rl.close();
   }
 
@@ -39,7 +41,9 @@ async function getProjectId() {
     process.exit(1);
   }
   if (projectIdInput.toLowerCase() === 'new') {
-    console.error('Project creation ("new") is now handled by test-create-project.js. Please provide an existing project ID. Exiting.');
+    console.error(
+      'Project creation ("new") is now handled by test-create-project.js. Please provide an existing project ID. Exiting.'
+    );
     process.exit(1);
   }
   console.log(`Using Project ID: ${projectIdInput}`);
@@ -56,8 +60,8 @@ const configGoWithDockerfile = {
   files: [
     'example-sources-to-deploy/main.go',
     'example-sources-to-deploy/go.mod',
-    'example-sources-to-deploy/Dockerfile'
-  ]
+    'example-sources-to-deploy/Dockerfile',
+  ],
 };
 
 // Configuration for Go deployment without Dockerfile (using buildpacks)
@@ -67,9 +71,9 @@ const configGoWithoutDockerfile = {
   region: 'europe-west1',
   files: [
     'example-sources-to-deploy/main.go',
-    'example-sources-to-deploy/go.mod'
+    'example-sources-to-deploy/go.mod',
     // Dockerfile is intentionally omitted here
-  ]
+  ],
 };
 
 // Configuration for Go deployment with file content (using buildpacks)
@@ -77,7 +81,7 @@ const configGoWithContent = {
   projectId: projectIdToUse,
   serviceName: 'example-go-app-content',
   region: 'europe-west1',
-  files: [] // To be populated with file content
+  files: [], // To be populated with file content
 };
 
 // Configuration for a deployment that is expected to fail
@@ -86,8 +90,12 @@ const configFailingBuild = {
   serviceName: 'example-failing-app',
   region: 'europe-west1',
   files: [
-    { filename: 'main.txt', content: 'This is not a valid application source file and should cause a build failure.' }
-  ]
+    {
+      filename: 'main.txt',
+      content:
+        'This is not a valid application source file and should cause a build failure.',
+    },
+  ],
 };
 
 // Configuration for deploying a container image
@@ -95,44 +103,56 @@ const configImageDeploy = {
   projectId: projectIdToUse,
   serviceName: 'hello-from-image',
   region: 'europe-west1',
-  imageUrl: 'gcr.io/cloudrun/hello'
+  imageUrl: 'gcr.io/cloudrun/hello',
 };
 
-
 try {
-  console.log("\n--- Testing container image deployment ---");
+  console.log('\n--- Testing container image deployment ---');
   await deployImage(configImageDeploy);
-  console.log("--- Container image deployment test completed ---");
+  console.log('--- Container image deployment test completed ---');
 
-  console.log("\n--- Testing intentionally failing build ---");
+  console.log('\n--- Testing intentionally failing build ---');
   try {
     await deploy(configFailingBuild);
     // If deploy doesn't throw an error, then the test has failed because it was expected to fail.
-    console.error("Deployment test failed: The build with invalid files succeeded when it was expected to fail.");
+    console.error(
+      'Deployment test failed: The build with invalid files succeeded when it was expected to fail.'
+    );
     process.exit(1);
   } catch (error) {
-    console.log("Intentionally failing build test completed as expected.");
+    console.log('Intentionally failing build test completed as expected.');
   }
 
-  console.log("--- Testing Go deployment with Dockerfile ---");
+  console.log('--- Testing Go deployment with Dockerfile ---');
   await deploy(configGoWithDockerfile);
-  console.log("--- Go deployment with Dockerfile test completed ---");
+  console.log('--- Go deployment with Dockerfile test completed ---');
 
-  console.log("\n--- Testing Go deployment without Dockerfile (Buildpacks) ---");
+  console.log(
+    '\n--- Testing Go deployment without Dockerfile (Buildpacks) ---'
+  );
   await deploy(configGoWithoutDockerfile);
-  console.log("--- Go deployment without Dockerfile (Buildpacks) test completed ---");
+  console.log(
+    '--- Go deployment without Dockerfile (Buildpacks) test completed ---'
+  );
 
-  console.log("\n--- Testing Go deployment with file content (Buildpacks) ---");
-  const mainGoContent = await fs.readFile(path.resolve('example-sources-to-deploy/main.go'), 'utf-8');
-  const goModContent = await fs.readFile(path.resolve('example-sources-to-deploy/go.mod'), 'utf-8');
+  console.log('\n--- Testing Go deployment with file content (Buildpacks) ---');
+  const mainGoContent = await fs.readFile(
+    path.resolve('example-sources-to-deploy/main.go'),
+    'utf-8'
+  );
+  const goModContent = await fs.readFile(
+    path.resolve('example-sources-to-deploy/go.mod'),
+    'utf-8'
+  );
   configGoWithContent.files = [
     { filename: 'main.go', content: mainGoContent },
-    { filename: 'go.mod', content: goModContent }
+    { filename: 'go.mod', content: goModContent },
   ];
   await deploy(configGoWithContent);
-  console.log("--- Go deployment with file content (Buildpacks) test completed ---");
-
+  console.log(
+    '--- Go deployment with file content (Buildpacks) test completed ---'
+  );
 } catch (error) {
-  console.error("An unexpected error occurred in the test script:", error);
+  console.error('An unexpected error occurred in the test script:', error);
   process.exit(1);
 }

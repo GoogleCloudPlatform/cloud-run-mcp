@@ -52,14 +52,12 @@ Open http://localhost:6274/
 
 To use local stdio MCP server. In your MCP client configuration, use the following:
 
-```json 
+```json
 {
   "mcpServers": {
     "cloud-run": {
       "command": "node",
-      "args": [
-        "/path/to/this/repo/cloud-run-mcp/mcp-server.js"
-      ]
+      "args": ["/path/to/this/repo/cloud-run-mcp/mcp-server.js"]
     }
   }
 }
@@ -75,20 +73,16 @@ npm run start
 
 Then, in your MCP client configuration, use the following:
 
-```json 
+```json
 {
   "mcpServers": {
     "cloud-run": {
       "command": "npx",
-      "args": [
-        "mcp-remote",
-        "http://localhost:3000/sse"
-      ]
+      "args": ["mcp-remote", "http://localhost:3000/sse"]
     }
   }
 }
 ```
-
 
 ## Testing
 
