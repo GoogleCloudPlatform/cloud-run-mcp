@@ -68,6 +68,24 @@ describe('registerPrompts', () => {
         }]
       });
     });
+
+    it('should use the provided project and region', async () => {
+      const server = {
+        registerPrompt: mock.fn(),
+      };
+      registerPrompts(server);
+      const handler = server.registerPrompt.mock.calls[0].arguments[2];
+      const result = await handler({ name: 'my-service', project: 'my-project', region: 'my-region' });
+      assert.deepStrictEqual(result, {
+        messages: [{
+          role: "user",
+          content: {
+            type: 'text',
+            text: `Use the deploy_local_folder tool to deploy the current folder in project my-project in region my-region. The service name should be my-service`
+          }
+        }]
+      });
+    });
   });
 
   describe('logs prompt', () => {
@@ -103,6 +121,24 @@ describe('registerPrompts', () => {
           content: {
             type: 'text',
             text: `Use get_service_log to get logs for the service ${serviceName}`
+          }
+        }]
+      });
+    });
+
+    it('should use the provided project and region', async () => {
+      const server = {
+        registerPrompt: mock.fn(),
+      };
+      registerPrompts(server);
+      const handler = server.registerPrompt.mock.calls[1].arguments[2];
+      const result = await handler({ service: 'my-service', project: 'my-project', region: 'my-region' });
+      assert.deepStrictEqual(result, {
+        messages: [{
+          role: "user",
+          content: {
+            type: 'text',
+            text: `Use get_service_log to get logs in project my-project in region my-region for the service my-service`
           }
         }]
       });
