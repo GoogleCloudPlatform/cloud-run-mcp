@@ -16,7 +16,9 @@
     "test:tools": "node --test test/test-tools.js",
     "test": "node test/run-all-tests.js",
     "mcp-inspector": "npx @modelcontextprotocol/inspector node mcp-server.js",
-    "start": "node mcp-server.js"
+    "start": "node mcp-server.js",
+    "lint:check": "prettier --check .",
+    "lint": "prettier --write ."
   },
   "repository": {
     "type": "git",
@@ -50,6 +52,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "esmock": "^2.7.1"
+    "esmock": "^2.7.1",
+    "prettier": "3.6.2"
   }
 }
