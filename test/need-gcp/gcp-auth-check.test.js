@@ -17,7 +17,7 @@ limitations under the License.
 import assert from 'node:assert/strict';
 import { describe, it, mock, beforeEach, afterEach } from 'node:test';
 import { GoogleAuth } from 'google-auth-library';
-import { ensureGCPCredentials } from '../lib/gcp-auth-check.js';
+import { ensureGCPCredentials } from '../../lib/gcp-auth-check.js';
 
 describe('ensureGCPCredentials', () => {
   let originalConsoleLog;

@@ -16,7 +16,7 @@ limitations under the License.
 
 import assert from 'node:assert/strict';
 import { describe, it, mock } from 'node:test';
-import { registerPrompts } from '../prompts.js';
+import { registerPrompts } from '../../prompts.js';
 
 describe('registerPrompts', () => {
   it('should register deploy and logs prompts', () => {

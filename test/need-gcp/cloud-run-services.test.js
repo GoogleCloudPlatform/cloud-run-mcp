@@ -16,7 +16,7 @@ limitations under the License.
 
 import readline from 'readline/promises';
 import { stdin as input, stdout as output } from 'process';
-import { getServiceLogs } from '../lib/cloud-run-services.js';
+import { getServiceLogs } from '../../lib/cloud-run-services.js';
 
 /**
  * Prompts the user for required service information
