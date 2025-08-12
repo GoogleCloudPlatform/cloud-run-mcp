@@ -4,7 +4,9 @@
   "type": "module",
   "description": "Cloud Run MCP deployment tool",
   "main": "mcp-server.js",
-  "bin": "mcp-server.js",
+  "bin": {
+    "cloud-run-mcp": "mcp-server.js"
+  },
   "scripts": {
     "deploy": "gcloud run deploy cloud-run-mcp --source . --no-invoker-iam-check",
     "test:deploy": "node test/test-deploy.js",
