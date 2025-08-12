@@ -6,5 +6,6 @@
       "command": "npx",
       "args": ["-y", "https://github.com/GoogleCloudPlatform/cloud-run-mcp"]
     }
-  }
+  },
+  "contextFileName": "GEMINI.md"
 }
