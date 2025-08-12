@@ -105,3 +105,15 @@ npm run test:deploy
 ```
 
 This script requires an existing Google Cloud Project ID to be provided when prompted or as a command-line argument.
+
+## Publishing to npm
+
+To update the [npm package]https://www.npmjs.com/package/@google-cloud/cloud-run-mcp)
+
+Run the following:
+
+* `npm test`
+* `npm version minor`
+* `git push --follow-tags`
+
+Then a [GitHub Action]https://github.com/GoogleCloudPlatform/cloud-run-mcp/blob/main/.github/workflows/npm-publish.yml) automatically publishes to npm when new releases are pushes.
