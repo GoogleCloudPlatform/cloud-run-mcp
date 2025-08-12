@@ -118,13 +118,14 @@ See Docker's [MCP catalog](https://hub.docker.com/mcp/server/cloud-run-mcp/overv
       }
    ```
 
-## Use as a `gemini-cli` extension
+## Use as a Gemini CLI extension
 
-To install this as a `gemini-cli` extension, run the following command:
+To install this as a [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension, run the following command:
 
 ```bash
 mkdir -p ~/.gemini/extensions/cloud-run && \
-  curl -s -L https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/main/gemini-extension.json > ~/.gemini/extensions/cloud-run/gemini-extension.json
+  curl -s -L https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/main/gemini-extension/gemini-extension.json > ~/.gemini/extensions/cloud-run/gemini-extension.json && \
+  curl -s -L https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/main/gemini-extension/Gemini.md > ~/.gemini/extensions/cloud-run/Gemini.md
 ```
 
 ## Use as remote MCP server
