@@ -7,5 +7,5 @@
       "args": ["-y", "https://github.com/GoogleCloudPlatform/cloud-run-mcp"]
     }
   },
-  "contextFileName": "GEMINI.md"
+  "contextFileName": "gemini-extension/GEMINI.md"
 }
