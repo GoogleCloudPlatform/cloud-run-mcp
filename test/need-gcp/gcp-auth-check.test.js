@@ -78,7 +78,7 @@ describe('ensureGCPCredentials', () => {
     assert.deepStrictEqual(
       capturedConsoleOutput,
       [
-        'Checking for Google Cloud Application Default Credentials...', 
+        'Checking for Google Cloud Application Default Credentials...',
         'Application Default Credentials found.',
       ],
       'Console output should indicate successful ADC discovery'
@@ -118,14 +118,14 @@ describe('ensureGCPCredentials', () => {
     assert.strictEqual(result, false, 'Should return false on failure');
 
     const expectedOutput = [
-      'Checking for Google Cloud Application Default Credentials...', 
+      'Checking for Google Cloud Application Default Credentials...',
       'ERROR: Google Cloud Application Default Credentials are not set up.',
       'An unexpected error occurred during credential verification.',
       '\nFor more details or alternative setup methods, consider:',
       '1. If running locally, run: gcloud auth application-default login.',
       '2. Ensuring the `GOOGLE_APPLICATION_CREDENTIALS` environment variable points to a valid service account key file.',
       '3. If on a Google Cloud environment (e.g., GCE, Cloud Run), verify the associated service account has necessary permissions.',
-      `\nOriginal error message from Google Auth Library: ${errorMessage}`, 
+      `\nOriginal error message from Google Auth Library: ${errorMessage}`,
       `Error stack: ${errorWithStack.stack}`,
     ];
     assert.deepStrictEqual(
@@ -149,14 +149,14 @@ describe('ensureGCPCredentials', () => {
     assert.strictEqual(result, false, 'Should return false on failure');
 
     const expectedOutput = [
-      'Checking for Google Cloud Application Default Credentials...', 
+      'Checking for Google Cloud Application Default Credentials...',
       'ERROR: Google Cloud Application Default Credentials are not set up.',
-      `An HTTP error occurred (Status: 401). This often means misconfigured, expired credentials, or a network issue.`, 
+      `An HTTP error occurred (Status: 401). This often means misconfigured, expired credentials, or a network issue.`,
       '\nFor more details or alternative setup methods, consider:',
       '1. If running locally, run: gcloud auth application-default login.',
       '2. Ensuring the `GOOGLE_APPLICATION_CREDENTIALS` environment variable points to a valid service account key file.',
       '3. If on a Google Cloud environment (e.g., GCE, Cloud Run), verify the associated service account has necessary permissions.',
-      `\nOriginal error message from Google Auth Library: ${httpErrorMessage}`, 
+      `\nOriginal error message from Google Auth Library: ${httpErrorMessage}`,
       `Error stack: ${errorWithStack.stack}`,
     ];
     assert.deepStrictEqual(
@@ -179,14 +179,14 @@ describe('ensureGCPCredentials', () => {
     assert.strictEqual(result, false, 'Should return false on failure');
 
     const expectedOutput = [
-      'Checking for Google Cloud Application Default Credentials...', 
+      'Checking for Google Cloud Application Default Credentials...',
       'ERROR: Google Cloud Application Default Credentials are not set up.',
       'An unexpected error occurred during credential verification (e.g., malformed response or invalid type).',
       '\nFor more details or alternative setup methods, consider:',
       '1. If running locally, run: gcloud auth application-default login.',
       '2. Ensuring the `GOOGLE_APPLICATION_CREDENTIALS` environment variable points to a valid service account key file.',
       '3. If on a Google Cloud environment (e.g., GCE, Cloud Run), verify the associated service account has necessary permissions.',
-      `\nOriginal error message from Google Auth Library: ${typeErrorMessage}`, 
+      `\nOriginal error message from Google Auth Library: ${typeErrorMessage}`,
       `Error stack: ${errorWithStack.stack}`,
     ];
     assert.deepStrictEqual(
@@ -209,14 +209,14 @@ describe('ensureGCPCredentials', () => {
     assert.strictEqual(result, false, 'Should return false on failure');
 
     const expectedOutput = [
-      'Checking for Google Cloud Application Default Credentials...', 
+      'Checking for Google Cloud Application Default Credentials...',
       'ERROR: Google Cloud Application Default Credentials are not set up.',
       'An unexpected error occurred during credential verification.',
       '\nFor more details or alternative setup methods, consider:',
       '1. If running locally, run: gcloud auth application-default login.',
       '2. Ensuring the `GOOGLE_APPLICATION_CREDENTIALS` environment variable points to a valid service account key file.',
       '3. If on a Google Cloud environment (e.g., GCE, Cloud Run), verify the associated service account has necessary permissions.',
-      `\nOriginal error message from Google Auth Library: ${unknownErrorMessage}`, 
+      `\nOriginal error message from Google Auth Library: ${unknownErrorMessage}`,
       `Error stack: ${errorWithStack.stack}`,
     ];
     assert.deepStrictEqual(
