@@ -45,7 +45,7 @@ describe('registerTools', () => {
         },
       });
 
-      registerTools(server);
+      registerTools(server, { gcpCredentialsAvailable: true });
 
       const handler = server.registerTool.mock.calls.find(
         (call) => call.arguments[0] === 'list_projects'
@@ -79,7 +79,7 @@ describe('registerTools', () => {
         },
       });
 
-      registerTools(server);
+      registerTools(server, { gcpCredentialsAvailable: true });
 
       const handler = server.registerTool.mock.calls.find(
         (call) => call.arguments[0] === 'create_project'
@@ -111,7 +111,7 @@ describe('registerTools', () => {
         },
       });
 
-      registerTools(server);
+      registerTools(server, { gcpCredentialsAvailable: true });
 
       const handler = server.registerTool.mock.calls.find(
         (call) => call.arguments[0] === 'create_project'
@@ -145,7 +145,7 @@ describe('registerTools', () => {
         },
       });
 
-      registerTools(server);
+      registerTools(server, { gcpCredentialsAvailable: true });
 
       const handler = server.registerTool.mock.calls.find(
         (call) => call.arguments[0] === 'list_services'
@@ -183,7 +183,7 @@ describe('registerTools', () => {
         },
       });
 
-      registerTools(server);
+      registerTools(server, { gcpCredentialsAvailable: true });
 
       const handler = server.registerTool.mock.calls.find(
         (call) => call.arguments[0] === 'get_service'
@@ -229,7 +229,7 @@ describe('registerTools', () => {
         },
       });
 
-      registerTools(server);
+      registerTools(server, { gcpCredentialsAvailable: true });
 
       const handler = server.registerTool.mock.calls.find(
         (call) => call.arguments[0] === 'get_service_log'
@@ -263,7 +263,7 @@ describe('registerTools', () => {
         },
       });
 
-      registerTools(server);
+      registerTools(server, { gcpCredentialsAvailable: true });
 
       const handler = server.registerTool.mock.calls.find(
         (call) => call.arguments[0] === 'deploy_local_files'
@@ -298,7 +298,7 @@ describe('registerTools', () => {
         },
       });
 
-      registerTools(server);
+      registerTools(server, { gcpCredentialsAvailable: true });
 
       const handler = server.registerTool.mock.calls.find(
         (call) => call.arguments[0] === 'deploy_local_folder'
@@ -333,7 +333,7 @@ describe('registerTools', () => {
         },
       });
 
-      registerTools(server);
+      registerTools(server, { gcpCredentialsAvailable: true });
 
       const handler = server.registerTool.mock.calls.find(
         (call) => call.arguments[0] === 'deploy_file_contents'
@@ -368,7 +368,7 @@ describe('registerTools', () => {
         },
       });
 
-      registerTools(server);
+      registerTools(server, { gcpCredentialsAvailable: true });
 
       const handler = server.registerTool.mock.calls.find(
         (call) => call.arguments[0] === 'deploy_container_image'
@@ -388,6 +388,37 @@ describe('registerTools', () => {
           },
         ],
       });
+    });
+  });
+
+  describe('when gcp credentials are not available', () => {
+    it('should return an error for all tools', async () => {
+      const server = {
+        registerTool: mock.fn(),
+      };
+
+      const { registerTools } = await esmock('../../tools.js', {});
+
+      registerTools(server, { gcpCredentialsAvailable: false });
+
+      const toolNames = server.registerTool.mock.calls.map(
+        (call) => call.arguments[0]
+      );
+
+      for (const toolName of toolNames) {
+        const handler = server.registerTool.mock.calls.find(
+          (call) => call.arguments[0] === toolName
+        ).arguments[2];
+        const result = await handler({});
+        assert.deepStrictEqual(result, {
+          content: [
+            {
+              type: 'text',
+              text: 'GCP credentials are not available. Please configure your environment.',
+            },
+          ],
+        });
+      }
     });
   });
 });

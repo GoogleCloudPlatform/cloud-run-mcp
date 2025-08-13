@@ -25,12 +25,33 @@ import {
   listProjects,
   createProjectAndAttachBilling,
 } from './lib/gcp-projects.js';
-import { checkGCP } from './lib/gcp-metadata.js';
+
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
+
+function gcpTool(gcpCredentialsAvailable, fn) {
+  if (!gcpCredentialsAvailable) {
+    return () => ({
+      content: [
+        {
+          type: 'text',
+          text: 'GCP credentials are not available. Please configure your environment.',
+        },
+      ],
+    });
+  }
+  return fn;
+}
+
 
 export const registerTools = (
   server,
-  { defaultProjectId, defaultRegion, defaultServiceName, skipIamCheck } = {}
+  {
+    defaultProjectId,
+    defaultRegion,
+    defaultServiceName,
+    skipIamCheck,
+    gcpCredentialsAvailable,
+  } = {}
 ) => {
   // Tool to list GCP projects
   server.registerTool(
@@ -39,28 +60,31 @@ export const registerTools = (
       description: 'Lists available GCP projects',
       inputSchema: {},
     },
-    async () => {
-      try {
-        const projects = await listProjects();
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Available GCP Projects:\n${projects.map((p) => `- ${p.id}`).join('\n')}`,
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error listing GCP projects: ${error.message}`,
-            },
-          ],
-        };
-      }
-    }
+    gcpTool(
+      gcpCredentialsAvailable,
+      async () => {
+        try {
+          const projects = await listProjects();
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Available GCP Projects:\n${projects.map((p) => `- ${p.id}`).join('\n')}`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error listing GCP projects: ${error.message}`,
+              },
+            ],
+          };
+        }
+      },
+    )
   );
 
   // Tool to create a new GCP project
@@ -78,41 +102,44 @@ export const registerTools = (
           ),
       },
     },
-    async ({ projectId }) => {
-      if (
-        projectId !== undefined &&
-        (typeof projectId !== 'string' || projectId.trim() === '')
-      ) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Error: If provided, Project ID must be a non-empty string.',
-            },
-          ],
-        };
-      }
-      try {
-        const result = await createProjectAndAttachBilling(projectId);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Successfully created GCP project with ID "${result.projectId}". You can now use this project ID for deployments.`,
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error creating GCP project or attaching billing: ${error.message}`,
-            },
-          ],
-        };
-      }
-    }
+    gcpTool(
+      gcpCredentialsAvailable,
+      async ({ projectId }) => {
+        if (
+          projectId !== undefined &&
+          (typeof projectId !== 'string' || projectId.trim() === '')
+        ) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: If provided, Project ID must be a non-empty string.',
+              },
+            ],
+          };
+        }
+        try {
+          const result = await createProjectAndAttachBilling(projectId);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Successfully created GCP project with ID "${result.projectId}". You can now use this project ID for deployments.`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error creating GCP project or attaching billing: ${error.message}`,
+              },
+            ],
+          };
+        }
+      },
+    )
   );
 
   // Listing Cloud Run services
@@ -131,45 +158,48 @@ export const registerTools = (
           .default(defaultRegion),
       },
     },
-    async ({ project, region }) => {
-      if (typeof project !== 'string') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Error: Project ID must be provided and be a non-empty string.',
-            },
-          ],
-        };
-      }
+    gcpTool(
+      gcpCredentialsAvailable,
+      async ({ project, region }) => {
+        if (typeof project !== 'string') {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: Project ID must be provided and be a non-empty string.',
+              },
+            ],
+          };
+        }
 
-      try {
-        const services = await listServices(project, region);
-        const serviceList = services
-          .map((s) => {
-            const serviceName = s.name.split('/').pop();
-            return `- ${serviceName} (URL: ${s.uri})`;
-          })
-          .join('\n');
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Services in project ${project} (location ${region}):\n${serviceList}`,
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error listing services for project ${project} (region ${region}): ${error.message}`,
-            },
-          ],
-        };
-      }
-    }
+        try {
+          const services = await listServices(project, region);
+          const serviceList = services
+            .map((s) => {
+              const serviceName = s.name.split('/').pop();
+              return `- ${serviceName} (URL: ${s.uri})`;
+            })
+            .join('\n');
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Services in project ${project} (location ${region}):\n${serviceList}`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error listing services for project ${project} (region ${region}): ${error.message}`,
+              },
+            ],
+          };
+        }
+      },
+    )
   );
 
   // Dynamic resource for getting a specific service
@@ -192,53 +222,56 @@ export const registerTools = (
           .default(defaultServiceName),
       },
     },
-    async ({ project, region, service }) => {
-      if (typeof project !== 'string') {
-        return {
-          content: [
-            { type: 'text', text: 'Error: Project ID must be provided.' },
-          ],
-        };
-      }
-      if (typeof service !== 'string') {
-        return {
-          content: [
-            { type: 'text', text: 'Error: Service name must be provided.' },
-          ],
-        };
-      }
-      try {
-        const serviceDetails = await getService(project, region, service);
-        if (serviceDetails) {
+    gcpTool(
+      gcpCredentialsAvailable,
+      async ({ project, region, service }) => {
+        if (typeof project !== 'string') {
           return {
             content: [
-              {
-                type: 'text',
-                text: `Name: ${service}\nRegion: ${region}\nProject: ${project}\nURL: ${serviceDetails.uri}\nLast deployed by: ${serviceDetails.lastModifier}`,
-              },
+              { type: 'text', text: 'Error: Project ID must be provided.' },
             ],
           };
-        } else {
+        }
+        if (typeof service !== 'string') {
+          return {
+            content: [
+              { type: 'text', text: 'Error: Service name must be provided.' },
+            ],
+          };
+        }
+        try {
+          const serviceDetails = await getService(project, region, service);
+          if (serviceDetails) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `Name: ${service}\nRegion: ${region}\nProject: ${project}\nURL: ${serviceDetails.uri}\nLast deployed by: ${serviceDetails.lastModifier}`,
+                },
+              ],
+            };
+          } else {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `Service ${service} not found in project ${project} (region ${region}).`,
+                },
+              ],
+            };
+          }
+        } catch (error) {
           return {
             content: [
               {
                 type: 'text',
-                text: `Service ${service} not found in project ${project} (region ${region}).`,
+                text: `Error getting service ${service} in project ${project} (region ${region}): ${error.message}`,
               },
             ],
           };
         }
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error getting service ${service} in project ${project} (region ${region}): ${error.message}`,
-            },
-          ],
-        };
-      }
-    }
+      },
+    )
   );
 
   // Logs for a service
@@ -262,46 +295,49 @@ export const registerTools = (
           .default(defaultServiceName),
       },
     },
-    async ({ project, region, service }) => {
-      let allLogs = [];
-      let requestOptions;
-      try {
-        do {
-          // Fetch a page of logs
-          const response = await getServiceLogs(
-            project,
-            region,
-            service,
-            requestOptions
-          );
+    gcpTool(
+      gcpCredentialsAvailable,
+      async ({ project, region, service }) => {
+        let allLogs = [];
+        let requestOptions;
+        try {
+          do {
+            // Fetch a page of logs
+            const response = await getServiceLogs(
+              project,
+              region,
+              service,
+              requestOptions
+            );
 
-          if (response.logs) {
-            allLogs.push(response.logs);
-          }
+            if (response.logs) {
+              allLogs.push(response.logs);
+            }
 
-          // Set the requestOptions incl pagintion token for the next iteration
+            // Set the requestOptions incl pagintion token for the next iteration
 
-          requestOptions = response.requestOptions;
-        } while (requestOptions); // Continue as long as there is a next page token
-        return {
-          content: [
-            {
-              type: 'text',
-              text: allLogs.join('\n'),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error getting Logs for service ${service} in project ${project} (region ${region}): ${error.message}`,
-            },
-          ],
-        };
-      }
-    }
+            requestOptions = response.requestOptions;
+          } while (requestOptions); // Continue as long as there is a next page token
+          return {
+            content: [
+              {
+                type: 'text',
+                text: allLogs.join('\n'),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error getting Logs for service ${service} in project ${project} (region ${region}): ${error.message}`,
+              },
+            ],
+          };
+        }
+      },
+    )
   );
 
   server.registerTool(
@@ -333,48 +369,51 @@ export const registerTools = (
           ),
       },
     },
-    async ({ project, region, service, files }) => {
-      if (typeof project !== 'string') {
-        throw new Error(
-          'Project must specified, please prompt the user for a valid existing Google Cloud project ID.'
-        );
-      }
-      if (typeof files !== 'object' || !Array.isArray(files)) {
-        throw new Error('Files must specified');
-      }
-      if (files.length === 0) {
-        throw new Error('No files specified for deployment');
-      }
+    gcpTool(
+      gcpCredentialsAvailable,
+      async ({ project, region, service, files }) => {
+        if (typeof project !== 'string') {
+          throw new Error(
+            'Project must specified, please prompt the user for a valid existing Google Cloud project ID.'
+          );
+        }
+        if (typeof files !== 'object' || !Array.isArray(files)) {
+          throw new Error('Files must specified');
+        }
+        if (files.length === 0) {
+          throw new Error('No files specified for deployment');
+        }
 
-      // Deploy to Cloud Run
-      try {
-        // TODO: Should we return intermediate progress messages? we'd need to use sendNotification for that, see https://github.com/modelcontextprotocol/typescript-sdk/blob/main/src/examples/server/jsonResponseStreamableHttp.ts#L46C24-L46C41
-        const response = await deploy({
-          projectId: project,
-          serviceName: service,
-          region: region,
-          files: files,
-          skipIamCheck: skipIamCheck, // Pass the new flag
-        });
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Cloud Run service ${service} deployed in project ${project}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error deploying to Cloud Run: ${error.message || error}`,
-            },
-          ],
-        };
-      }
-    }
+        // Deploy to Cloud Run
+        try {
+          // TODO: Should we return intermediate progress messages? we'd need to use sendNotification for that, see https://github.com/modelcontextprotocol/typescript-sdk/blob/main/src/examples/server/jsonResponseStreamableHttp.ts#L46C24-L46C41
+          const response = await deploy({
+            projectId: project,
+            serviceName: service,
+            region: region,
+            files: files,
+            skipIamCheck: skipIamCheck, // Pass the new flag
+          });
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Cloud Run service ${service} deployed in project ${project}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error deploying to Cloud Run: ${error.message || error}`,
+              },
+            ],
+          };
+        }
+      },
+    )
   );
 
   server.registerTool(
@@ -406,46 +445,49 @@ export const registerTools = (
           ),
       },
     },
-    async ({ project, region, service, folderPath }) => {
-      if (typeof project !== 'string') {
-        throw new Error(
-          'Project must be specified, please prompt the user for a valid existing Google Cloud project ID.'
-        );
-      }
-      if (typeof folderPath !== 'string' || folderPath.trim() === '') {
-        throw new Error(
-          'Folder path must be specified and be a non-empty string.'
-        );
-      }
+    gcpTool(
+      gcpCredentialsAvailable,
+      async ({ project, region, service, folderPath }) => {
+        if (typeof project !== 'string') {
+          throw new Error(
+            'Project must be specified, please prompt the user for a valid existing Google Cloud project ID.'
+          );
+        }
+        if (typeof folderPath !== 'string' || folderPath.trim() === '') {
+          throw new Error(
+            'Folder path must be specified and be a non-empty string.'
+          );
+        }
 
-      // Deploy to Cloud Run
-      try {
-        const response = await deploy({
-          projectId: project,
-          serviceName: service,
-          region: region,
-          files: [folderPath],
-          skipIamCheck: skipIamCheck, // Pass the new flag
-        });
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Cloud Run service ${service} deployed from folder ${folderPath} in project ${project}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error deploying folder to Cloud Run: ${error.message || error}`,
-            },
-          ],
-        };
-      }
-    }
+        // Deploy to Cloud Run
+        try {
+          const response = await deploy({
+            projectId: project,
+            serviceName: service,
+            region: region,
+            files: [folderPath],
+            skipIamCheck: skipIamCheck, // Pass the new flag
+          });
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Cloud Run service ${service} deployed from folder ${folderPath} in project ${project}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error deploying folder to Cloud Run: ${error.message || error}`,
+              },
+            ],
+          };
+        }
+      },
+    )
   );
 
   server.registerTool(
@@ -487,54 +529,57 @@ export const registerTools = (
           .describe('Array of file objects containing filename and content'),
       },
     },
-    async ({ project, region, service, files }) => {
-      if (typeof project !== 'string') {
-        throw new Error(
-          'Project must specified, please prompt the user for a valid existing Google Cloud project ID.'
-        );
-      }
-      if (typeof files !== 'object' || !Array.isArray(files)) {
-        throw new Error('Files must be specified');
-      }
-      if (files.length === 0) {
-        throw new Error('No files specified for deployment');
-      }
-
-      // Validate that each file has either content
-      for (const file of files) {
-        if (!file.content) {
-          throw new Error(`File ${file.filename} must have content`);
+    gcpTool(
+      gcpCredentialsAvailable,
+      async ({ project, region, service, files }) => {
+        if (typeof project !== 'string') {
+          throw new Error(
+            'Project must specified, please prompt the user for a valid existing Google Cloud project ID.'
+          );
         }
-      }
+        if (typeof files !== 'object' || !Array.isArray(files)) {
+          throw new Error('Files must be specified');
+        }
+        if (files.length === 0) {
+          throw new Error('No files specified for deployment');
+        }
 
-      // Deploy to Cloud Run
-      try {
-        const response = await deploy({
-          projectId: project,
-          serviceName: service,
-          region: region,
-          files: files,
-          skipIamCheck: skipIamCheck, // Pass the new flag
-        });
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Cloud Run service ${service} deployed in project ${project}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error deploying to Cloud Run: ${error.message || error}`,
-            },
-          ],
-        };
-      }
-    }
+        // Validate that each file has either content
+        for (const file of files) {
+          if (!file.content) {
+            throw new Error(`File ${file.filename} must have content`);
+          }
+        }
+
+        // Deploy to Cloud Run
+        try {
+          const response = await deploy({
+            projectId: project,
+            serviceName: service,
+            region: region,
+            files: files,
+            skipIamCheck: skipIamCheck, // Pass the new flag
+          });
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Cloud Run service ${service} deployed in project ${project}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error deploying to Cloud Run: ${error.message || error}`,
+              },
+            ],
+          };
+        }
+      },
+    )
   );
 
   server.registerTool(
@@ -566,46 +611,49 @@ export const registerTools = (
           ),
       },
     },
-    async ({ project, region, service, imageUrl }) => {
-      if (typeof project !== 'string') {
-        throw new Error(
-          'Project must specified, please prompt the user for a valid existing Google Cloud project ID.'
-        );
-      }
-      if (typeof imageUrl !== 'string' || imageUrl.trim() === '') {
-        throw new Error(
-          'Container image URL must be specified and be a non-empty string.'
-        );
-      }
+    gcpTool(
+      gcpCredentialsAvailable,
+      async ({ project, region, service, imageUrl }) => {
+        if (typeof project !== 'string') {
+          throw new Error(
+            'Project must specified, please prompt the user for a valid existing Google Cloud project ID.'
+          );
+        }
+        if (typeof imageUrl !== 'string' || imageUrl.trim() === '') {
+          throw new Error(
+            'Container image URL must be specified and be a non-empty string.'
+          );
+        }
 
-      // Deploy to Cloud Run
-      try {
-        const response = await deployImage({
-          projectId: project,
-          serviceName: service,
-          region: region,
-          imageUrl: imageUrl,
-          skipIamCheck: skipIamCheck,
-        });
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Cloud Run service ${service} deployed in project ${project}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error deploying to Cloud Run: ${error.message || error}`,
-            },
-          ],
-        };
-      }
-    }
+        // Deploy to Cloud Run
+        try {
+          const response = await deployImage({
+            projectId: project,
+            serviceName: service,
+            region: region,
+            imageUrl: imageUrl,
+            skipIamCheck: skipIamCheck,
+          });
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Cloud Run service ${service} deployed in project ${project}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error deploying to Cloud Run: ${error.message || error}`,
+              },
+            ],
+          };
+        }
+      },
+    )
   );
 };
 
@@ -616,6 +664,7 @@ export const registerToolsRemote = async (
     defaultRegion,
     defaultServiceName,
     skipIamCheck = false,
+    gcpCredentialsAvailable,
   } = {}
 ) => {
   // We no longer call checkGCP here; the effective defaults are passed in.
@@ -640,34 +689,37 @@ export const registerToolsRemote = async (
           .default(currentRegion),
       },
     },
-    async ({ region }) => {
-      try {
-        const services = await listServices(currentProject, region);
-        const serviceList = services
-          .map((s) => {
-            const serviceName = s.name.split('/').pop();
-            return `- ${serviceName} (URL: ${s.uri})`;
-          })
-          .join('\n');
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Services in project ${currentProject} (location ${region}):\n${serviceList}`,
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error listing services for project ${currentProject} (region ${currentRegion}): ${error.message}`,
-            },
-          ],
-        };
-      }
-    }
+    gcpTool(
+      gcpCredentialsAvailable,
+      async ({ region }) => {
+        try {
+          const services = await listServices(currentProject, region);
+          const serviceList = services
+            .map((s) => {
+              const serviceName = s.name.split('/').pop();
+              return `- ${serviceName} (URL: ${s.uri})`;
+            })
+            .join('\n');
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Services in project ${currentProject} (location ${region}):\n${serviceList}`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error listing services for project ${currentProject} (region ${currentRegion}): ${error.message}`,
+              },
+            ],
+          };
+        }
+      },
+    )
   );
 
   // Dynamic resource for getting a specific service (Remote)
@@ -686,50 +738,53 @@ export const registerToolsRemote = async (
           .default(defaultServiceName),
       },
     },
-    async ({ region, service }) => {
-      if (typeof service !== 'string') {
-        return {
-          content: [
-            { type: 'text', text: 'Error: Service name must be provided.' },
-          ],
-        };
-      }
-      try {
-        const serviceDetails = await getService(
-          currentProject,
-          region,
-          service
-        );
-        if (serviceDetails) {
+    gcpTool(
+      gcpCredentialsAvailable,
+      async ({ region, service }) => {
+        if (typeof service !== 'string') {
           return {
             content: [
-              {
-                type: 'text',
-                text: `Name: ${service}\nRegion: ${region}\nProject: ${currentProject}\nURL: ${serviceDetails.uri}\nLast deployed by: ${serviceDetails.lastModifier}`,
-              },
+              { type: 'text', text: 'Error: Service name must be provided.' },
             ],
           };
-        } else {
+        }
+        try {
+          const serviceDetails = await getService(
+            currentProject,
+            region,
+            service
+          );
+          if (serviceDetails) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `Name: ${service}\nRegion: ${region}\nProject: ${currentProject}\nURL: ${serviceDetails.uri}\nLast deployed by: ${serviceDetails.lastModifier}`,
+                },
+              ],
+            };
+          } else {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `Service ${service} not found in project ${currentProject} (region ${currentRegion}).`,
+                },
+              ],
+            };
+          }
+        } catch (error) {
           return {
             content: [
               {
                 type: 'text',
-                text: `Service ${service} not found in project ${currentProject} (region ${currentRegion}).`,
+                text: `Error getting service ${service} in project ${currentProject} (region ${currentRegion}): ${error.message}`,
               },
             ],
           };
         }
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error getting service ${service} in project ${currentProject} (region ${currentRegion}): ${error.message}`,
-            },
-          ],
-        };
-      }
-    }
+      },
+    )
   );
 
   // Logs for a service
@@ -753,46 +808,49 @@ export const registerToolsRemote = async (
           .default(defaultServiceName),
       },
     },
-    async ({ project, region, service }) => {
-      let allLogs = [];
-      let requestOptions;
-      try {
-        do {
-          // Fetch a page of logs
-          const response = await getServiceLogs(
-            project,
-            region,
-            service,
-            requestOptions
-          );
+    gcpTool(
+      gcpCredentialsAvailable,
+      async ({ project, region, service }) => {
+        let allLogs = [];
+        let requestOptions;
+        try {
+          do {
+            // Fetch a page of logs
+            const response = await getServiceLogs(
+              project,
+              region,
+              service,
+              requestOptions
+            );
 
-          if (response.logs) {
-            allLogs.push(response.logs);
-          }
+            if (response.logs) {
+              allLogs.push(response.logs);
+            }
 
-          // Set the requestOptions incl pagintion token for the next iteration
+            // Set the requestOptions incl pagintion token for the next iteration
 
-          requestOptions = response.requestOptions;
-        } while (requestOptions); // Continue as long as there is a next page token
-        return {
-          content: [
-            {
-              type: 'text',
-              text: allLogs.join('\n'),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error getting Logs for service ${service} in project ${project} (region ${region}): ${error.message}`,
-            },
-          ],
-        };
-      }
-    }
+            requestOptions = response.requestOptions;
+          } while (requestOptions); // Continue as long as there is a next page token
+          return {
+            content: [
+              {
+                type: 'text',
+                text: allLogs.join('\n'),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error getting Logs for service ${service} in project ${project} (region ${region}): ${error.message}`,
+              },
+            ],
+          };
+        }
+      },
+    )
   );
 
   // Deploy file contents to Cloud Run (Remote)
@@ -825,54 +883,57 @@ export const registerToolsRemote = async (
           .describe('Array of file objects containing filename and content'),
       },
     },
-    async ({ region, service, files }) => {
-      console.log(
-        `New deploy request (remote): ${JSON.stringify({ project: currentProject, region, service, files })}`
-      );
+    gcpTool(
+      gcpCredentialsAvailable,
+      async ({ region, service, files }) => {
+        console.log(
+          `New deploy request (remote): ${JSON.stringify({ project: currentProject, region, service, files })}`
+        );
 
-      if (
-        typeof files !== 'object' ||
-        !Array.isArray(files) ||
-        files.length === 0
-      ) {
-        throw new Error('Files must be specified');
-      }
-
-      // Validate that each file has content
-      for (const file of files) {
-        if (!file.content) {
-          throw new Error(`File ${file.filename} must have content`);
+        if (
+          typeof files !== 'object' ||
+          !Array.isArray(files) ||
+          files.length === 0
+        ) {
+          throw new Error('Files must be specified');
         }
-      }
 
-      // Deploy to Cloud Run
-      try {
-        const response = await deploy({
-          projectId: currentProject,
-          serviceName: service,
-          region: region,
-          files: files,
-          skipIamCheck: skipIamCheck, // Pass the new flag
-        });
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Cloud Run service ${service} deployed in project ${currentProject}\nCloud Console: https://console.cloud. google.com/run/detail/${region}/${service}?project=${currentProject}\nService URL: ${response.uri}`,
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error deploying to Cloud Run: ${error.message || error}`,
-            },
-          ],
-        };
-      }
-    }
+        // Validate that each file has content
+        for (const file of files) {
+          if (!file.content) {
+            throw new Error(`File ${file.filename} must have content`);
+          }
+        }
+
+        // Deploy to Cloud Run
+        try {
+          const response = await deploy({
+            projectId: currentProject,
+            serviceName: service,
+            region: region,
+            files: files,
+            skipIamCheck: skipIamCheck, // Pass the new flag
+          });
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Cloud Run service ${service} deployed in project ${currentProject}\nCloud Console: https://console.cloud. google.com/run/detail/${region}/${service}?project=${currentProject}\nService URL: ${response.uri}`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error deploying to Cloud Run: ${error.message || error}`,
+              },
+            ],
+          };
+        }
+      },
+    )
   );
 
   server.registerTool(
@@ -897,40 +958,43 @@ export const registerToolsRemote = async (
           ),
       },
     },
-    async ({ region, service, imageUrl }) => {
-      if (typeof imageUrl !== 'string' || imageUrl.trim() === '') {
-        throw new Error(
-          'Container image URL must be specified and be a non-empty string.'
-        );
-      }
+    gcpTool(
+      gcpCredentialsAvailable,
+      async ({ region, service, imageUrl }) => {
+        if (typeof imageUrl !== 'string' || imageUrl.trim() === '') {
+          throw new Error(
+            'Container image URL must be specified and be a non-empty string.'
+          );
+        }
 
-      // Deploy to Cloud Run
-      try {
-        const response = await deployImage({
-          projectId: currentProject,
-          serviceName: service,
-          region: region,
-          imageUrl: imageUrl,
-          skipIamCheck: skipIamCheck,
-        });
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Cloud Run service ${service} deployed in project ${currentProject}\nCloud Console: https://console.cloud. google.com/run/detail/${region}/${service}?project=${currentProject}\nService URL: ${response.uri}`,
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error deploying to Cloud Run: ${error.message || error}`,
-            },
-          ],
-        };
-      }
-    }
+        // Deploy to Cloud Run
+        try {
+          const response = await deployImage({
+            projectId: currentProject,
+            serviceName: service,
+            region: region,
+            imageUrl: imageUrl,
+            skipIamCheck: skipIamCheck,
+          });
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Cloud Run service ${service} deployed in project ${currentProject}\nCloud Console: https://console.cloud. google.com/run/detail/${region}/${service}?project=${currentProject}\nService URL: ${response.uri}`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error deploying to Cloud Run: ${error.message || error}`,
+              },
+            ],
+          };
+        }
+      },
+    )
   );
 };

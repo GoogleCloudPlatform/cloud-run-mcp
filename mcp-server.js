@@ -30,6 +30,7 @@ import { ensureGCPCredentials } from './lib/gcp-auth-check.js';
 import 'dotenv/config';
 
 const gcpInfo = await checkGCP();
+let gcpCredentialsAvailable = false;
 
 /**
  * Ensure that console.log and console.error are compatible with stdio.
@@ -52,7 +53,6 @@ function shouldStartStdio() {
 
 if (shouldStartStdio()) {
   makeLoggingCompatibleWithStdio();
-  await ensureGCPCredentials();
 }
 
 // Read default configurations from environment variables
@@ -88,6 +88,7 @@ async function getServer() {
       defaultRegion: effectiveRegion,
       defaultServiceName,
       skipIamCheck,
+      gcpCredentialsAvailable,
     });
   } else {
     console.log(
@@ -99,6 +100,7 @@ async function getServer() {
       defaultRegion: effectiveRegion,
       defaultServiceName,
       skipIamCheck,
+      gcpCredentialsAvailable,
     });
   }
 
@@ -110,13 +112,14 @@ async function getServer() {
 
 // stdio
 if (shouldStartStdio()) {
+  gcpCredentialsAvailable = await ensureGCPCredentials();
   const stdioTransport = new StdioServerTransport();
   const server = await getServer();
   await server.connect(stdioTransport);
   console.log('Cloud Run MCP server stdio transport connected');
 } else {
   console.log('Running on GCP, stdio transport will not be started.');
-  await ensureGCPCredentials();
+  gcpCredentialsAvailable = await ensureGCPCredentials();
   const app = express();
   app.use(express.json());
 
