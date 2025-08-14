@@ -35,7 +35,7 @@ describe('MCP Server in stdio mode', () => {
         'create_project',
         'deploy_container_image',
         'deploy_file_contents',
-        'deploy_local_files',
+        'deploy_files_without_directories',
         'deploy_local_folder',
         'get_service',
         'get_service_log',

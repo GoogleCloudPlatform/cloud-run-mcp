@@ -325,10 +325,10 @@ export const registerTools = (
   );
 
   server.registerTool(
-    'deploy_local_files',
+    'deploy_files_without_directories',
     {
       description:
-        'Deploy local files to Cloud Run. Takes an array of absolute file paths from the local filesystem that will be deployed. Use this tool if the files exists on the user local filesystem.',
+        'Deploys a flat list of local files to Cloud Run. Takes an array of absolute file paths from the local filesystem. The original directory structure is not preserved; all files are placed in the root of the deployed service. Use this tool when you want to deploy a specific set of files from different locations. If a service with the same name already exists, it will be updated. Otherwise, a new service will be created.',
       inputSchema: {
         project: z
           .string()
@@ -336,21 +336,23 @@ export const registerTools = (
             'Google Cloud project ID. Do not select it yourself, make sure the user provides or confirms the project ID.'
           )
           .default(defaultProjectId),
-        region: z
-          .string()
-          .optional()
-          .default(defaultRegion)
-          .describe('Region to deploy the service to'),
-        service: z
-          .string()
-          .optional()
-          .default(defaultServiceName)
-          .describe('Name of the Cloud Run service to deploy to'),
-        files: z
-          .array(z.string())
-          .describe(
-            'Array of absolute file paths to deploy (e.g. ["/home/user/project/src/index.js", "/home/user/project/package.json"])'
-          ),
+        region:
+          z
+            .string()
+            .optional()
+            .default(defaultRegion)
+            .describe('Region to deploy the service to'),
+        service:
+          z
+            .string()
+            .optional()
+            .default(defaultServiceName)
+            .describe('Name of the Cloud Run service to deploy to'),
+        files:
+          z.array(z.string())
+            .describe(
+              'Array of absolute file paths to deploy (e.g. ["/home/user/project/src/index.js", "/home/user/project/package.json"])'
+            ),
       },
     },
     gcpTool(
@@ -404,7 +406,7 @@ export const registerTools = (
     'deploy_local_folder',
     {
       description:
-        'Deploy a local folder to Cloud Run. Takes an absolute folder path from the local filesystem that will be deployed. Use this tool if the entire folder content needs to be deployed.',
+        'Deploys a local folder to Cloud Run, preserving the directory structure. Takes an absolute folder path from the local filesystem. Use this tool to deploy an entire project folder with its subdirectories. If a service with the same name already exists, it will be updated. Otherwise, a new service will be created.',
       inputSchema: {
         project: z
           .string()
@@ -478,7 +480,7 @@ export const registerTools = (
     'deploy_file_contents',
     {
       description:
-        'Deploy files to Cloud Run by providing their contents directly. Takes an array of file objects containing filename and content. Use this tool if the files only exist in the current chat context.',
+        'Deploy files to Cloud Run by providing their contents directly. Takes an array of file objects containing filename and content. Use this tool if the files only exist in the current chat context. If a service with the same name already exists, it will be updated with the new deployment. Otherwise, a new service will be created.',
       inputSchema: {
         project: z
           .string()

@@ -22,7 +22,7 @@ describe('registerTools', () => {
         'create_project',
         'deploy_container_image',
         'deploy_file_contents',
-        'deploy_local_files',
+        'deploy_files_without_directories',
         'deploy_local_folder',
         'get_service',
         'get_service_log',
@@ -251,7 +251,7 @@ describe('registerTools', () => {
     });
   });
 
-  describe('deploy_local_files', () => {
+  describe('deploy_files_without_directories', () => {
     it('should deploy local files', async () => {
       const server = {
         registerTool: mock.fn(),
@@ -266,7 +266,7 @@ describe('registerTools', () => {
       registerTools(server, { gcpCredentialsAvailable: true });
 
       const handler = server.registerTool.mock.calls.find(
-        (call) => call.arguments[0] === 'deploy_local_files'
+        (call) => call.arguments[0] === 'deploy_files_without_directories'
       ).arguments[2];
       const result = await handler({
         project: 'my-project',
