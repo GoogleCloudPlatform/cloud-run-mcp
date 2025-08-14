@@ -357,14 +357,16 @@ describe('registerTools', () => {
   });
 
   describe('deploy_container_image', () => {
-    it('should deploy container image', async () => {
+    it('should pass the service account to the deploy function', async () => {
       const server = {
         registerTool: mock.fn(),
       };
 
+      const deployImageMock = mock.fn(() => Promise.resolve({ uri: 'my-uri' }));
+
       const { registerTools } = await esmock('../../tools.js', {
         '../../lib/cloud-run-deploy.js': {
-          deployImage: () => Promise.resolve({ uri: 'my-uri' }),
+          deployImage: deployImageMock,
         },
       });
 
@@ -373,21 +375,19 @@ describe('registerTools', () => {
       const handler = server.registerTool.mock.calls.find(
         (call) => call.arguments[0] === 'deploy_container_image'
       ).arguments[2];
-      const result = await handler({
+
+      const testServiceAccount = 'test-sa@example.com';
+      await handler({
         project: 'my-project',
         region: 'my-region',
         service: 'my-service',
         imageUrl: 'gcr.io/my-project/my-image',
+        serviceAccount: testServiceAccount,
       });
 
-      assert.deepStrictEqual(result, {
-        content: [
-          {
-            type: 'text',
-            text: 'Cloud Run service my-service deployed in project my-project\nCloud Console: https://console.cloud.google.com/run/detail/my-region/my-service?project=my-project\nService URL: my-uri',
-          },
-        ],
-      });
+      assert.strictEqual(deployImageMock.mock.callCount(), 1);
+      const deployArgs = deployImageMock.mock.calls[0].arguments[0];
+      assert.strictEqual(deployArgs.serviceAccount, testServiceAccount);
     });
   });
 

@@ -33,14 +33,21 @@ export const registerPrompts = (server) => {
           .string()
           .describe('Region where the services are located')
           .optional(),
+        serviceAccount: z
+          .string()
+          .optional()
+          .describe('Email of the service account to use for the deployment.'),
       },
     },
-    async ({ name, project, region }) => {
+    async ({ name, project, region, serviceAccount }) => {
       const serviceNamePrompt =
         name ||
         'a name for the application based on the current working directory.';
       const projectPrompt = project ? ` in project ${project}` : '';
       const regionPrompt = region ? ` in region ${region}` : '';
+      const saPrompt = serviceAccount
+        ? ` with the service account ${serviceAccount}`
+        : '';
 
       return {
         messages: [
@@ -48,7 +55,7 @@ export const registerPrompts = (server) => {
             role: 'user',
             content: {
               type: 'text',
-              text: `Use the deploy_local_folder tool to deploy the current folder${projectPrompt}${regionPrompt}. The service name should be ${serviceNamePrompt}`,
+              text: `Use the deploy_local_folder tool to deploy the current folder${projectPrompt}${regionPrompt}${saPrompt}. The service name should be ${serviceNamePrompt}`,
             },
           },
         ],
