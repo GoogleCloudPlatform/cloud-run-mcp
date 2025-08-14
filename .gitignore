@@ -7,4 +7,6 @@
 
 # Node.js
 node_modules/
+
 .gemini/
+.vscode/
