@@ -417,23 +417,23 @@ export const registerTools = (
             'Google Cloud project ID. Do not select it yourself, make sure the user provides or confirms the project ID.'
           )
           .default(defaultProjectId),
-        region:
-          z.string()
+        region: z
+          .string()
           .optional()
           .default(defaultRegion)
           .describe('Region to deploy the service to'),
-        service:
-          z.string()
+        service: z
+          .string()
           .optional()
           .default(defaultServiceName)
           .describe('Name of the Cloud Run service to deploy to'),
-        folderPath:
-          z.string()
+        folderPath: z
+          .string()
           .describe(
             'Absolute path to the folder to deploy (e.g. "/home/user/project/src")'
           ),
-        serviceAccount:
-          z.string()
+        serviceAccount: z
+          .string()
           .optional()
           .describe('Email of the service account to attach to the service.'),
       },
@@ -496,24 +496,35 @@ export const registerTools = (
             'Google Cloud project ID. Leave unset for the app to be deployed in a new project. If provided, make sure the user confirms the project ID they want to deploy to.'
           )
           .default(defaultProjectId),
-        region:
-          z.string().optional().default(defaultRegion).describe('Region to deploy the service to'),
-        service:
-          z.string().optional().default(defaultServiceName).describe('Name of the Cloud Run service to deploy to'),
-        files:
-          z.array(
+        region: z
+          .string()
+          .optional()
+          .default(defaultRegion)
+          .describe('Region to deploy the service to'),
+        service: z
+          .string()
+          .optional()
+          .default(defaultServiceName)
+          .describe('Name of the Cloud Run service to deploy to'),
+        files: z
+          .array(
             z.object({
-              filename:
-                z.string().describe(
+              filename: z
+                .string()
+                .describe(
                   'Name and path of the file (e.g. "src/index.js" or "data/config.json")'
                 ),
-              content:
-                z.string().optional().describe('Text content of the file'),
+              content: z
+                .string()
+                .optional()
+                .describe('Text content of the file'),
             })
           )
           .describe('Array of file objects containing filename and content'),
-        serviceAccount:
-          z.string().optional().describe('Email of the service account to attach to the service.'),
+        serviceAccount: z
+          .string()
+          .optional()
+          .describe('Email of the service account to attach to the service.'),
       },
     },
     gcpTool(
@@ -877,7 +888,7 @@ export const registerToolsRemote = async (
       gcpCredentialsAvailable,
       async ({ region, service, files, serviceAccount }) => {
         console.log(
-          `New deploy request (remote): ${JSON.stringify({ project: currentProject, region, service, files }) }`
+          `New deploy request (remote): ${JSON.stringify({ project: currentProject, region, service, files })}`
         );
 
         if (
@@ -932,7 +943,7 @@ Service URL: ${response.uri}`,
   server.registerTool(
     'deploy_container_image',
     {
-      description: `Deploys a container image to Cloud Run in the GCP project ${currentProject}. Use this tool if the user provides a container image URL.`, 
+      description: `Deploys a container image to Cloud Run in the GCP project ${currentProject}. Use this tool if the user provides a container image URL.`,
       inputSchema: {
         region: z
           .string()
