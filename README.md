@@ -6,7 +6,7 @@ Enable MCP-compatible AI agents to deploy apps to Cloud Run.
 "mcpServers":{
   "cloud-run": {
     "command": "npx",
-    "args": ["-y", "https://github.com/GoogleCloudPlatform/cloud-run-mcp"]
+    "args": ["-y", "@google-cloud/cloud-run-mcp"]
   }
 }
 ```
@@ -72,7 +72,7 @@ Then configure the MCP server using either Node.js or Docker:
    ```json
       "cloud-run": {
         "command": "npx",
-        "args": ["-y", "https://github.com/GoogleCloudPlatform/cloud-run-mcp"]
+        "args": ["-y", "@google-cloud/cloud-run-mcp"]
       }
    ```
 
@@ -81,7 +81,7 @@ Then configure the MCP server using either Node.js or Docker:
    ```json
       "cloud-run": {
          "command": "npx",
-         "args": ["-y", "https://github.com/GoogleCloudPlatform/cloud-run-mcp"],
+         "args": ["-y", "@google-cloud/cloud-run-mcp"],
          "env": {
                "GOOGLE_CLOUD_PROJECT": "PROJECT_NAME",
                "GOOGLE_CLOUD_REGION": "PROJECT_REGION",
