@@ -112,7 +112,7 @@ To update the [npm package]https://www.npmjs.com/package/@google-cloud/cloud-run
 
 Run the following:
 
-* `git checkout new-release`
+* `git checkout -b new-release`
 * `npm test`
 * `npm version minor`
 * `git push --follow-tags`
