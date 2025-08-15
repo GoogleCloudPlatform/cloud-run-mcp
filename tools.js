@@ -358,7 +358,7 @@ export const registerTools = (
         files: z
           .array(z.string())
           .describe(
-            'Array of absolute file paths to deploy (e.g. "/home/user/project/src/index.js", "/home/user/project/package.json")'
+            'Array of absolute file paths to deploy (e.g. ["/home/user/project/src/index.js", "/home/user/project/package.json"])'
           ),
       },
     },
