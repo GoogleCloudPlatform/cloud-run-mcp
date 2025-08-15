@@ -382,12 +382,15 @@ describe('registerTools', () => {
       const handler = server.registerTool.mock.calls.find(
         (call) => call.arguments[0] === 'deploy_container_image'
       ).arguments[2];
-      const result = await handler({
-        project: 'my-project',
-        region: 'my-region',
-        service: 'my-service',
-        imageUrl: 'gcr.io/my-project/my-image',
-      });
+      const result = await handler(
+        {
+          project: 'my-project',
+          region: 'my-region',
+          service: 'my-service',
+          imageUrl: 'gcr.io/my-project/my-image',
+        },
+        { sendNotification: mock.fn() }
+      );
 
       assert.deepStrictEqual(result, {
         content: [

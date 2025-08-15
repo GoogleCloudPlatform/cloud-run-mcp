@@ -368,10 +368,10 @@ export const registerTools = (
           throw new Error('No files specified for deployment');
         }
 
-        const progressCallback = (progress) => {
-          sendNotification({
-            level: progress.level || 'info',
-            data: progress.data,
+        const progressCallback = async (progress) => {
+          await sendNotification({
+            method: "notifications/message",
+            params: { level: progress.level || 'info', data: progress.data }
           });
         };
 
@@ -456,10 +456,10 @@ export const registerTools = (
           );
         }
 
-        const progressCallback = (progress) => {
-          sendNotification({
-            level: progress.level || 'info',
-            data: progress.data,
+        const progressCallback = async (progress) => {
+          await sendNotification({
+            method: "notifications/message",
+            params: { level: progress.level || 'info', data: progress.data }
           });
         };
 
@@ -559,10 +559,10 @@ export const registerTools = (
           }
         }
 
-        const progressCallback = (progress) => {
-          sendNotification({
-            level: progress.level || 'info',
-            data: progress.data,
+        const progressCallback = async (progress) => {
+          await sendNotification({
+            method: "notifications/message",
+            params: { level: progress.level || 'info', data: progress.data }
           });
         };
 
@@ -632,7 +632,7 @@ export const registerTools = (
     },
     gcpTool(
       gcpCredentialsAvailable,
-      async ({ project, region, service, imageUrl }) => {
+      async ({ project, region, service, imageUrl }, { sendNotification }) => {
         if (typeof project !== 'string') {
           throw new Error(
             'Project must specified, please prompt the user for a valid existing Google Cloud project ID.'
@@ -644,6 +644,13 @@ export const registerTools = (
           );
         }
 
+        const progressCallback = async (progress) => {
+          await sendNotification({
+            method: "notifications/message",
+            params: { level: progress.level || 'info', data: progress.data }
+          });
+        };
+
         // Deploy to Cloud Run
         try {
           const response = await deployImage({
@@ -652,6 +659,7 @@ export const registerTools = (
             region: region,
             imageUrl: imageUrl,
             skipIamCheck: skipIamCheck,
+            progressCallback,
           });
           return {
             content: [
@@ -915,10 +923,10 @@ export const registerToolsRemote = async (
           }
         }
 
-        const progressCallback = (progress) => {
-          sendNotification({
-            level: progress.level || 'info',
-            data: progress.data,
+        const progressCallback = async (progress) => {
+          await sendNotification({
+            method: "notifications/message",
+            params: { level: progress.level || 'info', data: progress.data }
           });
         };
 
@@ -988,10 +996,10 @@ export const registerToolsRemote = async (
           );
         }
 
-        const progressCallback = (progress) => {
-          sendNotification({
-            level: progress.level || 'info',
-            data: progress.data,
+        const progressCallback = async (progress) => {
+          await sendNotification({
+            method: "notifications/message",
+            params: { level: progress.level || 'info', data: progress.data }
           });
         };
 
