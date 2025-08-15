@@ -71,13 +71,12 @@ async function getServer() {
     },
     { capabilities: { logging: {} } }
   );
- 
-  // this is no-op handler is required for mcp-inspector to function due to a mismatch between the SDK mcp-inspector 
-  server.server.setRequestHandler(SetLevelRequestSchema, request => {
-  console.log(`Log Level: ${request.params.level}`);
-  return {};
-});
 
+  // this is no-op handler is required for mcp-inspector to function due to a mismatch between the SDK mcp-inspector
+  server.server.setRequestHandler(SetLevelRequestSchema, (request) => {
+    console.log(`Log Level: ${request.params.level}`);
+    return {};
+  });
 
   // Get GCP metadata info once
   const gcpInfo = await checkGCP();
@@ -87,7 +86,6 @@ async function getServer() {
     envProjectId || (gcpInfo && gcpInfo.project) || undefined;
   const effectiveRegion =
     envRegion || (gcpInfo && gcpInfo.region) || 'europe-west1';
-
 
   if (shouldStartStdio() || !(gcpInfo && gcpInfo.project)) {
     console.log('Using tools optimized for local or stdio mode.');

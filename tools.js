@@ -29,10 +29,10 @@ import {
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 function createProgressCallback(sendNotification) {
-  return async (progress) => {
-    await sendNotification({
-      method: "notifications/message",
-      params: { level: progress.level || 'info', data: progress.data }
+  return (progress) => {
+    sendNotification({
+      method: 'notifications/message',
+      params: { level: progress.level || 'info', data: progress.data },
     });
   };
 }
@@ -381,7 +381,7 @@ export const registerTools = (
 
         // Deploy to Cloud Run
         try {
-          progressCallback({
+          await progressCallback({
             data: `Starting deployment of local files for service ${service} in project ${project}...`,
           });
           const response = await deploy({
@@ -464,7 +464,7 @@ export const registerTools = (
 
         // Deploy to Cloud Run
         try {
-          progressCallback({
+          await progressCallback({
             data: `Starting deployment of local folder for service ${service} in project ${project}...`,
           });
           const response = await deploy({
@@ -562,7 +562,7 @@ export const registerTools = (
 
         // Deploy to Cloud Run
         try {
-          progressCallback({
+          await progressCallback({
             data: `Starting deployment of file contents for service ${service} in project ${project}...`,
           });
           const response = await deploy({
@@ -916,7 +916,7 @@ export const registerToolsRemote = async (
 
         // Deploy to Cloud Run
         try {
-          progressCallback({
+          await progressCallback({
             data: `Starting deployment of file contents for service ${service} in project ${currentProject}...`,
           });
           const response = await deploy({
@@ -984,7 +984,7 @@ export const registerToolsRemote = async (
 
         // Deploy to Cloud Run
         try {
-          progressCallback({
+          await progressCallback({
             data: `Starting deployment of container image for service ${service} in project ${currentProject}...`,
           });
           const response = await deployImage({
