@@ -125,7 +125,7 @@ To install this as a [Gemini CLI](https://github.com/google-gemini/gemini-cli) e
 ```bash
 mkdir -p ~/.gemini/extensions/cloud-run/gemini-extension && \
   curl -s -L https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/main/gemini-extension.json > ~/.gemini/extensions/cloud-run/gemini-extension.json && \
-  curl -s -L https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/main/gemini-extension/Gemini.md > ~/.gemini/extensions/cloud-run/gemini-extension/Gemini.md
+  curl -s -L https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/main/gemini-extension/GEMINI.md > ~/.gemini/extensions/cloud-run/gemini-extension/GEMINI.md
 ```
 
 ## Use as remote MCP server
