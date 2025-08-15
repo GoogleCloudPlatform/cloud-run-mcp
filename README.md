@@ -130,7 +130,6 @@ mkdir -p ~/.gemini/extensions/cloud-run/gemini-extension && \
 
 ## Use as remote MCP server
 
-
 > [!WARNING]  
 > Do not use the remote MCP server without authentication. In the following instructions, we will use IAM authentication to secure the connection to the MCP server from your local machine. This is important to prevent unauthorized access to your Google Cloud resources.
 

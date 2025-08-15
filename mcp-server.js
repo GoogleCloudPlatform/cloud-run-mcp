@@ -68,7 +68,7 @@ async function getServer() {
       name: 'cloud-run',
       version: '1.0.0',
     },
-    { capabilities: { logging: {} } }
+    { capabilities: {} }
   );
 
   // Get GCP metadata info once
