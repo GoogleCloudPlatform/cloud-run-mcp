@@ -355,7 +355,7 @@ export const registerTools = (
     },
     gcpTool(
       gcpCredentialsAvailable,
-      async ({ project, region, service, files }) => {
+      async ({ project, region, service, files }, { sendNotification }) => {
         if (typeof project !== 'string') {
           throw new Error(
             'Project must specified, please prompt the user for a valid existing Google Cloud project ID.'
@@ -368,15 +368,25 @@ export const registerTools = (
           throw new Error('No files specified for deployment');
         }
 
+        const progressCallback = (progress) => {
+          sendNotification({
+            level: progress.level || 'info',
+            data: progress.data,
+          });
+        };
+
         // Deploy to Cloud Run
         try {
-          // TODO: Should we return intermediate progress messages? we'd need to use sendNotification for that, see https://github.com/modelcontextprotocol/typescript-sdk/blob/main/src/examples/server/jsonResponseStreamableHttp.ts#L46C24-L46C41
+          progressCallback({
+            data: `Starting deployment of local files for service ${service} in project ${project}...`,
+          });
           const response = await deploy({
             projectId: project,
             serviceName: service,
             region: region,
             files: files,
             skipIamCheck: skipIamCheck, // Pass the new flag
+            progressCallback,
           });
           return {
             content: [
@@ -431,7 +441,7 @@ export const registerTools = (
     },
     gcpTool(
       gcpCredentialsAvailable,
-      async ({ project, region, service, folderPath }) => {
+      async ({ project, region, service, folderPath }, { sendNotification }) => {
         if (typeof project !== 'string') {
           throw new Error(
             'Project must be specified, please prompt the user for a valid existing Google Cloud project ID.'
@@ -443,14 +453,25 @@ export const registerTools = (
           );
         }
 
+        const progressCallback = (progress) => {
+          sendNotification({
+            level: progress.level || 'info',
+            data: progress.data,
+          });
+        };
+
         // Deploy to Cloud Run
         try {
+          progressCallback({
+            data: `Starting deployment of local folder for service ${service} in project ${project}...`,
+          });
           const response = await deploy({
             projectId: project,
             serviceName: service,
             region: region,
             files: [folderPath],
             skipIamCheck: skipIamCheck, // Pass the new flag
+            progressCallback,
           });
           return {
             content: [
@@ -515,7 +536,7 @@ export const registerTools = (
     },
     gcpTool(
       gcpCredentialsAvailable,
-      async ({ project, region, service, files }) => {
+      async ({ project, region, service, files }, { sendNotification }) => {
         if (typeof project !== 'string') {
           throw new Error(
             'Project must specified, please prompt the user for a valid existing Google Cloud project ID.'
@@ -535,14 +556,25 @@ export const registerTools = (
           }
         }
 
+        const progressCallback = (progress) => {
+          sendNotification({
+            level: progress.level || 'info',
+            data: progress.data,
+          });
+        };
+
         // Deploy to Cloud Run
         try {
+          progressCallback({
+            data: `Starting deployment of file contents for service ${service} in project ${project}...`,
+          });
           const response = await deploy({
             projectId: project,
             serviceName: service,
             region: region,
             files: files,
             skipIamCheck: skipIamCheck, // Pass the new flag
+            progressCallback,
           });
           return {
             content: [
@@ -858,9 +890,9 @@ export const registerToolsRemote = async (
           .describe('Array of file objects containing filename and content'),
       },
     },
-    gcpTool(gcpCredentialsAvailable, async ({ region, service, files }) => {
+    gcpTool(gcpCredentialsAvailable, async ({ region, service, files }, { sendNotification }) => {
       console.log(
-        `New deploy request (remote): ${JSON.stringify({ project: currentProject, region, service, files })}`
+        `New deploy request (remote): ${JSON.stringify({ project: currentProject, region, service, files }) }`
       );
 
       if (
@@ -878,14 +910,25 @@ export const registerToolsRemote = async (
         }
       }
 
+      const progressCallback = (progress) => {
+        sendNotification({
+          level: progress.level || 'info',
+          data: progress.data,
+        });
+      };
+
       // Deploy to Cloud Run
       try {
+        progressCallback({
+          data: `Starting deployment of file contents for service ${service} in project ${currentProject}...`,
+        });
         const response = await deploy({
           projectId: currentProject,
           serviceName: service,
           region: region,
           files: files,
           skipIamCheck: skipIamCheck, // Pass the new flag
+          progressCallback,
         });
         return {
           content: [
@@ -930,21 +973,32 @@ export const registerToolsRemote = async (
           ),
       },
     },
-    gcpTool(gcpCredentialsAvailable, async ({ region, service, imageUrl }) => {
+    gcpTool(gcpCredentialsAvailable, async ({ region, service, imageUrl }, { sendNotification }) => {
       if (typeof imageUrl !== 'string' || imageUrl.trim() === '') {
         throw new Error(
           'Container image URL must be specified and be a non-empty string.'
         );
       }
 
+      const progressCallback = (progress) => {
+        sendNotification({
+          level: progress.level || 'info',
+          data: progress.data,
+        });
+      };
+
       // Deploy to Cloud Run
       try {
+        progressCallback({
+          data: `Starting deployment of container image for service ${service} in project ${currentProject}...`,
+        });
         const response = await deployImage({
           projectId: currentProject,
           serviceName: service,
           region: region,
           imageUrl: imageUrl,
           skipIamCheck: skipIamCheck,
+          progressCallback,
         });
         return {
           content: [

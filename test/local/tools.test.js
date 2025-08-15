@@ -268,12 +268,15 @@ describe('registerTools', () => {
       const handler = server.registerTool.mock.calls.find(
         (call) => call.arguments[0] === 'deploy_local_files'
       ).arguments[2];
-      const result = await handler({
-        project: 'my-project',
-        region: 'my-region',
-        service: 'my-service',
-        files: ['file1', 'file2'],
-      });
+      const result = await handler(
+        {
+          project: 'my-project',
+          region: 'my-region',
+          service: 'my-service',
+          files: ['file1', 'file2'],
+        },
+        { sendNotification: mock.fn() }
+      );
 
       assert.deepStrictEqual(result, {
         content: [
@@ -303,12 +306,15 @@ describe('registerTools', () => {
       const handler = server.registerTool.mock.calls.find(
         (call) => call.arguments[0] === 'deploy_local_folder'
       ).arguments[2];
-      const result = await handler({
-        project: 'my-project',
-        region: 'my-region',
-        service: 'my-service',
-        folderPath: '/my/folder',
-      });
+      const result = await handler(
+        {
+          project: 'my-project',
+          region: 'my-region',
+          service: 'my-service',
+          folderPath: '/my/folder',
+        },
+        { sendNotification: mock.fn() }
+      );
 
       assert.deepStrictEqual(result, {
         content: [
@@ -338,12 +344,15 @@ describe('registerTools', () => {
       const handler = server.registerTool.mock.calls.find(
         (call) => call.arguments[0] === 'deploy_file_contents'
       ).arguments[2];
-      const result = await handler({
-        project: 'my-project',
-        region: 'my-region',
-        service: 'my-service',
-        files: [{ filename: 'file1', content: 'content1' }],
-      });
+      const result = await handler(
+        {
+          project: 'my-project',
+          region: 'my-region',
+          service: 'my-service',
+          files: [{ filename: 'file1', content: 'content1' }],
+        },
+        { sendNotification: mock.fn() }
+      );
 
       assert.deepStrictEqual(result, {
         content: [
