@@ -28,6 +28,15 @@ import {
 
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 
+function createProgressCallback(sendNotification) {
+  return async (progress) => {
+    await sendNotification({
+      method: "notifications/message",
+      params: { level: progress.level || 'info', data: progress.data }
+    });
+  };
+}
+
 function gcpTool(gcpCredentialsAvailable, fn) {
   if (!gcpCredentialsAvailable) {
     return () => ({
@@ -349,7 +358,7 @@ export const registerTools = (
         files: z
           .array(z.string())
           .describe(
-            'Array of absolute file paths to deploy (e.g. ["/home/user/project/src/index.js", "/home/user/project/package.json"])'
+            'Array of absolute file paths to deploy (e.g. "/home/user/project/src/index.js", "/home/user/project/package.json")'
           ),
       },
     },
@@ -368,12 +377,7 @@ export const registerTools = (
           throw new Error('No files specified for deployment');
         }
 
-        const progressCallback = async (progress) => {
-          await sendNotification({
-            method: "notifications/message",
-            params: { level: progress.level || 'info', data: progress.data }
-          });
-        };
+        const progressCallback = createProgressCallback(sendNotification);
 
         // Deploy to Cloud Run
         try {
@@ -456,12 +460,7 @@ export const registerTools = (
           );
         }
 
-        const progressCallback = async (progress) => {
-          await sendNotification({
-            method: "notifications/message",
-            params: { level: progress.level || 'info', data: progress.data }
-          });
-        };
+        const progressCallback = createProgressCallback(sendNotification);
 
         // Deploy to Cloud Run
         try {
@@ -559,12 +558,7 @@ export const registerTools = (
           }
         }
 
-        const progressCallback = async (progress) => {
-          await sendNotification({
-            method: "notifications/message",
-            params: { level: progress.level || 'info', data: progress.data }
-          });
-        };
+        const progressCallback = createProgressCallback(sendNotification);
 
         // Deploy to Cloud Run
         try {
@@ -644,12 +638,7 @@ export const registerTools = (
           );
         }
 
-        const progressCallback = async (progress) => {
-          await sendNotification({
-            method: "notifications/message",
-            params: { level: progress.level || 'info', data: progress.data }
-          });
-        };
+        const progressCallback = createProgressCallback(sendNotification);
 
         // Deploy to Cloud Run
         try {
@@ -923,12 +912,7 @@ export const registerToolsRemote = async (
           }
         }
 
-        const progressCallback = async (progress) => {
-          await sendNotification({
-            method: "notifications/message",
-            params: { level: progress.level || 'info', data: progress.data }
-          });
-        };
+        const progressCallback = createProgressCallback(sendNotification);
 
         // Deploy to Cloud Run
         try {
@@ -947,7 +931,7 @@ export const registerToolsRemote = async (
             content: [
               {
                 type: 'text',
-                text: `Cloud Run service ${service} deployed in project ${currentProject}\nCloud Console: https://console.cloud. google.com/run/detail/${region}/${service}?project=${currentProject}\nService URL: ${response.uri}`,
+                text: `Cloud Run service ${service} deployed in project ${currentProject}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${currentProject}\nService URL: ${response.uri}`,
               },
             ],
           };
@@ -996,12 +980,7 @@ export const registerToolsRemote = async (
           );
         }
 
-        const progressCallback = async (progress) => {
-          await sendNotification({
-            method: "notifications/message",
-            params: { level: progress.level || 'info', data: progress.data }
-          });
-        };
+        const progressCallback = createProgressCallback(sendNotification);
 
         // Deploy to Cloud Run
         try {
@@ -1020,7 +999,7 @@ export const registerToolsRemote = async (
             content: [
               {
                 type: 'text',
-                text: `Cloud Run service ${service} deployed in project ${currentProject}\nCloud Console: https://console.cloud. google.com/run/detail/${region}/${service}?project=${currentProject}\nService URL: ${response.uri}`,
+                text: `Cloud Run service ${service} deployed in project ${currentProject}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${currentProject}\nService URL: ${response.uri}`,
               },
             ],
           };
