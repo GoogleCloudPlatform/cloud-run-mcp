@@ -112,8 +112,10 @@ To update the [npm package]https://www.npmjs.com/package/@google-cloud/cloud-run
 
 Run the following:
 
-- `npm test`
-- `npm version minor`
-- `git push --follow-tags`
+* `git checkout -b new-release`
+* `npm test`
+* `npm version minor`
+* `git push --follow-tags`
+* On GitHub, [create a new release](https://github.com/GoogleCloudPlatform/cloud-run-mcp/releases/new) for this tag.
 
 Then a [GitHub Action]https://github.com/GoogleCloudPlatform/cloud-run-mcp/blob/main/.github/workflows/npm-publish.yml) automatically publishes to npm when new releases are pushes.
