@@ -156,7 +156,9 @@ export const registerTools = (
           .default(defaultProjectId),
         region: z
           .string()
-          .describe('Region where the services are located')
+          .describe(
+            'Region where the services are located. For GPU support, must be one of: us-central1, us-east4, europe-west1, europe-west4, asia-southeast1.'
+          )
           .default(defaultRegion),
       },
     },
@@ -360,11 +362,54 @@ export const registerTools = (
           .describe(
             'Array of absolute file paths to deploy (e.g. ["/home/user/project/src/index.js", "/home/user/project/package.json"])'
           ),
+        gpu: z
+          .boolean()
+          .optional()
+          .describe(
+            'Whether to deploy with an NVIDIA L4 GPU. This has cost and resource implications. If true, cpu and memory minimums will be enforced.'
+          ),
+        cpu: z
+          .string()
+          .optional()
+          .describe(
+            'CPU limit. E.g. "1", "4000m". For GPU, min is "4".'
+          ),
+        memory: z
+          .string()
+          .optional()
+          .describe(
+            'Memory limit. E.g. "512Mi", "16Gi". For GPU, min is "16Gi".'
+          ),
+        port: z.number().optional().describe('Container port to expose.'),
+        gpuZonalRedundancy: z
+          .boolean()
+          .optional()
+          .describe(
+            'For GPU deployments, whether to use zonal redundancy. This may require specific quota. See g.co/cloudrun/gpu-quota. Defaults to true.'
+          ),
       },
     },
     gcpTool(
       gcpCredentialsAvailable,
-      async ({ project, region, service, files }, { sendNotification }) => {
+      async (
+        {
+          project,
+          region,
+          service,
+          files,
+          gpu,
+          cpu,
+          memory,
+          port,
+          gpuZonalRedundancy,
+        },
+        { sendNotification }
+      ) => {
+        if (gpu && gpuZonalRedundancy === undefined) {
+          throw new Error(
+            'When deploying with a GPU, `gpuZonalRedundancy` must be specified as either true or false.'
+          );
+        }
         if (typeof project !== 'string') {
           throw new Error(
             'Project must specified, please prompt the user for a valid existing Google Cloud project ID.'
@@ -391,6 +436,11 @@ export const registerTools = (
             files: files,
             skipIamCheck: skipIamCheck, // Pass the new flag
             progressCallback,
+            gpu,
+            cpu,
+            memory,
+            port,
+            gpuZonalRedundancy: gpuZonalRedundancy,
           });
           return {
             content: [
@@ -441,14 +491,54 @@ export const registerTools = (
           .describe(
             'Absolute path to the folder to deploy (e.g. "/home/user/project/src")'
           ),
+        gpu: z
+          .boolean()
+          .optional()
+          .describe(
+            'Whether to deploy with an NVIDIA L4 GPU. This has cost and resource implications. If true, cpu and memory minimums will be enforced.'
+          ),
+        cpu: z
+          .string()
+          .optional()
+          .describe(
+            'CPU limit. E.g. "1", "4000m". For GPU, min is "4".'
+          ),
+        memory: z
+          .string()
+          .optional()
+          .describe(
+            'Memory limit. E.g. "512Mi", "16Gi". For GPU, min is "16Gi".'
+          ),
+        port: z.number().optional().describe('Container port to expose.'),
+        gpuZonalRedundancy: z
+          .boolean()
+          .optional()
+          .describe(
+            'For GPU deployments, whether to use zonal redundancy. This may require specific quota. See g.co/cloudrun/gpu-quota. Defaults to true.'
+          ),
       },
     },
     gcpTool(
       gcpCredentialsAvailable,
       async (
-        { project, region, service, folderPath },
+        {
+          project,
+          region,
+          service,
+          folderPath,
+          gpu,
+          cpu,
+          memory,
+          port,
+          gpuZonalRedundancy,
+        },
         { sendNotification }
       ) => {
+        if (gpu && gpuZonalRedundancy === undefined) {
+          throw new Error(
+            'When deploying with a GPU, `gpuZonalRedundancy` must be specified as either true or false.'
+          );
+        }
         if (typeof project !== 'string') {
           throw new Error(
             'Project must be specified, please prompt the user for a valid existing Google Cloud project ID.'
@@ -474,6 +564,11 @@ export const registerTools = (
             files: [folderPath],
             skipIamCheck: skipIamCheck, // Pass the new flag
             progressCallback,
+            gpu,
+            cpu,
+            memory,
+            port,
+            gpuZonalRedundancy: gpuZonalRedundancy,
           });
           return {
             content: [
@@ -534,11 +629,54 @@ export const registerTools = (
             })
           )
           .describe('Array of file objects containing filename and content'),
+        gpu: z
+          .boolean()
+          .optional()
+          .describe(
+            'Whether to deploy with an NVIDIA L4 GPU. This has cost and resource implications. If true, cpu and memory minimums will be enforced.'
+          ),
+        cpu: z
+          .string()
+          .optional()
+          .describe(
+            'CPU limit. E.g. "1", "4000m". For GPU, min is "4".'
+          ),
+        memory: z
+          .string()
+          .optional()
+          .describe(
+            'Memory limit. E.g. "512Mi", "16Gi". For GPU, min is "16Gi".'
+          ),
+        port: z.number().optional().describe('Container port to expose.'),
+        gpuZonalRedundancy: z
+          .boolean()
+          .optional()
+          .describe(
+            'For GPU deployments, whether to use zonal redundancy. This may require specific quota. See g.co/cloudrun/gpu-quota. Defaults to true.'
+          ),
       },
     },
     gcpTool(
       gcpCredentialsAvailable,
-      async ({ project, region, service, files }, { sendNotification }) => {
+      async (
+        {
+          project,
+          region,
+          service,
+          files,
+          gpu,
+          cpu,
+          memory,
+          port,
+          gpuZonalRedundancy,
+        },
+        { sendNotification }
+      ) => {
+        if (gpu && gpuZonalRedundancy === undefined) {
+          throw new Error(
+            'When deploying with a GPU, `gpuZonalRedundancy` must be specified as either true or false.'
+          );
+        }
         if (typeof project !== 'string') {
           throw new Error(
             'Project must specified, please prompt the user for a valid existing Google Cloud project ID.'
@@ -572,6 +710,11 @@ export const registerTools = (
             files: files,
             skipIamCheck: skipIamCheck, // Pass the new flag
             progressCallback,
+            gpu,
+            cpu,
+            memory,
+            port,
+            gpuZonalRedundancy: gpuZonalRedundancy,
           });
           return {
             content: [
@@ -622,11 +765,54 @@ export const registerTools = (
           .describe(
             'The URL of the container image to deploy (e.g. "gcr.io/cloudrun/hello")'
           ),
+        gpu: z
+          .boolean()
+          .optional()
+          .describe(
+            'Whether to deploy with an NVIDIA L4 GPU. This has cost and resource implications. If true, cpu and memory minimums will be enforced.'
+          ),
+        cpu: z
+          .string()
+          .optional()
+          .describe(
+            'CPU limit. E.g. "1", "4000m". For GPU, min is "4".'
+          ),
+        memory: z
+          .string()
+          .optional()
+          .describe(
+            'Memory limit. E.g. "512Mi", "16Gi". For GPU, min is "16Gi".'
+          ),
+        port: z.number().optional().describe('Container port to expose.'),
+        gpuZonalRedundancy: z
+          .boolean()
+          .optional()
+          .describe(
+            'For GPU deployments, whether to use zonal redundancy. This may require specific quota. See g.co/cloudrun/gpu-quota. Defaults to true.'
+          ),
       },
     },
     gcpTool(
       gcpCredentialsAvailable,
-      async ({ project, region, service, imageUrl }, { sendNotification }) => {
+      async (
+        {
+          project,
+          region,
+          service,
+          imageUrl,
+          gpu,
+          cpu,
+          memory,
+          port,
+          gpuZonalRedundancy,
+        },
+        { sendNotification }
+      ) => {
+        if (gpu && gpuZonalRedundancy === undefined) {
+          throw new Error(
+            'When deploying with a GPU, `gpuZonalRedundancy` must be specified as either true or false.'
+          );
+        }
         if (typeof project !== 'string') {
           throw new Error(
             'Project must specified, please prompt the user for a valid existing Google Cloud project ID.'
@@ -649,6 +835,11 @@ export const registerTools = (
             imageUrl: imageUrl,
             skipIamCheck: skipIamCheck,
             progressCallback,
+            gpu,
+            cpu,
+            memory,
+            port,
+            gpuZonalRedundancy: gpuZonalRedundancy,
           });
           return {
             content: [
@@ -701,7 +892,9 @@ export const registerToolsRemote = async (
       inputSchema: {
         region: z
           .string()
-          .describe('Region where the services are located')
+          .describe(
+            'Region where the services are located. For GPU support, must be one of: us-central1, us-east4, europe-west1, europe-west4, asia-southeast1.'
+          )
           .default(currentRegion),
       },
     },
@@ -743,7 +936,9 @@ export const registerToolsRemote = async (
       inputSchema: {
         region: z
           .string()
-          .describe('Region where the service is located')
+          .describe(
+            'Region where the service is located. For GPU support, must be one of: us-central1, us-east4, europe-west1, europe-west4, asia-southeast1.'
+          )
           .default(currentRegion),
         service: z
           .string()
@@ -810,7 +1005,9 @@ export const registerToolsRemote = async (
           .default(currentProject), // Use currentProject
         region: z
           .string()
-          .describe('Region where the service is located')
+          .describe(
+            'Region where the service is located. For GPU support, must be one of: us-central1, us-east4, europe-west1, europe-west4, asia-southeast1.'
+          )
           .default(currentRegion), // Use currentRegion
         service: z
           .string()
@@ -888,11 +1085,43 @@ export const registerToolsRemote = async (
             })
           )
           .describe('Array of file objects containing filename and content'),
+        gpu: z
+          .boolean()
+          .optional()
+          .describe(
+            'Whether to deploy with an NVIDIA L4 GPU. This has cost and resource implications. If true, cpu and memory minimums will be enforced.'
+          ),
+        cpu: z
+          .string()
+          .optional()
+          .describe(
+            'CPU limit. E.g. "1", "4000m". For GPU, min is "4".'
+          ),
+        memory: z
+          .string()
+          .optional()
+          .describe(
+            'Memory limit. E.g. "512Mi", "16Gi". For GPU, min is "16Gi".'
+          ),
+        gpu_zonal_redundancy: z
+          .boolean()
+          .optional()
+          .describe(
+            'For GPU deployments, whether to use zonal redundancy. This may require specific quota. See g.co/cloudrun/gpu-quota. Defaults to false.'
+          ),
       },
     },
     gcpTool(
       gcpCredentialsAvailable,
-      async ({ region, service, files }, { sendNotification }) => {
+      async (
+        { region, service, files, gpu, cpu, memory, gpu_zonal_redundancy },
+        { sendNotification }
+      ) => {
+        if (gpu && gpu_zonal_redundancy === undefined) {
+          throw new Error(
+            'When deploying with a GPU, `gpu_zonal_redundancy` must be specified as either true or false.'
+          );
+        }
         console.log(
           `New deploy request (remote): ${JSON.stringify({ project: currentProject, region, service, files })}`
         );
@@ -926,6 +1155,11 @@ export const registerToolsRemote = async (
             files: files,
             skipIamCheck: skipIamCheck, // Pass the new flag
             progressCallback,
+            gpu,
+            cpu,
+            memory,
+            port,
+            gpuZonalRedundancy: gpuZonalRedundancy,
           });
           return {
             content: [
@@ -969,11 +1203,51 @@ export const registerToolsRemote = async (
           .describe(
             'The URL of the container image to deploy (e.g. "gcr.io/cloudrun/hello")'
           ),
+        gpu: z
+          .boolean()
+          .optional()
+          .describe(
+            'Whether to deploy with an NVIDIA L4 GPU. This has cost and resource implications. If true, cpu and memory minimums will be enforced.'
+          ),
+        cpu: z
+          .string()
+          .optional()
+          .describe(
+            'CPU limit. E.g. "1", "4000m". For GPU, min is "4".'
+          ),
+        memory: z
+          .string()
+          .optional()
+          .describe(
+            'Memory limit. E.g. "512Mi", "16Gi". For GPU, min is "16Gi".'
+          ),
+        gpu_zonal_redundancy: z
+          .boolean()
+          .optional()
+          .describe(
+            'For GPU deployments, whether to use zonal redundancy. This may require specific quota. See g.co/cloudrun/gpu-quota. Defaults to false.'
+          ),
       },
     },
     gcpTool(
       gcpCredentialsAvailable,
-      async ({ region, service, imageUrl }, { sendNotification }) => {
+      async (
+        {
+          region,
+          service,
+          imageUrl,
+          gpu,
+          cpu,
+          memory,
+          gpu_zonal_redundancy,
+        },
+        { sendNotification }
+      ) => {
+        if (gpu && gpu_zonal_redundancy === undefined) {
+          throw new Error(
+            'When deploying with a GPU, `gpu_zonal_redundancy` must be specified as either true or false.'
+          );
+        }
         if (typeof imageUrl !== 'string' || imageUrl.trim() === '') {
           throw new Error(
             'Container image URL must be specified and be a non-empty string.'
@@ -994,6 +1268,11 @@ export const registerToolsRemote = async (
             imageUrl: imageUrl,
             skipIamCheck: skipIamCheck,
             progressCallback,
+            gpu,
+            cpu,
+            memory,
+            port,
+            gpuZonalRedundancy: gpuZonalRedundancy,
           });
           return {
             content: [
