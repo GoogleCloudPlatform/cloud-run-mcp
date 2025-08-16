@@ -14,64 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import readline from 'readline/promises';
-import { stdin as input, stdout as output } from 'process';
+import { test } from 'node:test';
+import assert from 'node:assert';
 import { createProjectAndAttachBilling } from '../../lib/gcp-projects.js';
 
-/**
- * Prompts the user for an optional project ID or allows them to proceed with auto-generation.
- * Checks for a project ID from command line arguments first.
- * @returns {Promise<string|undefined>} The Google Cloud project ID or undefined if auto-generation is chosen.
- */
-async function getOptionalProjectId() {
-  let projectIdInput = process.argv[2]; // Get the third element (index 2) which is the first argument
+test('should create a new project and attach billing', async () => {
+  console.log('Attempting to create a new project and attach billing...');
+  const newProjectResult = await createProjectAndAttachBilling();
 
-  if (projectIdInput && projectIdInput.trim() !== '') {
-    console.log(
-      `Using Project ID from command line argument: ${projectIdInput.trim()}`
-    );
-    return projectIdInput.trim();
-  }
-
-  const rl = readline.createInterface({ input, output });
-  projectIdInput = await rl.question(
-    'Enter a specific Project ID to use (or press Enter to auto-generate): '
+  assert(newProjectResult, 'newProjectResult should not be null');
+  assert(
+    newProjectResult.projectId,
+    'newProjectResult.projectId should not be null'
   );
-  rl.close();
 
-  if (projectIdInput && projectIdInput.trim() !== '') {
-    console.log(
-      `Attempting to create project with specified ID: ${projectIdInput.trim()}`
-    );
-    return projectIdInput.trim();
-  }
-  console.log('No Project ID specified. An ID will be auto-generated.');
-  return undefined;
-}
-
-async function main() {
-  try {
-    const optionalProjectId = await getOptionalProjectId();
-    console.log('Attempting to create a new project and attach billing...');
-    const newProjectResult =
-      await createProjectAndAttachBilling(optionalProjectId);
-
-    if (newProjectResult && newProjectResult.projectId) {
-      console.log(
-        `Successfully created project: ${newProjectResult.projectId}`
-      );
-      console.log(newProjectResult.billingMessage);
-      console.log('\nProject creation test completed successfully.');
-    } else {
-      console.error(
-        'Failed to create a new project or retrieve project details.'
-      );
-      process.exit(1);
-    }
-  } catch (error) {
-    console.error('Error during project creation test:', error.message);
-    process.exit(1);
-  }
-}
-
-main();
+  console.log(
+    `Successfully created project: ${newProjectResult.projectId}`
+  );
+  console.log(newProjectResult.billingMessage);
+});

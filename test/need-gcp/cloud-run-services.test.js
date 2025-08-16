@@ -14,96 +14,76 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import readline from 'readline/promises';
-import { stdin as input, stdout as output } from 'process';
-import { getServiceLogs } from '../../lib/cloud-run-services.js';
+import { test } from 'node:test';
+import assert from 'node:assert';
+import {
+  getServiceLogs,
+  listServices,
+} from '../../lib/cloud-run-services.js';
 
 /**
- * Prompts the user for required service information
- * @returns {Promise<{projectId: string, region: string, serviceId: string}>} The service details
+ * Gets service details from GOOGLE_CLOUD_PROJECT or command line arguments.
+ * @returns {{projectId: string, region: string, serviceId: string}} The service details
  */
-async function getServiceDetails() {
-  const rl = readline.createInterface({ input, output });
+function getServiceDetails() {
+  const projectId = process.env.GOOGLE_CLOUD_PROJECT || process.argv[2];
+  const [, , arg1, arg2, arg3] = process.argv;
 
-  // Check command line arguments first
-  const [, , projectId, region = 'europe-west1', serviceId] = process.argv;
+  let region = 'europe-west1';
+  let serviceId;
 
-  if (projectId && serviceId) {
-    console.log(`Using command line arguments:
-Project ID: ${projectId}
-Region: ${region}
-Service ID: ${serviceId}`);
-    rl.close();
-    return { projectId, region, serviceId };
+  if (process.env.GOOGLE_CLOUD_PROJECT) {
+    region = arg1 || 'europe-west1';
+    serviceId = arg2;
+  } else {
+    region = arg2 || 'europe-west1';
+    serviceId = arg3;
   }
 
-  // If not provided via command line, prompt for the values
-  const projectIdInput = await rl.question('Enter the Project ID: ');
-  const regionInput = await rl.question(
-    'Enter the region (press Enter for europe-west1): '
-  );
-  const serviceIdInput = await rl.question('Enter the Service ID: ');
-
-  rl.close();
-
-  return {
-    projectId: projectIdInput.trim(),
-    region: regionInput.trim() || 'europe-west1',
-    serviceId: serviceIdInput.trim(),
-  };
-}
-
-async function main() {
-  try {
-    const { projectId, region, serviceId } = await getServiceDetails();
-
-    if (!projectId || !serviceId) {
-      console.error('Both Project ID and Service ID are required.');
-      process.exit(1);
-    }
-
-    console.log(
-      `\nFetching logs for service "${serviceId}" in project "${projectId}" (region: ${region})...`
+  if (!projectId) {
+    console.error(
+      'Usage: node <script> <projectId> [region] [serviceId] or set GOOGLE_CLOUD_PROJECT'
     );
-
-    let requestOptions;
-    let pageCount = 0;
-    const MAX_PAGES = 3; // Limit the number of pages to avoid too much output
-
-    do {
-      const result = await getServiceLogs(
-        projectId,
-        region,
-        serviceId,
-        requestOptions
-      );
-
-      if (result.logs) {
-        console.log('\nLog entries:');
-        console.log(result.logs);
-      } else {
-        console.log('No logs found for this service.');
-      }
-
-      requestOptions = result.requestOptions;
-      pageCount++;
-
-      if (requestOptions && pageCount < MAX_PAGES) {
-        const rl = readline.createInterface({ input, output });
-        const answer = await rl.question('\nFetch more logs? (y/N): ');
-        rl.close();
-
-        if (answer.toLowerCase() !== 'y') {
-          break;
-        }
-      }
-    } while (requestOptions && pageCount < MAX_PAGES);
-
-    console.log('\nService logs test completed successfully.');
-  } catch (error) {
-    console.error('Error during service logs test:', error.message);
     process.exit(1);
   }
+
+  console.log(`Using:
+Project ID: ${projectId}
+Region: ${region}`);
+  if (serviceId) {
+    console.log(`Service ID: ${serviceId}`);
+  }
+
+  return { projectId, region, serviceId };
 }
 
-main();
+const { projectId, region, serviceId } = getServiceDetails();
+
+test('should list services', async () => {
+  const services = await listServices(projectId, region);
+  assert(Array.isArray(services), 'services should be an array');
+  console.log('Services found:', services.length);
+});
+
+test('should fetch service logs', async () => {
+  if (!serviceId) {
+    console.log('Skipping service log test: no serviceId provided.');
+    return;
+  }
+
+  console.log(
+    `
+Fetching logs for service "${serviceId}" in project "${projectId}" (region: ${region})...`
+  );
+
+  const result = await getServiceLogs(projectId, region, serviceId);
+
+  if (result.logs) {
+    console.log('\nLog entries:');
+    console.log(result.logs);
+  } else {
+    console.log('No logs found for this service.');
+  }
+});
+
+

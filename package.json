@@ -10,8 +10,8 @@
   "scripts": {
     "deploy": "gcloud run deploy cloud-run-mcp --source . --no-invoker-iam-check",
     "test:deploy": "node test/need-gcp/cloud-run-deploy.test.js",
-    "test:create-project": "node test/need-gcp/gcp-projects.test.js",
-    "test:service-logs": "node test/need-gcp/cloud-run-services.test.js",
+    "test:projects": "node test/need-gcp/gcp-projects.test.js",
+    "test:services": "node test/need-gcp/cloud-run-services.test.js",
     "test:gcp-auth": "node test/need-gcp/gcp-auth-check.test.js",
     "test:prompts": "node --test test/local/prompts.test.js",
     "test:mcp": "node --test test/local/mcp-server.test.js",
