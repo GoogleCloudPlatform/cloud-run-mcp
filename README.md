@@ -11,6 +11,10 @@ Enable MCP-compatible AI agents to deploy apps to Cloud Run.
 }
 ```
 
+Deploy from Gemini CLI and other AI-powered CLI agents:  
+
+<img  src="https://https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/cligif/.github/images/deploycli.gif" width="800">
+
 Deploy from AI-powered IDEs:
 
 <img src="https://github.com/user-attachments/assets/9fdcec30-2b38-4362-9eb1-54cab09e99d4" width="800">
