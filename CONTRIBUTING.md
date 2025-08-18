@@ -25,6 +25,12 @@ This project follows
 
 ## Contribution process
 
+### Start with an issue
+
+Before sending a pull request, please open an issue describing the bug or feature
+you would like to address. This will allow maintainers of this project to guide
+you in your design and implementation.
+
 ### Code reviews
 
 All submissions, including submissions by project members, require review. We
