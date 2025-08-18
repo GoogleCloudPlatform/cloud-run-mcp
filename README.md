@@ -13,7 +13,7 @@ Enable MCP-compatible AI agents to deploy apps to Cloud Run.
 
 Deploy from Gemini CLI and other AI-powered CLI agents:  
 
-<img  src="https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/refs/heads/cligif/.github/images/deploycli.gif" width="800">
+<img  src="https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/refs/heads/main/.github/images/deploycli.gif" width="800">
 
 Deploy from AI-powered IDEs:
 
@@ -47,6 +47,18 @@ Prompts are natural language commands that can be used to perform common tasks. 
 
 - `deploy`: Deploys the current working directory to Cloud Run. If a service name is not provided, it will use the `DEFAULT_SERVICE_NAME` environment variable, or the name of the current working directory.
 - `logs`: Gets the logs for a Cloud Run service. If a service name is not provided, it will use the `DEFAULT_SERVICE_NAME` environment variable, or the name of the current working directory.
+
+
+## Use as a Gemini CLI extension
+
+To install this as a [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension, run the following command:
+
+```bash
+mkdir -p ~/.gemini/extensions/cloud-run/gemini-extension && \
+  curl -s -L https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/main/gemini-extension.json > ~/.gemini/extensions/cloud-run/gemini-extension.json && \
+  curl -s -L https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/main/gemini-extension/GEMINI.md > ~/.gemini/extensions/cloud-run/gemini-extension/GEMINI.md
+```
+
 
 ## Use as local MCP server
 
@@ -121,16 +133,6 @@ See Docker's [MCP catalog](https://hub.docker.com/mcp/server/cloud-run-mcp/overv
         }
       }
    ```
-
-## Use as a Gemini CLI extension
-
-To install this as a [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension, run the following command:
-
-```bash
-mkdir -p ~/.gemini/extensions/cloud-run/gemini-extension && \
-  curl -s -L https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/main/gemini-extension.json > ~/.gemini/extensions/cloud-run/gemini-extension.json && \
-  curl -s -L https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/main/gemini-extension/GEMINI.md > ~/.gemini/extensions/cloud-run/gemini-extension/GEMINI.md
-```
 
 ## Use as remote MCP server
 
