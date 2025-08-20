@@ -32,7 +32,7 @@ describe('Tool Notifications', () => {
       { sendNotification }
     );
 
-    assert.strictEqual(sendNotification.mock.callCount(), 1);
+    assert.strictEqual(sendNotification.mock.callCount(), 2);
     assert.deepStrictEqual(sendNotification.mock.calls[0].arguments[0], {
       method: 'notifications/message',
       params: {

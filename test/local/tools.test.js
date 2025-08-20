@@ -257,9 +257,14 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
+      const deployMock = mock.fn(() => Promise.resolve({ uri: 'my-uri' }));
+
       const { registerTools } = await esmock('../../tools.js', {
         '../../lib/cloud-run-deploy.js': {
-          deploy: () => Promise.resolve({ uri: 'my-uri' }),
+          deploy: deployMock,
+        },
+        '../../lib/archive.js': {
+          zipFiles: () => Promise.resolve({ zipBuffer: 'zip-buffer', hasDockerfile: true }),
         },
       });
 
@@ -286,6 +291,14 @@ describe('registerTools', () => {
           },
         ],
       });
+
+      assert.strictEqual(deployMock.mock.callCount(), 1);
+      const deployArgs = deployMock.mock.calls[0].arguments[0];
+      assert.strictEqual(deployArgs.projectId, 'my-project');
+      assert.strictEqual(deployArgs.serviceName, 'my-service');
+      assert.strictEqual(deployArgs.region, 'my-region');
+      assert.strictEqual(deployArgs.zipBuffer, 'zip-buffer');
+      assert.strictEqual(deployArgs.hasDockerfile, true);
     });
   });
 
@@ -295,9 +308,14 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
+      const deployMock = mock.fn(() => Promise.resolve({ uri: 'my-uri' }));
+
       const { registerTools } = await esmock('../../tools.js', {
         '../../lib/cloud-run-deploy.js': {
-          deploy: () => Promise.resolve({ uri: 'my-uri' }),
+          deploy: deployMock,
+        },
+        '../../lib/archive.js': {
+          zipFiles: () => Promise.resolve({ zipBuffer: 'zip-buffer', hasDockerfile: true }),
         },
       });
 
@@ -324,6 +342,14 @@ describe('registerTools', () => {
           },
         ],
       });
+
+      assert.strictEqual(deployMock.mock.callCount(), 1);
+      const deployArgs = deployMock.mock.calls[0].arguments[0];
+      assert.strictEqual(deployArgs.projectId, 'my-project');
+      assert.strictEqual(deployArgs.serviceName, 'my-service');
+      assert.strictEqual(deployArgs.region, 'my-region');
+      assert.strictEqual(deployArgs.zipBuffer, 'zip-buffer');
+      assert.strictEqual(deployArgs.hasDockerfile, true);
     });
   });
 
@@ -333,9 +359,14 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
+      const deployMock = mock.fn(() => Promise.resolve({ uri: 'my-uri' }));
+
       const { registerTools } = await esmock('../../tools.js', {
         '../../lib/cloud-run-deploy.js': {
-          deploy: () => Promise.resolve({ uri: 'my-uri' }),
+          deploy: deployMock,
+        },
+        '../../lib/archive.js': {
+          zipFiles: () => Promise.resolve({ zipBuffer: 'zip-buffer', hasDockerfile: true }),
         },
       });
 
@@ -362,6 +393,14 @@ describe('registerTools', () => {
           },
         ],
       });
+
+      assert.strictEqual(deployMock.mock.callCount(), 1);
+      const deployArgs = deployMock.mock.calls[0].arguments[0];
+      assert.strictEqual(deployArgs.projectId, 'my-project');
+      assert.strictEqual(deployArgs.serviceName, 'my-service');
+      assert.strictEqual(deployArgs.region, 'my-region');
+      assert.strictEqual(deployArgs.zipBuffer, 'zip-buffer');
+      assert.strictEqual(deployArgs.hasDockerfile, true);
     });
   });
 

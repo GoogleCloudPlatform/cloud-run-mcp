@@ -16,6 +16,7 @@ limitations under the License.
 
 import { z } from 'zod';
 import { deploy, deployImage } from './lib/cloud-run-deploy.js';
+import { zipFiles } from './lib/archive.js';
 import {
   listServices,
   getService,
@@ -384,11 +385,18 @@ export const registerTools = (
           await progressCallback({
             data: `Starting deployment of local files for service ${service} in project ${project}...`,
           });
+
+          const { zipBuffer, hasDockerfile } = await zipFiles(
+            files,
+            progressCallback
+          );
+
           const response = await deploy({
             projectId: project,
             serviceName: service,
             region: region,
-            files: files,
+            zipBuffer,
+            hasDockerfile,
             skipIamCheck: skipIamCheck, // Pass the new flag
             progressCallback,
           });
@@ -467,11 +475,18 @@ export const registerTools = (
           await progressCallback({
             data: `Starting deployment of local folder for service ${service} in project ${project}...`,
           });
+
+          const { zipBuffer, hasDockerfile } = await zipFiles(
+            [folderPath],
+            progressCallback
+          );
+
           const response = await deploy({
             projectId: project,
             serviceName: service,
             region: region,
-            files: [folderPath],
+            zipBuffer,
+            hasDockerfile,
             skipIamCheck: skipIamCheck, // Pass the new flag
             progressCallback,
           });
@@ -565,11 +580,18 @@ export const registerTools = (
           await progressCallback({
             data: `Starting deployment of file contents for service ${service} in project ${project}...`,
           });
+
+          const { zipBuffer, hasDockerfile } = await zipFiles(
+            files,
+            progressCallback
+          );
+
           const response = await deploy({
             projectId: project,
             serviceName: service,
             region: region,
-            files: files,
+            zipBuffer,
+            hasDockerfile,
             skipIamCheck: skipIamCheck, // Pass the new flag
             progressCallback,
           });
@@ -897,12 +919,8 @@ export const registerToolsRemote = async (
           `New deploy request (remote): ${JSON.stringify({ project: currentProject, region, service, files })}`
         );
 
-        if (
-          typeof files !== 'object' ||
-          !Array.isArray(files) ||
-          files.length === 0
-        ) {
-          throw new Error('Files must be specified');
+        if (!files || !Array.isArray(files) || files.length === 0) {
+          throw new Error('Error: files array is required and must not be empty.');
         }
 
         // Validate that each file has content
@@ -919,11 +937,18 @@ export const registerToolsRemote = async (
           await progressCallback({
             data: `Starting deployment of file contents for service ${service} in project ${currentProject}...`,
           });
+
+          const { zipBuffer, hasDockerfile } = await zipFiles(
+            files,
+            progressCallback
+          );
+
           const response = await deploy({
             projectId: currentProject,
             serviceName: service,
             region: region,
-            files: files,
+            zipBuffer,
+            hasDockerfile,
             skipIamCheck: skipIamCheck, // Pass the new flag
             progressCallback,
           });
