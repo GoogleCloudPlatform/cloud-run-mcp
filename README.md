@@ -34,7 +34,7 @@ Deploy from agent SDKs, like the [Google Gen AI SDK](https://ai.google.dev/gemin
 - `list-services`: Lists Cloud Run services in a given project and region.
 - `get-service`: Gets details for a specific Cloud Run service.
 - `get-service-log`: Gets Logs and Error Messages for a specific Cloud Run service.
-- `deploy-local-files`\*: Deploys files from the local file system to a Google Cloud Run service.
+
 - `deploy-local-folder`\*: Deploys a local folder to a Google Cloud Run service.
 - `list-projects`\*: Lists available GCP projects.
 - `create-project`\*: Creates a new GCP project and attach it to the first available billing account. A project ID can be optionally specified.

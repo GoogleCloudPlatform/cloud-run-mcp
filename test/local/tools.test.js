@@ -12,7 +12,7 @@ describe('registerTools', () => {
 
     registerTools(server);
 
-    assert.strictEqual(server.registerTool.mock.callCount(), 9);
+    assert.strictEqual(server.registerTool.mock.callCount(), 8);
     const toolNames = server.registerTool.mock.calls.map(
       (call) => call.arguments[0]
     );
@@ -22,7 +22,6 @@ describe('registerTools', () => {
         'create_project',
         'deploy_container_image',
         'deploy_file_contents',
-        'deploy_local_files',
         'deploy_local_folder',
         'get_service',
         'get_service_log',
@@ -251,43 +250,7 @@ describe('registerTools', () => {
     });
   });
 
-  describe('deploy_local_files', () => {
-    it('should deploy local files', async () => {
-      const server = {
-        registerTool: mock.fn(),
-      };
-
-      const { registerTools } = await esmock('../../tools.js', {
-        '../../lib/cloud-run-deploy.js': {
-          deploy: () => Promise.resolve({ uri: 'my-uri' }),
-        },
-      });
-
-      registerTools(server, { gcpCredentialsAvailable: true });
-
-      const handler = server.registerTool.mock.calls.find(
-        (call) => call.arguments[0] === 'deploy_local_files'
-      ).arguments[2];
-      const result = await handler(
-        {
-          project: 'my-project',
-          region: 'my-region',
-          service: 'my-service',
-          files: ['file1', 'file2'],
-        },
-        { sendNotification: mock.fn() }
-      );
-
-      assert.deepStrictEqual(result, {
-        content: [
-          {
-            type: 'text',
-            text: 'Cloud Run service my-service deployed in project my-project\nCloud Console: https://console.cloud.google.com/run/detail/my-region/my-service?project=my-project\nService URL: my-uri',
-          },
-        ],
-      });
-    });
-  });
+  
 
   describe('deploy_local_folder', () => {
     it('should deploy local folder', async () => {

@@ -55,32 +55,7 @@ describe('Cloud Run Deployments', () => {
     await assert.rejects(deploy(configFailingBuild));
   });
 
-  test('should deploy a Go app with a Dockerfile', async () => {
-    const configGoWithDockerfile = {
-      projectId: projectId,
-      serviceName: 'example-go-app-docker',
-      region: 'europe-west1',
-      files: [
-        'example-sources-to-deploy/main.go',
-        'example-sources-to-deploy/go.mod',
-        'example-sources-to-deploy/Dockerfile',
-      ],
-    };
-    await deploy(configGoWithDockerfile);
-  });
-
-  test('should deploy a Go app without a Dockerfile (Buildpacks)', async () => {
-    const configGoWithoutDockerfile = {
-      projectId: projectId,
-      serviceName: 'example-go-app-buildpack',
-      region: 'europe-west1',
-      files: [
-        'example-sources-to-deploy/main.go',
-        'example-sources-to-deploy/go.mod',
-      ],
-    };
-    await deploy(configGoWithoutDockerfile);
-  });
+  
 
   test('should deploy a Go app with file content (Buildpacks)', async () => {
     const mainGoContent = await fs.readFile(
