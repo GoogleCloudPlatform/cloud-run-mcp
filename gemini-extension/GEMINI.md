@@ -47,7 +47,7 @@ server {
 The user must have an existing Google Cloud account with billing set up, and ideally an existing Google Cloud project.
 
 If deployment fails because of an access or IAM error, it is likely that the user doesn't have Google Cloud credentials on the local machine.
-The user mush follow these steps:
+The user must follow these steps:
 
 1. Install the [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) and authenticate with their Google account.
 
