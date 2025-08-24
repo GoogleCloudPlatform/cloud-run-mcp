@@ -127,7 +127,7 @@ export const registerTools = (
           content: [
             {
               type: 'text',
-              text: `Successfully created GCP project with ID "${result.projectId}". You can now use this project ID for deployments.`,
+              text: result.billingMessage,
             },
           ],
         };
