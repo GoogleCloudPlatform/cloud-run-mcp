@@ -123,14 +123,25 @@ export const registerTools = (
       }
       try {
         const result = await createProjectAndAttachBilling(projectId);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: result.billingMessage,
-            },
-          ],
-        };
+        if (result.billingMessage.includes('Successfully')) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Successfully created GCP project with ID "${result.projectId}". You can now use this project ID for deployments.`,
+              },
+            ],
+          };
+        } else {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: result.billingMessage,
+              },
+            ],
+          };
+        }
       } catch (error) {
         return {
           content: [

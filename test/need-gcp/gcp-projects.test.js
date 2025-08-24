@@ -61,7 +61,18 @@ async function main() {
         `Successfully created project: ${newProjectResult.projectId}`
       );
       console.log(newProjectResult.billingMessage);
-      console.log('\nProject creation test completed successfully.');
+
+      if (newProjectResult.billingMessage.includes('No billing accounts found')) {
+        console.log(
+          '\nTest passed: Correctly received the billing warning message.'
+        );
+        process.exit(0);
+      } else {
+        console.error(
+          '\nTest failed: Did not receive the expected billing warning message.'
+        );
+        process.exit(1);
+      }
     } else {
       console.error(
         'Failed to create a new project or retrieve project details.'

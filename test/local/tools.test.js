@@ -64,7 +64,7 @@ describe('registerTools', () => {
   });
 
   describe('create_project', () => {
-    it('should create a project with a provided id', async () => {
+    it('should return a simple success message when billing is attached', async () => {
       const server = {
         registerTool: mock.fn(),
       };
@@ -73,8 +73,8 @@ describe('registerTools', () => {
         '../../lib/gcp-projects.js': {
           createProjectAndAttachBilling: (projectId) =>
             Promise.resolve({
-              projectId: projectId,
-              billingMessage: 'billing message',
+              projectId: 'my-project',
+              billingMessage: 'Successfully attached billing.',
             }),
         },
       });
@@ -96,7 +96,7 @@ describe('registerTools', () => {
       });
     });
 
-    it('should create a project with a generated id', async () => {
+    it('should return the full warning message when billing fails', async () => {
       const server = {
         registerTool: mock.fn(),
       };
@@ -106,7 +106,7 @@ describe('registerTools', () => {
           createProjectAndAttachBilling: () =>
             Promise.resolve({
               projectId: 'generated-project',
-              billingMessage: 'billing message',
+              billingMessage: 'Project created. No billing accounts found.',
             }),
         },
       });
@@ -122,7 +122,7 @@ describe('registerTools', () => {
         content: [
           {
             type: 'text',
-            text: 'Successfully created GCP project with ID "generated-project". You can now use this project ID for deployments.',
+            text: 'Project created. No billing accounts found.',
           },
         ],
       });
