@@ -37,7 +37,7 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
-      const { registerTools } = await esmock('../../tools.js', {
+  const { registerTools } = await esmock('../../tools/tools.js', {
         '../../lib/gcp-projects.js': {
           listProjects: () =>
             Promise.resolve([{ id: 'project1' }, { id: 'project2' }]),
@@ -68,7 +68,7 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
-      const { registerTools } = await esmock('../../tools.js', {
+  const { registerTools } = await esmock('../../tools/tools.js', {
         '../../lib/gcp-projects.js': {
           createProjectAndAttachBilling: (projectId) =>
             Promise.resolve({
@@ -100,7 +100,7 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
-      const { registerTools } = await esmock('../../tools.js', {
+  const { registerTools } = await esmock('../../tools/tools.js', {
         '../../lib/gcp-projects.js': {
           createProjectAndAttachBilling: () =>
             Promise.resolve({
@@ -134,7 +134,7 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
-      const { registerTools } = await esmock('../../tools.js', {
+  const { registerTools } = await esmock('../../tools/tools.js', {
         '../../lib/cloud-run-services.js': {
           listServices: () =>
             Promise.resolve([
@@ -171,7 +171,7 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
-      const { registerTools } = await esmock('../../tools.js', {
+  const { registerTools } = await esmock('../../tools/tools.js', {
         '../../lib/cloud-run-services.js': {
           getService: () =>
             Promise.resolve({
@@ -222,7 +222,7 @@ describe('registerTools', () => {
         return Promise.resolve({ logs: 'log3\nlog4', requestOptions: null });
       };
 
-      const { registerTools } = await esmock('../../tools.js', {
+  const { registerTools } = await esmock('../../tools/tools.js', {
         '../../lib/cloud-run-services.js': {
           getServiceLogs: getServiceLogs,
         },
@@ -258,7 +258,7 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
-      const { registerTools } = await esmock('../../tools.js', {
+  const { registerTools } = await esmock('../../tools/tools.js', {
         '../../lib/cloud-run-deploy.js': {
           deploy: () => Promise.resolve({ uri: 'my-uri' }),
         },
@@ -296,7 +296,7 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
-      const { registerTools } = await esmock('../../tools.js', {
+  const { registerTools } = await esmock('../../tools/tools.js', {
         '../../lib/cloud-run-deploy.js': {
           deploy: () => Promise.resolve({ uri: 'my-uri' }),
         },
@@ -334,7 +334,7 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
-      const { registerTools } = await esmock('../../tools.js', {
+  const { registerTools } = await esmock('../../tools/tools.js', {
         '../../lib/cloud-run-deploy.js': {
           deployImage: () => Promise.resolve({ uri: 'my-uri' }),
         },
@@ -372,7 +372,7 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
-      const { registerTools } = await esmock('../../tools.js', {});
+  const { registerTools } = await esmock('../../tools/tools.js', {});
 
       registerTools(server, { gcpCredentialsAvailable: false });
 

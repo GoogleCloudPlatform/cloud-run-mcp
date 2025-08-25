@@ -23,7 +23,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 // Support stdio, as it is easier to use locally
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { registerTools, registerToolsRemote } from './tools.js';
+import { registerTools, registerToolsRemote } from './tools/tools.js';
 import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { registerPrompts } from './prompts.js';
 import { checkGCP } from './lib/gcp-metadata.js';

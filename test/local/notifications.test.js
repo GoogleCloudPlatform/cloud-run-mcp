@@ -8,7 +8,7 @@ describe('Tool Notifications', () => {
       registerTool: mock.fn(),
     };
 
-    const { registerTools } = await esmock('../../tools.js', {
+  const { registerTools } = await esmock('../../tools/tools.js', {
       '../../lib/cloud-run-deploy.js': {
         deploy: () => Promise.resolve({ uri: 'my-uri' }),
       },
