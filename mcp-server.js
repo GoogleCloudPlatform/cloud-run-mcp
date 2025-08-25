@@ -43,6 +43,9 @@ function makeLoggingCompatibleWithStdio() {
 }
 
 function shouldStartStdio() {
+  if (process.env.GCP_STDIO === 'false') {
+    return false;
+  }
   if (process.env.GCP_STDIO) {
     return true;
   }
