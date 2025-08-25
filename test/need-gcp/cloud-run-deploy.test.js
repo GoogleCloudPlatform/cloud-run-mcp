@@ -78,31 +78,47 @@ describe('Cloud Run Deployments', () => {
     await deploy(configGoWithContent);
   });
 
-  test('should fail to deploy without a service name', async (t) => {
+  test('should fail to deploy without a service name', async () => {
     const config = {
       projectId: projectId,
       region: 'europe-west1',
       files: ['example-sources-to-deploy/main.go'],
     };
-    const error = new Error('process.exit() was called.');
-    const mockExit = t.mock.method(process, 'exit', () => {
-      throw error;
+    await assert.rejects(deploy(config), {
+      message: 'Error: serviceName is required in the configuration object.',
     });
-    await assert.rejects(deploy(config), error);
-    assert.strictEqual(mockExit.mock.callCount(), 1);
   });
 
-  test('should fail to deploy image without a service name', async (t) => {
+  test('should fail to deploy image without a service name', async () => {
     const config = {
       projectId: projectId,
       region: 'europe-west1',
       imageUrl: 'gcr.io/cloudrun/hello',
     };
-    const error = new Error('process.exit() was called.');
-    const mockExit = t.mock.method(process, 'exit', () => {
-      throw error;
+    await assert.rejects(deployImage(config), {
+      message: 'Error: serviceName is required in the configuration object.',
     });
-    await assert.rejects(deployImage(config), error);
-    assert.strictEqual(mockExit.mock.callCount(), 1);
+  });
+
+  test('should fail to deploy without a project id', async () => {
+    const config = {
+      serviceName: 'hello-from-image',
+      region: 'europe-west1',
+      files: ['example-sources-to-deploy/main.go'],
+    };
+    await assert.rejects(deploy(config), {
+      message: 'Error: projectId is required in the configuration object.',
+    });
+  });
+
+  test('should fail to deploy image without a project id', async () => {
+    const config = {
+      serviceName: 'hello-from-image',
+      region: 'europe-west1',
+      imageUrl: 'gcr.io/cloudrun/hello',
+    };
+    await assert.rejects(deployImage(config), {
+      message: 'Error: projectId is required in the configuration object.',
+    });
   });
 });
