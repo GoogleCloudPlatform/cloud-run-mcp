@@ -77,4 +77,48 @@ describe('Cloud Run Deployments', () => {
     };
     await deploy(configGoWithContent);
   });
+
+  test('should fail to deploy without a service name', async () => {
+    const config = {
+      projectId: projectId,
+      region: 'europe-west1',
+      files: ['example-sources-to-deploy/main.go'],
+    };
+    await assert.rejects(deploy(config), {
+      message: 'Error: serviceName is required in the configuration object.',
+    });
+  });
+
+  test('should fail to deploy image without a service name', async () => {
+    const config = {
+      projectId: projectId,
+      region: 'europe-west1',
+      imageUrl: 'gcr.io/cloudrun/hello',
+    };
+    await assert.rejects(deployImage(config), {
+      message: 'Error: serviceName is required in the configuration object.',
+    });
+  });
+
+  test('should fail to deploy without a project id', async () => {
+    const config = {
+      serviceName: 'hello-from-image',
+      region: 'europe-west1',
+      files: ['example-sources-to-deploy/main.go'],
+    };
+    await assert.rejects(deploy(config), {
+      message: 'Error: projectId is required in the configuration object.',
+    });
+  });
+
+  test('should fail to deploy image without a project id', async () => {
+    const config = {
+      serviceName: 'hello-from-image',
+      region: 'europe-west1',
+      imageUrl: 'gcr.io/cloudrun/hello',
+    };
+    await assert.rejects(deployImage(config), {
+      message: 'Error: projectId is required in the configuration object.',
+    });
+  });
 });
