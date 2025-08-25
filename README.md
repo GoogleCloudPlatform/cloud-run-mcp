@@ -17,11 +17,11 @@ Deploy from Gemini CLI and other AI-powered CLI agents:
 
 Deploy from AI-powered IDEs:
 
-<img src="https://github.com/user-attachments/assets/9fdcec30-2b38-4362-9eb1-54cab09e99d4" width="800">
+<img src="https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/refs/heads/main/.github/images/deploy_from_ide.gif" width="800">
 
 Deploy from AI assistant apps:
 
-<img src="https://github.com/user-attachments/assets/b10f0335-b332-4640-af38-ea015b46b57c" width="800">
+<img src="https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/refs/heads/main/.github/images/deploy_from_apps.gif" width="800">
 
 Deploy from agent SDKs, like the [Google Gen AI SDK](https://ai.google.dev/gemini-api/docs/function-calling?example=meeting#use_model_context_protocol_mcp) or [Agent Development Kit](https://google.github.io/adk-docs/tools/mcp-tools/).
 
