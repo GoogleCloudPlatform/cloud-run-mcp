@@ -16,6 +16,7 @@ limitations under the License.
 
 import { z } from 'zod';
 import { deploy, deployImage } from './lib/cloud-run-deploy.js';
+import { deployModel } from './lib/cloud-run-deploy-model.js';
 import {
   listServices,
   getService,
@@ -592,6 +593,84 @@ export const registerTools = (
       }
     )
   );
+
+  server.registerTool(
+    'cloud_run_deploy_model',
+    {
+      description: 'Deploys a LLM model to Cloud Run.',
+      inputSchema: {
+        project: z
+          .string()
+          .describe(
+            'Google Cloud project ID. Do not select it yourself, make sure the user provides or confirms the project ID.'
+          )
+          .default(defaultProjectId),
+        region: z
+          .string()
+          .optional()
+          .default(defaultRegion)
+          .describe('Region to deploy the service to'),
+        service: z
+          .string()
+          .optional()
+          .describe('Name of the Cloud Run service to deploy to'),
+        framework: z
+          .enum(['ollama', 'vllm'])
+          .describe('The framework to use for serving the model.'),
+        model: z
+          .string()
+          .describe('The model to deploy from Ollama library or Hugging Face Hub.'),
+        hf_token: z
+          .string()
+          .optional()
+          .describe('Hugging Face token, required for private models.'),
+      },
+    },
+    gcpTool(
+      gcpCredentialsAvailable,
+      async (
+        { project, region, service, framework, model, hf_token },
+        { sendNotification }
+      ) => {
+        if (typeof project !== 'string') {
+          throw new Error(
+            'Project must be specified, please prompt the user for a valid existing Google Cloud project ID.'
+          );
+        }
+
+        const progressCallback = createProgressCallback(sendNotification);
+
+        try {
+          const response = await deployModel({
+            projectId: project,
+            serviceName: service,
+            region: region,
+            framework: framework,
+            model: model,
+            hfToken: hf_token,
+            progressCallback,
+          });
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Cloud Run service ${service} deployed in project ${project}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error deploying to Cloud Run: ${error.message || error}`,
+              },
+            ],
+          };
+        }
+      }
+    )
+  );
 };
 
 export const registerToolsRemote = async (
@@ -914,6 +993,69 @@ export const registerToolsRemote = async (
             region: region,
             imageUrl: imageUrl,
             skipIamCheck: skipIamCheck,
+            progressCallback,
+          });
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Cloud Run service ${service} deployed in project ${currentProject}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${currentProject}\nService URL: ${response.uri}`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error deploying to Cloud Run: ${error.message || error}`,
+              },
+            ],
+          };
+        }
+      }
+    )
+  );
+
+  server.registerTool(
+    'cloud_run_deploy_model',
+    {
+      description: `Deploys a LLM model to Cloud Run in the GCP project ${currentProject}.`,
+      inputSchema: {
+        region: z
+          .string()
+          .optional()
+          .default(currentRegion)
+          .describe('Region to deploy the service to'),
+        service:
+          z.string().optional().describe('Name of the Cloud Run service to deploy to'),
+        framework:
+          z.enum(['ollama', 'vllm']).describe('The framework to use for serving the model.'),
+        model:
+          z.string().describe('The model to deploy from Ollama library or Hugging Face Hub.'),
+        hf_token:
+          z.string().optional().describe('Hugging Face token, required for private models.'),
+        gcs_bucket:
+          z.string().optional().describe('GCS bucket to store the model. If not specified, a new bucket will be created.'),
+      },
+    },
+    gcpTool(
+      gcpCredentialsAvailable,
+      async (
+        { region, service, framework, model, hf_token, gcs_bucket },
+        { sendNotification }
+      ) => {
+        const progressCallback = createProgressCallback(sendNotification);
+
+        try {
+          const response = await deployModel({
+            projectId: currentProject,
+            serviceName: service,
+            region: region,
+            framework: framework,
+            model: model,
+            hfToken: hf_token,
+            gcsBucket: gcs_bucket,
             progressCallback,
           });
           return {
