@@ -29,6 +29,7 @@ function gcpTool(gcpCredentialsAvailable, fn) {
   return fn;
 }
 
+// Tool to list GCP projects
 function registerListProjectsTool(server, options) {
   server.registerTool(
     'list_projects',
@@ -61,6 +62,7 @@ function registerListProjectsTool(server, options) {
   );
 }
 
+// Tool to create a new GCP project
 function registerCreateProjectTool(server, options) {
   server.registerTool(
     'create_project',
@@ -114,6 +116,7 @@ function registerCreateProjectTool(server, options) {
   );
 }
 
+// Listing Cloud Run services
 function registerListServicesTool(server, options) {
   server.registerTool(
     'list_services',
@@ -172,6 +175,7 @@ function registerListServicesTool(server, options) {
   );
 }
 
+// Dynamic resource for getting a specific service
 function registerGetServiceTool(server, options) {
   server.registerTool(
     'get_service',
@@ -242,6 +246,7 @@ function registerGetServiceTool(server, options) {
   );
 }
 
+// Get logs for a service
 function registerGetServiceLogTool(server, options) {
   server.registerTool(
     'get_service_log',
@@ -306,6 +311,7 @@ function registerGetServiceLogTool(server, options) {
   );
 }
 
+// Tool to deploy to Cloud Run from local folder
 function registerDeployLocalFolderTool(server, options) {
   server.registerTool(
     'deploy_local_folder',
@@ -391,6 +397,7 @@ function registerDeployLocalFolderTool(server, options) {
   );
 }
 
+// Tool to deploy to Cloud Run from file contents
 function registerDeployFileContentsTool(server, options) {
   server.registerTool(
     'deploy_file_contents',
@@ -491,6 +498,7 @@ function registerDeployFileContentsTool(server, options) {
   );
 }
 
+// Tool to deploy to Cloud Run from container image
 function registerDeployContainerImageTool(server, options) {
   server.registerTool(
     'deploy_container_image',
