@@ -74,7 +74,7 @@ To use remote MCP Server in a MCP client:
 Start the MCP server locally with:
 
 ```bash
-npm run start
+GCP_STDIO=false node /path/to/this/repo/cloud-run-mcp/mcp-server.js
 ```
 
 Then, in your MCP client configuration, use the following:
@@ -85,6 +85,18 @@ Then, in your MCP client configuration, use the following:
     "cloud-run": {
       "command": "npx",
       "args": ["mcp-remote", "http://localhost:3000/sse"]
+    }
+  }
+}
+```
+
+or, if your client supports the `url` attribute, you can use:
+
+```
+{
+  "mcpServers": {
+    "cloud-run": {
+      "url": "http://localhost:3000/sse"
     }
   }
 }
