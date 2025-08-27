@@ -25,7 +25,7 @@ import {
   registerDeployLocalFolderTool,
   registerDeployFileContentsTool,
   registerDeployContainerImageTool,
-} from './register_tools.js';
+} from './register-tools.js';
 
 export const registerTools = (
   server,
