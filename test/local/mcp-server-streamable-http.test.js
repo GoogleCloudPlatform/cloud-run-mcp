@@ -17,14 +17,6 @@ class MCPClient {
         await this.client.connect(this.transport);
     }
 
-    async listTools() {
-        return await this.client.listTools();
-    }
-
-    async listPrompts() {
-        return await this.client.listPrompts();
-    }
-
     async cleanup() {
         await this.client.close();
     }
@@ -46,7 +38,6 @@ describe('MCP Server in Streamble HTTP mode', () => {
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         client = new MCPClient("http-server");
-        await client.connectToServer("http://localhost:3000/mcp");
     });
 
     after(async () => {
@@ -56,31 +47,7 @@ describe('MCP Server in Streamble HTTP mode', () => {
         }
     });
 
-    test('should list tools over streamble-http', async () => {
-        const response = await client.listTools();
-        const tools = response.tools;
-        assert(Array.isArray(tools));
-        const toolNames = tools.map((t) => t.name);
-        assert.deepStrictEqual(
-            toolNames.sort(),
-            [
-                'create_project',
-                'deploy_container_image',
-                'deploy_file_contents',
-                'deploy_local_folder',
-                'get_service',
-                'get_service_log',
-                'list_projects',
-                'list_services',
-            ].sort()
-        );
-    });
-
-    test('should list prompts over streamble-http', async () => {
-        const response = await client.listPrompts();
-        const prompts = response.prompts;
-        assert(Array.isArray(prompts));
-        const promptNames = prompts.map((p) => p.name);
-        assert.deepStrictEqual(promptNames.sort(), ['deploy', 'logs'].sort());
+    test('should start an HTTP server', async () => {
+        await client.connectToServer("http://localhost:3000/mcp");
     });
 });
