@@ -30,7 +30,7 @@ class MCPClient {
     }
 }
 
-describe('MCP Server in HTTP mode', () => {
+describe('MCP Server in Streamble HTTP mode', () => {
     let client;
     let serverProcess;
 
@@ -56,7 +56,7 @@ describe('MCP Server in HTTP mode', () => {
         }
     });
 
-    test('should list tools', async () => {
+    test('should list tools over streamble-http', async () => {
         const response = await client.listTools();
         const tools = response.tools;
         assert(Array.isArray(tools));
@@ -76,7 +76,7 @@ describe('MCP Server in HTTP mode', () => {
         );
     });
 
-    test('should list prompts', async () => {
+    test('should list prompts over streamble-http', async () => {
         const response = await client.listPrompts();
         const prompts = response.prompts;
         assert(Array.isArray(prompts));
