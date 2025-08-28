@@ -122,7 +122,8 @@ if (shouldStartStdio()) {
   await server.connect(stdioTransport);
   console.log('Cloud Run MCP server stdio transport connected');
 } else {
-  console.log('Running on GCP, stdio transport will not be started.');
+  // non-stdio mode
+  console.log('Stdio transport mode is turned off.');
   gcpCredentialsAvailable = await ensureGCPCredentials();
   const app = express();
   app.use(express.json());
