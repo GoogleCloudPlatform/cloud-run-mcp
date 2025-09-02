@@ -26,8 +26,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { registerTools, registerToolsRemote } from './tools/tools.js';
 import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { registerPrompts } from './prompts.js';
-import { checkGCP } from './lib/gcp-metadata.js';
-import { ensureGCPCredentials } from './lib/gcp-auth-check.js';
+import { checkGCP } from './lib/cloud-api/metadata.js';
+import { ensureGCPCredentials } from './lib/cloud-api/auth.js';
 import 'dotenv/config';
 
 const gcpInfo = await checkGCP();

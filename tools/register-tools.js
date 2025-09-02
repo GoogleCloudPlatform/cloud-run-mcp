@@ -15,9 +15,16 @@ limitations under the License.
 */
 
 import { z } from 'zod';
-import { listProjects, createProjectAndAttachBilling } from '../lib/gcp-projects.js';
-import { listServices, getService, getServiceLogs } from '../lib/cloud-run-services.js';
-import { deploy, deployImage } from '../lib/cloud-run-deploy.js';
+import {
+  listProjects,
+  createProjectAndAttachBilling,
+} from '../lib/cloud-api/projects.js';
+import {
+  listServices,
+  getService,
+  getServiceLogs,
+} from '../lib/cloud-api/run.js';
+import { deploy, deployImage } from '../lib/deployment/deployer.js';
 
 function createProgressCallback(sendNotification) {
   return (progress) => {
@@ -209,53 +216,56 @@ function registerGetServiceTool(server, options) {
           .default(options.defaultServiceName),
       },
     },
-    gcpTool(options.gcpCredentialsAvailable, async ({ project, region, service }) => {
-      if (typeof project !== 'string') {
-        return {
-          content: [
-            { type: 'text', text: 'Error: Project ID must be provided.' },
-          ],
-        };
-      }
-      if (typeof service !== 'string') {
-        return {
-          content: [
-            { type: 'text', text: 'Error: Service name must be provided.' },
-          ],
-        };
-      }
-      try {
-        const serviceDetails = await getService(project, region, service);
-        if (serviceDetails) {
+    gcpTool(
+      options.gcpCredentialsAvailable,
+      async ({ project, region, service }) => {
+        if (typeof project !== 'string') {
           return {
             content: [
-              {
-                type: 'text',
-                text: `Name: ${service}\nRegion: ${region}\nProject: ${project}\nURL: ${serviceDetails.uri}\nLast deployed by: ${serviceDetails.lastModifier}`,
-              },
+              { type: 'text', text: 'Error: Project ID must be provided.' },
             ],
           };
-        } else {
+        }
+        if (typeof service !== 'string') {
+          return {
+            content: [
+              { type: 'text', text: 'Error: Service name must be provided.' },
+            ],
+          };
+        }
+        try {
+          const serviceDetails = await getService(project, region, service);
+          if (serviceDetails) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `Name: ${service}\nRegion: ${region}\nProject: ${project}\nURL: ${serviceDetails.uri}\nLast deployed by: ${serviceDetails.lastModifier}`,
+                },
+              ],
+            };
+          } else {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `Service ${service} not found in project ${project} (region ${region}).`,
+                },
+              ],
+            };
+          }
+        } catch (error) {
           return {
             content: [
               {
                 type: 'text',
-                text: `Service ${service} not found in project ${project} (region ${region}).`,
+                text: `Error getting service ${service} in project ${project} (region ${region}): ${error.message}`,
               },
             ],
           };
         }
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error getting service ${service} in project ${project} (region ${region}): ${error.message}`,
-            },
-          ],
-        };
       }
-    })
+    )
   );
 }
 
@@ -281,46 +291,49 @@ function registerGetServiceLogTool(server, options) {
           .default(options.defaultServiceName),
       },
     },
-    gcpTool(options.gcpCredentialsAvailable, async ({ project, region, service }) => {
-      let allLogs = [];
-      let requestOptions;
-      try {
-        do {
-          // Fetch a page of logs
-          const response = await getServiceLogs(
-            project,
-            region,
-            service,
-            requestOptions
-          );
+    gcpTool(
+      options.gcpCredentialsAvailable,
+      async ({ project, region, service }) => {
+        let allLogs = [];
+        let requestOptions;
+        try {
+          do {
+            // Fetch a page of logs
+            const response = await getServiceLogs(
+              project,
+              region,
+              service,
+              requestOptions
+            );
 
-          if (response.logs) {
-            allLogs.push(response.logs);
-          }
+            if (response.logs) {
+              allLogs.push(response.logs);
+            }
 
-          // Set the requestOptions incl pagintion token for the next iteration
+            // Set the requestOptions incl pagintion token for the next iteration
 
-          requestOptions = response.requestOptions;
-        } while (requestOptions); // Continue as long as there is a next page token
-        return {
-          content: [
-            {
-              type: 'text',
-              text: allLogs.join('\n'),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error getting Logs for service ${service} in project ${project} (region ${region}): ${error.message}`,
-            },
-          ],
-        };
+            requestOptions = response.requestOptions;
+          } while (requestOptions); // Continue as long as there is a next page token
+          return {
+            content: [
+              {
+                type: 'text',
+                text: allLogs.join('\n'),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error getting Logs for service ${service} in project ${project} (region ${region}): ${error.message}`,
+              },
+            ],
+          };
+        }
       }
-    })
+    )
   );
 }
 

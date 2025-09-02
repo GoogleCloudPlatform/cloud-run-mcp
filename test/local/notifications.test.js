@@ -8,12 +8,15 @@ describe('Tool Notifications', () => {
       registerTool: mock.fn(),
     };
 
-  const { registerTools } = await esmock('../../tools/tools.js', {}, {
-      '../../lib/cloud-run-deploy.js': {
-        deploy: () => Promise.resolve({ uri: 'my-uri' }),
-      },
-    },
-  );
+    const { registerTools } = await esmock(
+      '../../tools/tools.js',
+      {},
+      {
+        '../../lib/deployment/deployer.js': {
+          deploy: () => Promise.resolve({ uri: 'my-uri' }),
+        },
+      }
+    );
 
     registerTools(server, { gcpCredentialsAvailable: true });
 

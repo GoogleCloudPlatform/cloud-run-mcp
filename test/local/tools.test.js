@@ -37,12 +37,16 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
-  const { registerTools } = await esmock('../../tools/tools.js', {}, {
-        '../../lib/gcp-projects.js': {
-          listProjects: () =>
-            Promise.resolve([{ id: 'project1' }, { id: 'project2' }]),
-        },
-      });
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/cloud-api/projects.js': {
+            listProjects: () =>
+              Promise.resolve([{ id: 'project1' }, { id: 'project2' }]),
+          },
+        }
+      );
 
       registerTools(server, { gcpCredentialsAvailable: true });
 
@@ -68,15 +72,19 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
-  const { registerTools } = await esmock('../../tools/tools.js', {}, {
-        '../../lib/gcp-projects.js': {
-          createProjectAndAttachBilling: (projectId) =>
-            Promise.resolve({
-              projectId: projectId,
-              billingMessage: 'billing message',
-            }),
-        },
-      });
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/cloud-api/projects.js': {
+            createProjectAndAttachBilling: (projectId) =>
+              Promise.resolve({
+                projectId: projectId,
+                billingMessage: 'billing message',
+              }),
+          },
+        }
+      );
 
       registerTools(server, { gcpCredentialsAvailable: true });
 
@@ -100,15 +108,19 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
-  const { registerTools } = await esmock('../../tools/tools.js', {}, {
-        '../../lib/gcp-projects.js': {
-          createProjectAndAttachBilling: () =>
-            Promise.resolve({
-              projectId: 'generated-project',
-              billingMessage: 'billing message',
-            }),
-        },
-      });
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/cloud-api/projects.js': {
+            createProjectAndAttachBilling: () =>
+              Promise.resolve({
+                projectId: 'generated-project',
+                billingMessage: 'billing message',
+              }),
+          },
+        }
+      );
 
       registerTools(server, { gcpCredentialsAvailable: true });
 
@@ -134,15 +146,19 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
-  const { registerTools } = await esmock('../../tools/tools.js', {}, {
-        '../../lib/cloud-run-services.js': {
-          listServices: () =>
-            Promise.resolve([
-              { name: 'service1', uri: 'uri1' },
-              { name: 'service2', uri: 'uri2' },
-            ]),
-        },
-      });
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/cloud-api/run.js': {
+            listServices: () =>
+              Promise.resolve([
+                { name: 'service1', uri: 'uri1' },
+                { name: 'service2', uri: 'uri2' },
+              ]),
+          },
+        }
+      );
 
       registerTools(server, { gcpCredentialsAvailable: true });
 
@@ -171,16 +187,20 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
-  const { registerTools } = await esmock('../../tools/tools.js', {}, {
-        '../../lib/cloud-run-services.js': {
-          getService: () =>
-            Promise.resolve({
-              name: 'my-service',
-              uri: 'my-uri',
-              lastModifier: 'me',
-            }),
-        },
-      });
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/cloud-api/run.js': {
+            getService: () =>
+              Promise.resolve({
+                name: 'my-service',
+                uri: 'my-uri',
+                lastModifier: 'me',
+              }),
+          },
+        }
+      );
 
       registerTools(server, { gcpCredentialsAvailable: true });
 
@@ -222,11 +242,15 @@ describe('registerTools', () => {
         return Promise.resolve({ logs: 'log3\nlog4', requestOptions: null });
       };
 
-  const { registerTools } = await esmock('../../tools/tools.js', {}, {
-        '../../lib/cloud-run-services.js': {
-          getServiceLogs: getServiceLogs,
-        },
-      });
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/cloud-api/run.js': {
+            getServiceLogs: getServiceLogs,
+          },
+        }
+      );
 
       registerTools(server, { gcpCredentialsAvailable: true });
 
@@ -250,19 +274,21 @@ describe('registerTools', () => {
     });
   });
 
-  
-
   describe('deploy_local_folder', () => {
     it('should deploy local folder', async () => {
       const server = {
         registerTool: mock.fn(),
       };
 
-  const { registerTools } = await esmock('../../tools/tools.js', {}, {
-        '../../lib/cloud-run-deploy.js': {
-          deploy: () => Promise.resolve({ uri: 'my-uri' }),
-        },
-      });
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/deployment/deployer.js': {
+            deploy: () => Promise.resolve({ uri: 'my-uri' }),
+          },
+        }
+      );
 
       registerTools(server, { gcpCredentialsAvailable: true });
 
@@ -296,11 +322,15 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
-  const { registerTools } = await esmock('../../tools/tools.js', {}, {
-        '../../lib/cloud-run-deploy.js': {
-          deploy: () => Promise.resolve({ uri: 'my-uri' }),
-        },
-      });
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/deployment/deployer.js': {
+            deploy: () => Promise.resolve({ uri: 'my-uri' }),
+          },
+        }
+      );
 
       registerTools(server, { gcpCredentialsAvailable: true });
 
@@ -334,11 +364,15 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
-  const { registerTools } = await esmock('../../tools/tools.js', {}, {
-        '../../lib/cloud-run-deploy.js': {
-          deployImage: () => Promise.resolve({ uri: 'my-uri' }),
-        },
-      });
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/deployment/deployer.js': {
+            deployImage: () => Promise.resolve({ uri: 'my-uri' }),
+          },
+        }
+      );
 
       registerTools(server, { gcpCredentialsAvailable: true });
 
@@ -372,7 +406,7 @@ describe('registerTools', () => {
         registerTool: mock.fn(),
       };
 
-  const { registerTools } = await esmock('../../tools/tools.js', {});
+      const { registerTools } = await esmock('../../tools/tools.js', {});
 
       registerTools(server, { gcpCredentialsAvailable: false });
 
