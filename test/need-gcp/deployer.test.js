@@ -16,15 +16,13 @@ limitations under the License.
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert';
-import { deploy, deployImage } from '../../lib/cloud-run-deploy.js';
+import { deploy, deployImage } from '../../lib/deployment/deployer.js';
 import fs from 'fs/promises';
 import path from 'path';
 
 const projectId = process.env.GOOGLE_CLOUD_PROJECT || process.argv[2];
 if (!projectId) {
-  console.error(
-    'Usage: node <script> <projectId> or set GOOGLE_CLOUD_PROJECT'
-  );
+  console.error('Usage: node <script> <projectId> or set GOOGLE_CLOUD_PROJECT');
   process.exit(1);
 }
 
@@ -54,8 +52,6 @@ describe('Cloud Run Deployments', () => {
     };
     await assert.rejects(deploy(configFailingBuild));
   });
-
-  
 
   test('should deploy a Go app with file content (Buildpacks)', async () => {
     const mainGoContent = await fs.readFile(

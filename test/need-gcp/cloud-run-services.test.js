@@ -19,7 +19,7 @@ import assert from 'node:assert';
 import {
   getServiceLogs,
   listServices,
-} from '../../lib/cloud-run-services.js';
+} from '../../lib/cloud-api/run.js';
 
 /**
  * Gets service details from GOOGLE_CLOUD_PROJECT or command line arguments.

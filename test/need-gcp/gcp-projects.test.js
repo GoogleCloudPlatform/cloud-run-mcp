@@ -16,7 +16,7 @@ limitations under the License.
 
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { createProjectAndAttachBilling } from '../../lib/gcp-projects.js';
+import { createProjectAndAttachBilling } from '../../lib/cloud-api/projects.js';
 
 test('should create a new project and attach billing', async () => {
   console.log('Attempting to create a new project and attach billing...');
