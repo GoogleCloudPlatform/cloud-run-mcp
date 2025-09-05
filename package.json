@@ -16,7 +16,7 @@
     "test:prompts": "node --test test/local/prompts.test.js",
     "test:mcp": "node --test test/local/mcp-server.test.js",
     "test:tools": "node --test test/local/tools.test.js",
-    "test": "node --test test/local/*.test.js",
+    "test": "node --test test/local/*.test.js test/local/**/*.test.js",
     "mcp-inspector": "npx @modelcontextprotocol/inspector node mcp-server.js",
     "start": "node mcp-server.js",
     "lint:check": "prettier --check .",
