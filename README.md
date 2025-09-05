@@ -54,7 +54,7 @@ Prompts are natural language commands that can be used to perform common tasks. 
 To install this as a [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension, run the following command:
 
 ```bash
-gemini extensions install --source https://github.com/GoogleCloudPlatform/cloud-run-mcp
+gemini extensions install https://github.com/GoogleCloudPlatform/cloud-run-mcp
 ```
 
 
