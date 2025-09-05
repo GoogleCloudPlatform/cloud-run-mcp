@@ -7,4 +7,9 @@
 
 # Node.js
 node_modules/
+
+# Test coverage
+coverage/
+
+# Settings
 .gemini/

@@ -1,0 +1,15 @@
+{
+  "all": true,
+  "reporter": [
+    "lcov",
+    "text"
+  ],
+  "lines": 38,
+  "functions": 31,
+  "branches": 68,
+  "statements": 38,
+  "exclude": [
+    "**/test/**",
+    "**/coverage/**"
+  ]
+}
