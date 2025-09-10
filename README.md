@@ -54,9 +54,9 @@ To install this as a [Gemini CLI](https://github.com/google-gemini/gemini-cli) e
 
 2. Install the extension:
 
-  ```bash
-  gemini extensions install https://github.com/GoogleCloudPlatform/cloud-run-mcp
-  ```
+   ```bash
+   gemini extensions install https://github.com/GoogleCloudPlatform/cloud-run-mcp
+   ```
 
 2. Log in to your Google Cloud account using the command:
 
