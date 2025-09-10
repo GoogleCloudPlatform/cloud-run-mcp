@@ -1,5 +1,5 @@
 # Cloud Run MCP server and Gemini CLI extension
-## Deploy code to Google Cloud Run from AI-powered CLIs and IDEs.
+Enable MCP-compatible AI agents to deploy apps to Cloud Run.
 
 ```json
 "mcpServers":{
