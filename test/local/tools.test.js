@@ -152,10 +152,16 @@ describe('registerTools', () => {
         {
           '../../lib/cloud-api/run.js': {
             listServices: () =>
-              Promise.resolve([
-                { name: 'service1', uri: 'uri1' },
-                { name: 'service2', uri: 'uri2' },
-              ]),
+              Promise.resolve({
+                'my-region1': [
+                  { name: 'service1', uri: 'uri1' },
+                  { name: 'service2', uri: 'uri2' },
+                ],
+                'my-region2': [
+                  { name: 'service3', uri: 'uri3' },
+                  { name: 'service4', uri: 'uri4' },
+                ]
+              }),
           },
         }
       );
@@ -166,15 +172,18 @@ describe('registerTools', () => {
         (call) => call.arguments[0] === 'list_services'
       ).arguments[2];
       const result = await handler({
-        project: 'my-project',
-        region: 'my-region',
+        project: 'my-project'
       });
 
       assert.deepStrictEqual(result, {
         content: [
           {
             type: 'text',
-            text: 'Services in project my-project (location my-region):\n- service1 (URL: uri1)\n- service2 (URL: uri2)',
+            text: 'Services in project my-project (location my-region1):\n- service1 (URL: uri1)\n- service2 (URL: uri2)',
+          },
+          {
+            type: 'text',
+            text: 'Services in project my-project (location my-region2):\n- service3 (URL: uri3)\n- service4 (URL: uri4)',
           },
         ],
       });

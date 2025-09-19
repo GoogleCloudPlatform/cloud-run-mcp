@@ -141,19 +141,15 @@ function registerListServicesTool(server, options) {
   server.registerTool(
     'list_services',
     {
-      description: 'Lists Cloud Run services in a given project and region.',
+      description: 'Lists Cloud Run services in a given project.',
       inputSchema: {
         project: z
           .string()
           .describe('Google Cloud project ID')
           .default(options.defaultProjectId),
-        region: z
-          .string()
-          .describe('Region where the services are located')
-          .default(options.defaultRegion),
       },
     },
-    gcpTool(options.gcpCredentialsAvailable, async ({ project, region }) => {
+    gcpTool(options.gcpCredentialsAvailable, async ({ project }) => {
       if (typeof project !== 'string') {
         return {
           content: [
@@ -164,29 +160,29 @@ function registerListServicesTool(server, options) {
           ],
         };
       }
-
       try {
-        const services = await listServices(project, region);
-        const serviceList = services
-          .map((s) => {
-            const serviceName = s.name.split('/').pop();
-            return `- ${serviceName} (URL: ${s.uri})`;
-          })
-          .join('\n');
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Services in project ${project} (location ${region}):\n${serviceList}`,
-            },
-          ],
-        };
+        const allServices = await listServices(project);
+        const content = [];
+        for (const region of Object.keys(allServices)) {
+          const serviceList = allServices[region];
+          const servicesText = serviceList
+            .map((s) => {
+              const serviceName = s.name.split('/').pop();
+              return `- ${serviceName} (URL: ${s.uri})`;
+            })
+            .join('\n');
+          content.push({
+            type: 'text',
+            text: `Services in project ${project} (location ${region}):\n${servicesText}`,
+          });
+        }
+        return { content };
       } catch (error) {
         return {
           content: [
             {
               type: 'text',
-              text: `Error listing services for project ${project} (region ${region}): ${error.message}`,
+              text: `Error listing services for project ${project}: ${error.message}`,
             },
           ],
         };
