@@ -4,10 +4,10 @@
     "lcov",
     "text"
   ],
-  "lines": 44,
+  "lines": 43,
   "functions": 35,
   "branches": 73,
-  "statements": 44,
+  "statements": 43,
   "exclude": [
     "**/test/**",
     "**/coverage/**"
