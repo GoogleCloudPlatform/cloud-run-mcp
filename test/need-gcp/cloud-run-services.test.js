@@ -15,66 +15,68 @@ limitations under the License.
 */
 
 import { test } from 'node:test';
+import { getServiceLogs, listServices } from '../../lib/cloud-api/run.js';
 import assert from 'node:assert';
-import {
-  getServiceLogs,
-  listServices,
-} from '../../lib/cloud-api/run.js';
+
+/**
+ * Get the GCP project ID from GOOGLE_CLOUD_PROJECT or command line argument.
+ * @returns {string} The GCP project ID
+ */
+function getProjectId() {
+  const projectId = process.env.GOOGLE_CLOUD_PROJECT || process.argv[2];
+  if (!projectId) {
+    console.error(
+      'Usage: node <script> <projectId> or set GOOGLE_CLOUD_PROJECT'
+    );
+    process.exit(1);
+  }
+  console.log(`Using Project ID: ${projectId}`);
+  return projectId;
+}
 
 /**
  * Gets service details from GOOGLE_CLOUD_PROJECT or command line arguments.
  * @returns {{projectId: string, region: string, serviceId: string}} The service details
  */
-function getServiceDetails() {
-  const projectId = process.env.GOOGLE_CLOUD_PROJECT || process.argv[2];
-  const [, , arg1, arg2, arg3] = process.argv;
+async function getServiceDetails() {
+  const projectId = getProjectId();
+  let region, serviceId;
 
-  let region = 'europe-west1';
-  let serviceId;
+  try {
+    const allServices = await listServices(projectId);
 
-  if (process.env.GOOGLE_CLOUD_PROJECT) {
-    region = arg1 || 'europe-west1';
-    serviceId = arg2;
-  } else {
-    region = arg2 || 'europe-west1';
-    serviceId = arg3;
+    if (!allServices || Object.keys(allServices).length === 0) {
+      assert.fail('No services found for the given project.');
+    }
+
+    const regions = Object.keys(allServices);
+    region = regions[0];
+
+    if (!allServices[region] || allServices[region].length === 0) {
+      assert.fail(`No services found in region: ${region}`);
+    }
+
+    const serviceName = allServices[region][0].name;
+    serviceId = serviceName.split('/').pop();
+    console.log(`Using region - ${region} and service ID - ${serviceId}`);
+
+    return { projectId, region, serviceId };
+  } catch (error) {
+    // Better error handling for the API call itself
+    console.error('Error fetching services:', error.message);
+    throw error; // Re-throw the error to fail the test
   }
-
-  if (!projectId) {
-    console.error(
-      'Usage: node <script> <projectId> [region] [serviceId] or set GOOGLE_CLOUD_PROJECT'
-    );
-    process.exit(1);
-  }
-
-  console.log(`Using:
-Project ID: ${projectId}
-Region: ${region}`);
-  if (serviceId) {
-    console.log(`Service ID: ${serviceId}`);
-  }
-
-  return { projectId, region, serviceId };
 }
 
-const { projectId, region, serviceId } = getServiceDetails();
-
 test('should list services', async () => {
-  const services = await listServices(projectId, region);
-  assert(Array.isArray(services), 'services should be an array');
-  console.log('Services found:', services.length);
+  const projectId = getProjectId();
+  const services = await listServices(projectId);
+  console.log('Services found:', services ? Object.keys(services) : 'None');
+  console.log('All Services', services);
 });
 
 test('should fetch service logs', async () => {
-  if (!serviceId) {
-    console.log('Skipping service log test: no serviceId provided.');
-    return;
-  }
-
-  console.log(
-    `
-Fetching logs for service "${serviceId}" in project "${projectId}" (region: ${region})...`
-  );
+  const { projectId, region, serviceId } = await getServiceDetails();
 
   const result = await getServiceLogs(projectId, region, serviceId);
 
@@ -85,5 +87,3 @@ Fetching logs for service "${serviceId}" in project "${projectId}" (region: ${re
     console.log('No logs found for this service.');
   }
 });
-
-

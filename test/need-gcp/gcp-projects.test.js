@@ -28,8 +28,6 @@ test('should create a new project and attach billing', async () => {
     'newProjectResult.projectId should not be null'
   );
 
-  console.log(
-    `Successfully created project: ${newProjectResult.projectId}`
-  );
+  console.log(`Successfully created project: ${newProjectResult.projectId}`);
   console.log(newProjectResult.billingMessage);
 });

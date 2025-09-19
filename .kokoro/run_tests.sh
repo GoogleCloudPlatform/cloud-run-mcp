@@ -17,5 +17,13 @@
 # Fail on any error.
 set -xe
 
-# TODO: Add actual test commands here.
-echo "Hello from Kokoro!"
+# cd to project root
+cd "$(dirname "$0")"/..
+
+# Install dependencies
+npm install
+
+# Run tests
+npm run test:services # Run tests related to services
+npm run test:deploy # Run tests related to deployments
+npm run test:gcp-auth # Run tests related to GCP authentication
