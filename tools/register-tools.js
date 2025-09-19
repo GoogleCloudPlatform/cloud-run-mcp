@@ -141,7 +141,7 @@ function registerListServicesTool(server, options) {
   server.registerTool(
     'list_services',
     {
-      description: 'Lists Cloud Run services in a given project.',
+      description: 'Lists all Cloud Run services in a given project.',
       inputSchema: {
         project: z
           .string()
