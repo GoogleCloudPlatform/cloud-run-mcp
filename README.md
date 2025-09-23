@@ -1,5 +1,8 @@
 # Cloud Run MCP server and Gemini CLI extension
-Enable MCP-compatible AI agents to deploy apps to Cloud Run.
+
+## Deploy from MCP-compatible AI
+
+Enable MCP-compatible AI agents to deploy apps to Cloud Run, and use the following configuration for Cloud Run MCP server:
 
 ```json
 "mcpServers":{
@@ -10,19 +13,31 @@ Enable MCP-compatible AI agents to deploy apps to Cloud Run.
 }
 ```
 
-Deploy from Gemini CLI and other AI-powered CLI agents:  
+Most MCP clients require a configuration file to be created or modified to add the MCP server.
+
+> [!NOTE]  
+> The configuration file syntax can be different across clients. Please refer to the following links for the latest expected syntax:
+> 
+> - **Windsurf**: https://docs.windsurf.com/windsurf/mcp
+> - **VSCode**: https://code.visualstudio.com/docs/copilot/chat/mcp-servers
+> - **Claude Desktop**: https://modelcontextprotocol.io/quickstart/user
+> - **Cursor**: https://docs.cursor.com/context/model-context-protocol
+
+## Deploy from Gemini CLI and other AI-powered CLI agents:  
 
 <img  src="https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/refs/heads/main/.github/images/deploycli.gif" width="800">
 
-Deploy from AI-powered IDEs:
+## Deploy from AI-powered IDEs:
 
 <img src="https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/refs/heads/main/.github/images/deploy_from_ide.gif" width="800">
 
-Deploy from AI assistant apps:
+## Deploy from AI assistant apps:
 
 <img src="https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/refs/heads/main/.github/images/deploy_from_apps.gif" width="800">
 
-Deploy from agent SDKs, like the [Google Gen AI SDK](https://ai.google.dev/gemini-api/docs/function-calling?example=meeting#use_model_context_protocol_mcp) or [Agent Development Kit](https://google.github.io/adk-docs/tools/mcp-tools/).
+## Deploy from agent SDKs
+
+You can also deploy from agent SDKs, like the [Google Gen AI SDK](https://ai.google.dev/gemini-api/docs/function-calling?example=meeting#use_model_context_protocol_mcp) or [Agent Development Kit](https://google.github.io/adk-docs/tools/mcp-tools/).
 
 > [!NOTE]  
 > This is the repository of an MCP server to deploy code to Cloud Run, to learn how to **host** MCP servers on Cloud Run, [visit the Cloud Run documentation](https://cloud.google.com/run/docs/host-mcp-servers).
