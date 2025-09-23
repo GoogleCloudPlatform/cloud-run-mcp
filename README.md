@@ -69,6 +69,28 @@ To install this as a [Gemini CLI](https://github.com/google-gemini/gemini-cli) e
    gcloud auth application-default login
    ```
 
+## Using MCP Clients
+
+Enable MCP-compatible AI agents to deploy apps to Cloud Run, and use the following configuration for Cloud Run MCP server:
+
+```json
+"mcpServers":{
+  "cloud-run": {
+    "command": "npx",
+    "args": ["-y", "@google-cloud/cloud-run-mcp"]
+  }
+}
+```
+
+Most MCP clients require a configuration file to be created or modified to add the MCP server.
+
+> [!NOTE]  
+> The configuration file syntax can be different across clients. Please refer to the following links for the latest expected syntax:
+> 
+> - **Windsurf**: https://docs.windsurf.com/windsurf/mcp
+> - **VSCode**: https://code.visualstudio.com/docs/copilot/chat/mcp-servers
+> - **Claude Desktop**: https://modelcontextprotocol.io/quickstart/user
+> - **Cursor**: https://docs.cursor.com/context/model-context-protocol
 
 ## Use as local MCP server
 
