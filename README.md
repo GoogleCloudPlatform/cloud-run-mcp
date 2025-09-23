@@ -205,3 +205,5 @@ With this option, you will only be able to deploy code to the same Google Cloud 
         "args": ["-y", "mcp-remote", "http://localhost:3000/sse"]
       }
    ```
+
+The Google Cloud Platform Terms of Service (available at https://cloud.google.com/terms/) and the Data Processing and Security Terms (available at https://cloud.google.com/terms/data-processing-terms) do not apply to any component of the Cloud Run MCP Server software.
