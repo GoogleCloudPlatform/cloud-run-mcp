@@ -69,18 +69,23 @@ To install this as a [Gemini CLI](https://github.com/google-gemini/gemini-cli) e
    gcloud auth application-default login
    ```
 
-## Using MCP Clients
+## Use in MCP Clients
+
+### Learn how to configure your MCP client
 
 Most MCP clients require a configuration file to be created or modified to add the MCP server.
 
 The configuration file syntax can be different across clients. Please refer to the following links for the latest expected syntax:
  
-- **Windsurf**: https://docs.windsurf.com/windsurf/mcp
-- **VSCode**: https://code.visualstudio.com/docs/copilot/chat/mcp-servers
-- **Claude Desktop**: https://modelcontextprotocol.io/quickstart/user
-- **Cursor**: https://docs.cursor.com/context/model-context-protocol
+- [**Windsurf**](https://docs.windsurf.com/windsurf/mcp)
+- [**VSCode**](https://code.visualstudio.com/docs/copilot/chat/mcp-servers)
+- [**Claude Desktop**](https://modelcontextprotocol.io/quickstart/user)
+- [**Cursor**](https://docs.cursor.com/context/model-context-protocol)
 
-## Use as local MCP server
+Once you have identified how to configure your MCP client, select one of these two options to set up the MCP server.
+We recommend setting up as a local MCP server using Node.js. 
+
+### Set up as local MCP server
 
 Run the Cloud Run MCP server on your local machine using local Google Cloud credentials. This is best if you are using an AI-assisted IDE (e.g. Cursor) or a desktop AI application (e.g. Claude).
 
@@ -99,7 +104,7 @@ Run the Cloud Run MCP server on your local machine using local Google Cloud cred
 
 Then configure the MCP server using either Node.js or Docker:
 
-### Using Node.js
+#### Using Node.js
 
 0. Install [Node.js](https://nodejs.org/en/download/) (LTS version recommended).
 
@@ -126,7 +131,7 @@ Then configure the MCP server using either Node.js or Docker:
       }
    ```
 
-### Using Docker
+#### Using Docker
 
 See Docker's [MCP catalog](https://hub.docker.com/mcp/server/cloud-run-mcp/overview), or use these manual instructions:
 
@@ -154,7 +159,7 @@ See Docker's [MCP catalog](https://hub.docker.com/mcp/server/cloud-run-mcp/overv
       }
    ```
 
-## Use as remote MCP server
+### Set up as remote MCP server
 
 > [!WARNING]  
 > Do not use the remote MCP server without authentication. In the following instructions, we will use IAM authentication to secure the connection to the MCP server from your local machine. This is important to prevent unauthorized access to your Google Cloud resources.
