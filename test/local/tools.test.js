@@ -160,7 +160,7 @@ describe('registerTools', () => {
                 'my-region2': [
                   { name: 'service3', uri: 'uri3' },
                   { name: 'service4', uri: 'uri4' },
-                ]
+                ],
               }),
           },
         }
@@ -172,7 +172,7 @@ describe('registerTools', () => {
         (call) => call.arguments[0] === 'list_services'
       ).arguments[2];
       const result = await handler({
-        project: 'my-project'
+        project: 'my-project',
       });
 
       assert.deepStrictEqual(result, {

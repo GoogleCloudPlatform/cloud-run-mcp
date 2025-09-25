@@ -29,13 +29,15 @@ describe('triggerCloudBuild', () => {
     const context = {
       cloudBuildClient: {
         createBuild: mock.fn(() =>
-          Promise.resolve([{
-            metadata: {
-              build: {
-                id: mockBuildId,
+          Promise.resolve([
+            {
+              metadata: {
+                build: {
+                  id: mockBuildId,
+                },
               },
             },
-          }])
+          ])
         ),
         getBuild: getBuildMock,
       },
@@ -54,7 +56,10 @@ describe('triggerCloudBuild', () => {
     );
 
     assert.deepStrictEqual(result, mockSuccessResult);
-    assert.strictEqual(context.cloudBuildClient.createBuild.mock.callCount(), 1);
+    assert.strictEqual(
+      context.cloudBuildClient.createBuild.mock.callCount(),
+      1
+    );
     assert.strictEqual(context.cloudBuildClient.getBuild.mock.callCount(), 1);
 
     const { calls: logCalls } = logAndProgressMock.mock;
@@ -92,13 +97,15 @@ describe('triggerCloudBuild', () => {
     const context = {
       cloudBuildClient: {
         createBuild: mock.fn(() =>
-          Promise.resolve([{
-            metadata: {
-              build: {
-                id: mockBuildId,
+          Promise.resolve([
+            {
+              metadata: {
+                build: {
+                  id: mockBuildId,
+                },
               },
             },
-          }])
+          ])
         ),
         getBuild: getBuildMock,
       },
@@ -130,7 +137,10 @@ describe('triggerCloudBuild', () => {
       }
     );
 
-    assert.strictEqual(context.cloudBuildClient.createBuild.mock.callCount(), 1);
+    assert.strictEqual(
+      context.cloudBuildClient.createBuild.mock.callCount(),
+      1
+    );
     assert.strictEqual(context.cloudBuildClient.getBuild.mock.callCount(), 1);
     assert.strictEqual(context.loggingClient.getEntries.mock.callCount(), 1);
     assert.strictEqual(setTimeoutMock.mock.callCount(), 1);
@@ -155,13 +165,15 @@ describe('triggerCloudBuild', () => {
 
     const getBuildMock = mock.fn(() => Promise.resolve([mockSuccessResult]));
     const createBuildMock = mock.fn(() =>
-      Promise.resolve([{
-        metadata: {
-          build: {
-            id: mockBuildId,
+      Promise.resolve([
+        {
+          metadata: {
+            build: {
+              id: mockBuildId,
+            },
           },
         },
-      }])
+      ])
     );
 
     const { triggerCloudBuild } = await esmock(
@@ -301,13 +313,15 @@ describe('triggerCloudBuild', () => {
     const context = {
       cloudBuildClient: {
         createBuild: mock.fn(() =>
-          Promise.resolve([{
-            metadata: {
-              build: {
-                id: mockBuildId,
+          Promise.resolve([
+            {
+              metadata: {
+                build: {
+                  id: mockBuildId,
+                },
               },
             },
-          }])
+          ])
         ),
         getBuild: getBuildMock,
       },
@@ -371,13 +385,15 @@ describe('triggerCloudBuild', () => {
     const context = {
       cloudBuildClient: {
         createBuild: mock.fn(() =>
-          Promise.resolve([{
-            metadata: {
-              build: {
-                id: mockBuildId,
+          Promise.resolve([
+            {
+              metadata: {
+                build: {
+                  id: mockBuildId,
+                },
               },
             },
-          }])
+          ])
         ),
         getBuild: getBuildMock,
       },
@@ -412,6 +428,9 @@ describe('triggerCloudBuild', () => {
     assert.match(logCalls[2].arguments[0], /failed with status: FAILURE/);
     assert.match(logCalls[3].arguments[0], /Build logs:/);
     assert.match(logCalls[4].arguments[0], /Attempting to fetch last/);
-    assert.match(logCalls[5].arguments[0], /Failed to fetch build logs snippet/);
+    assert.match(
+      logCalls[5].arguments[0],
+      /Failed to fetch build logs snippet/
+    );
   });
 });

@@ -1,4 +1,5 @@
 # Cloud Run MCP server and Gemini CLI extension
+
 Enable MCP-compatible AI agents to deploy apps to Cloud Run.
 
 ```json
@@ -10,7 +11,7 @@ Enable MCP-compatible AI agents to deploy apps to Cloud Run.
 }
 ```
 
-Deploy from Gemini CLI and other AI-powered CLI agents:  
+Deploy from Gemini CLI and other AI-powered CLI agents:
 
 <img  src="https://raw.githubusercontent.com/GoogleCloudPlatform/cloud-run-mcp/refs/heads/main/.github/images/deploycli.gif" width="800">
 
@@ -47,7 +48,6 @@ Prompts are natural language commands that can be used to perform common tasks. 
 - `deploy`: Deploys the current working directory to Cloud Run. If a service name is not provided, it will use the `DEFAULT_SERVICE_NAME` environment variable, or the name of the current working directory.
 - `logs`: Gets the logs for a Cloud Run service. If a service name is not provided, it will use the `DEFAULT_SERVICE_NAME` environment variable, or the name of the current working directory.
 
-
 ## Use as a Gemini CLI extension
 
 To install this as a [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension, run the following command:
@@ -58,13 +58,13 @@ To install this as a [Gemini CLI](https://github.com/google-gemini/gemini-cli) e
    gemini extensions install https://github.com/GoogleCloudPlatform/cloud-run-mcp
    ```
 
-2. Log in to your Google Cloud account using the command:
+3. Log in to your Google Cloud account using the command:
 
    ```bash
    gcloud auth login
    ```
 
-3. Set up application credentials using the command:
+4. Set up application credentials using the command:
    ```bash
    gcloud auth application-default login
    ```
@@ -76,14 +76,14 @@ To install this as a [Gemini CLI](https://github.com/google-gemini/gemini-cli) e
 Most MCP clients require a configuration file to be created or modified to add the MCP server.
 
 The configuration file syntax can be different across clients. Please refer to the following links for the latest expected syntax:
- 
+
 - [**Windsurf**](https://docs.windsurf.com/windsurf/mcp)
 - [**VSCode**](https://code.visualstudio.com/docs/copilot/chat/mcp-servers)
 - [**Claude Desktop**](https://modelcontextprotocol.io/quickstart/user)
 - [**Cursor**](https://docs.cursor.com/context/model-context-protocol)
 
 Once you have identified how to configure your MCP client, select one of these two options to set up the MCP server.
-We recommend setting up as a local MCP server using Node.js. 
+We recommend setting up as a local MCP server using Node.js.
 
 ### Set up as local MCP server
 
