@@ -27,10 +27,7 @@ import {
   registerDeployContainerImageTool,
 } from './register-tools.js';
 
-export const registerTools = (
-  server,
-  options = {}
-) => {
+export const registerTools = (server, options = {}) => {
   registerListProjectsTool(server, options);
   registerCreateProjectTool(server, options);
   registerListServicesTool(server, options);
@@ -41,10 +38,7 @@ export const registerTools = (
   registerDeployContainerImageTool(server, options);
 };
 
-export const registerToolsRemote = (
-  server,
-  options = {}
-) => {
+export const registerToolsRemote = (server, options = {}) => {
   // For remote, use the same registration functions but with effective project/region passed in options
   registerListServicesTool(server, options);
   registerGetServiceTool(server, options);
@@ -52,4 +46,3 @@ export const registerToolsRemote = (
   registerDeployFileContentsTool(server, options);
   registerDeployContainerImageTool(server, options);
 };
-
