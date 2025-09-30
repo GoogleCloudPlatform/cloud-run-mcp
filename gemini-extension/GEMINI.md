@@ -3,7 +3,7 @@
 ## Code that can be deployed
 
 Only web servers can be deployed using this MCP server.
-The code needs to listen for HTTP reqeusts on the port defined by the $PORT environment variable or 8080.
+The code needs to listen for HTTP requests on the port defined by the $PORT environment variable or 8080.
 
 ### Supported languages
 
