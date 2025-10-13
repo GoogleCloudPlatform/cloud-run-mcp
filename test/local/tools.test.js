@@ -116,7 +116,8 @@ describe('registerTools', () => {
             createProjectAndAttachBilling: () =>
               Promise.resolve({
                 projectId: 'generated-project',
-                billingMessage: 'Project generated-project created successfully. Billing attached.',
+                billingMessage:
+                  'Project generated-project created successfully. Billing attached.',
               }),
           },
         }
