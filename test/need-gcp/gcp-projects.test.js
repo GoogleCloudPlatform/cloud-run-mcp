@@ -27,6 +27,16 @@ test('should create a new project and attach billing', async () => {
     newProjectResult.projectId,
     'newProjectResult.projectId should not be null'
   );
+  assert(
+    newProjectResult.billingMessage,
+    'newProjectResult.billingMessage should not be null'
+  );
+  assert(
+    newProjectResult.billingMessage.startsWith(
+      `Project ${newProjectResult.projectId} created successfully.`
+    ),
+    'newProjectResult.billingMessage should start with success message'
+  );
 
   console.log(`Successfully created project: ${newProjectResult.projectId}`);
   console.log(newProjectResult.billingMessage);
