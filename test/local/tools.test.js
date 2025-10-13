@@ -80,7 +80,7 @@ describe('registerTools', () => {
             createProjectAndAttachBilling: (projectId) =>
               Promise.resolve({
                 projectId: projectId,
-                billingMessage: 'billing message',
+                billingMessage: `Project ${projectId} created successfully. Billing attached.`,
               }),
           },
         }
@@ -97,7 +97,7 @@ describe('registerTools', () => {
         content: [
           {
             type: 'text',
-            text: 'Successfully created GCP project with ID "my-project". You can now use this project ID for deployments.',
+            text: 'Project my-project created successfully. Billing attached.',
           },
         ],
       });
@@ -116,7 +116,7 @@ describe('registerTools', () => {
             createProjectAndAttachBilling: () =>
               Promise.resolve({
                 projectId: 'generated-project',
-                billingMessage: 'billing message',
+                billingMessage: 'Project generated-project created successfully. Billing attached.',
               }),
           },
         }
@@ -133,7 +133,7 @@ describe('registerTools', () => {
         content: [
           {
             type: 'text',
-            text: 'Successfully created GCP project with ID "generated-project". You can now use this project ID for deployments.',
+            text: 'Project generated-project created successfully. Billing attached.',
           },
         ],
       });
