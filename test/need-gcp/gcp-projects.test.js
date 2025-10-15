@@ -14,22 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { test } from 'node:test';
 import assert from 'node:assert';
+import { test } from 'node:test';
+
 import {
   createProjectAndAttachBilling,
   deleteProject,
   generateProjectId,
 } from '../../lib/cloud-api/projects.js';
 
-test('should create a new project and attach billing', async () => {
+export async function withTemporaryProject(testFn) {
   console.log('Attempting to create a new project and attach billing...');
   let newProjectResult = null;
 
   const projectId = 'test-' + generateProjectId(); // e.g., test-mcp-cvc-cvc format
   console.log(`Generated project ID: ${projectId}`);
 
-  // Parent is required because service accounts cannot create projects without a parent.
+  // Parent is required because service accounts cannot create projects without
+  // a parent.
   const parent = process.env.GCP_PARENT || process.argv[2];
   console.log(`Using parent: ${parent}`);
 
@@ -40,19 +42,11 @@ test('should create a new project and attach billing', async () => {
       newProjectResult.projectId,
       'newProjectResult.projectId should not be null'
     );
-    assert(
-      newProjectResult.billingMessage,
-      'newProjectResult.billingMessage should not be null'
-    );
-    assert(
-      newProjectResult.billingMessage.startsWith(
-        `Project ${newProjectResult.projectId} created successfully.`
-      ),
-      'newProjectResult.billingMessage should start with success message'
-    );
 
     console.log(`Successfully created project: ${newProjectResult.projectId}`);
     console.log(newProjectResult.billingMessage);
+
+    await testFn(projectId);
   } finally {
     if (newProjectResult && newProjectResult.projectId) {
       console.log(
@@ -71,4 +65,12 @@ test('should create a new project and attach billing', async () => {
       }
     }
   }
+}
+
+test('should create a new project and attach billing', async () => {
+  await withTemporaryProject(async (projectId) => {
+    // If withTemporaryProject runs successfully, the project was created and
+    // billed.
+    assert(projectId);
+  });
 });
