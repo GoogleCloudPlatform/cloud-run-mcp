@@ -146,6 +146,7 @@ describe('registerTools', () => {
       const server = {
         registerTool: mock.fn(),
       };
+      // Mock listServices to return different services for different regions
 
       const { registerTools } = await esmock(
         '../../tools/tools.js',
