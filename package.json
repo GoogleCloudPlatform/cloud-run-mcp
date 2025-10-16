@@ -9,6 +9,7 @@
   },
   "scripts": {
     "deploy": "gcloud run deploy cloud-run-mcp --source . --no-invoker-iam-check",
+    "test:scenarios": "node --test test/need-gcp/deployment_scenarios.test.js",
     "test:deploy": "node test/need-gcp/deployer.test.js",
     "test:projects": "node test/need-gcp/gcp-projects.test.js",
     "test:services": "node test/need-gcp/cloud-run-services.test.js",
@@ -42,6 +43,7 @@
     "@google-cloud/artifact-registry": "^4.0.1",
     "@google-cloud/billing": "^5.0.1",
     "@google-cloud/cloudbuild": "^5.0.1",
+    "@google-cloud/iam": "^1.1.0",
     "@google-cloud/logging": "^11.2.0",
     "@google-cloud/resource-manager": "^6.0.1",
     "@google-cloud/run": "^2.0.1",
