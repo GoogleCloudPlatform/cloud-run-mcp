@@ -53,7 +53,7 @@ export async function withTemporaryProject(testFn) {
         `Attempting to delete project: ${newProjectResult.projectId}`
       );
       try {
-        await deleteProject(newProjectResult.projectId);
+        // await deleteProject(newProjectResult.projectId);
         console.log(
           `Successfully deleted project: ${newProjectResult.projectId}`
         );

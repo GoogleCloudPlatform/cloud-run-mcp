@@ -25,7 +25,7 @@ npm install
 
 # Run tests
 GCP_PARENT="folders/583132987080" npm run test:scenarios
-# npm run test:projects
+# GCP_PARENT="folders/583132987080" npm run test:projects
 # npm run test:services # Run tests related to services
 # npm run test:deploy # Run tests related to deployments
 # npm run test:gcp-auth # Run tests related to GCP authentication
