@@ -43,6 +43,7 @@
     "@google-cloud/artifact-registry": "^4.0.1",
     "@google-cloud/billing": "^5.0.1",
     "@google-cloud/cloudbuild": "^5.0.1",
+    "@google-cloud/iam": "^1.1.0",
     "@google-cloud/logging": "^11.2.0",
     "@google-cloud/resource-manager": "^6.0.1",
     "@google-cloud/run": "^2.0.1",
