@@ -21,9 +21,13 @@ import path from 'path';
 import {
   createProjectAndAttachBilling,
   generateProjectId,
+  deleteProject,
 } from '../../lib/cloud-api/projects.js';
 import { deployImage, deploy } from '../../lib/deployment/deployer.js';
-import { callWithRetry } from '../../lib/cloud-api/helpers.js';
+import {
+  callWithRetry,
+  ensureApisEnabled,
+} from '../../lib/cloud-api/helpers.js';
 
 /**
  * Gets project number from project ID.
@@ -42,34 +46,6 @@ export async function getProjectNumber(projectId) {
   } catch (error) {
     console.error(
       `Error getting project number for project ${projectId}:`,
-      error.message
-    );
-    throw error;
-  }
-}
-
-/**
- * Creates a service account.
- * @param {string} projectId The project ID.
- * @param {string} accountId The service account ID.
- * @param {string} displayName The service account display name.
- * @returns {Promise<string>} service account email.
- */
-export async function createServiceAccount(projectId, accountId, displayName) {
-  const { IAMClient } = await import('@google-cloud/iam');
-  const client = new IAMClient();
-  try {
-    const [sa] = await client.createServiceAccount({
-      name: `projects/${projectId}`,
-      accountId,
-      serviceAccount: {
-        displayName,
-      },
-    });
-    return sa.email;
-  } catch (error) {
-    console.error(
-      `Error creating service account for project ${projectId}:`,
       error.message
     );
     throw error;
@@ -130,47 +106,53 @@ export async function addIamPolicyBinding(projectId, member, role) {
   }
 }
 
-test('should create a project and deploy hello image to it', async () => {
-  console.log('Attempting to create a new project and deploy to it...');
-  let newProjectResult = null;
-
-  const projectId = 'test-' + generateProjectId(); // e.g., test-mcp-cvc-cvc format
+async function setupProject(testContext, isSourceDeploy = false) {
+  const projectId = 'test-' + generateProjectId();
   console.log(`Generated project ID: ${projectId}`);
-
-  // Parent is required because service accounts cannot create projects without a parent.
   const parent = process.env.GCP_PARENT || process.argv[2];
-  console.log(`Using parent: ${parent}`);
-
-  newProjectResult = await createProjectAndAttachBilling(projectId, parent);
-  assert(newProjectResult, 'newProjectResult should not be null');
-  assert(
-    newProjectResult.projectId,
-    'newProjectResult.projectId should not be null'
+  const newProjectResult = await createProjectAndAttachBilling(
+    projectId,
+    parent
   );
-
+  assert(
+    newProjectResult?.projectId,
+    `Project creation failed for ${projectId}`
+  );
   console.log(`Successfully created project: ${newProjectResult.projectId}`);
   console.log(newProjectResult.billingMessage);
 
-  // // Create custom service account for Cloud Build.
-  // const buildServiceAccount = await createServiceAccount(
-  //   newProjectResult.projectId,
-  //   'cloud-build-sa',
-  //   'Cloud Build Service Account'
-  // );
-  // const buildServiceAccountMember = `serviceAccount:${buildServiceAccount}`;
+  testContext.after(async () => {
+    try {
+      await deleteProject(projectId);
+    } catch (e) {
+      console.error(`Failed to delete project ${projectId}:`, e.message);
+    }
+  });
 
-  // // It needs cloud build builder to be able to run builds.
-  // await addIamPolicyBinding(
-  //   newProjectResult.projectId,
-  //   buildServiceAccountMember,
-  //   'roles/cloudbuild.builds.builder'
-  // );
+  if (isSourceDeploy) {
+    const { ServiceUsageClient } = await import('@google-cloud/service-usage');
+    const serviceUsageClient = new ServiceUsageClient({ projectId });
+    const context = {
+      serviceUsageClient: serviceUsageClient,
+    };
+    await ensureApisEnabled(context, projectId, ['run.googleapis.com']);
+    console.log('Adding editor role to Compute SA...');
+    const projectNumber = await getProjectNumber(newProjectResult.projectId);
+    const member = `serviceAccount:${projectNumber}-compute@developer.gserviceaccount.com`;
+    await callWithRetry(
+      () =>
+        addIamPolicyBinding(newProjectResult.projectId, member, 'roles/editor'),
+      `addIamPolicyBinding roles/editor to ${member}`
+    );
+    console.log('Compute SA editor role added.');
+  }
+  return projectId;
+}
 
-  console.log(`Deploying to project: ${newProjectResult.projectId}`);
-
-  console.log('Scenario-1: Starting deployment of hello image...');
+test('Scenario-1: Starting deployment of hello image...', async (testContext) => {
+  const projectId = await setupProject(testContext);
   const configImageDeploy = {
-    projectId: newProjectResult.projectId,
+    projectId: projectId,
     serviceName: 'hello-scenario',
     region: 'europe-west1',
     imageUrl: 'gcr.io/cloudrun/hello',
@@ -178,18 +160,10 @@ test('should create a project and deploy hello image to it', async () => {
   await deployImage(configImageDeploy);
 
   console.log('Scenario-1: Deployment completed.');
+});
 
-  console.log('Adding editor role to Compute SA...');
-  const projectNumber = await getProjectNumber(newProjectResult.projectId);
-  const member = `serviceAccount:${projectNumber}-compute@developer.gserviceaccount.com`;
-  await callWithRetry(
-    () =>
-      addIamPolicyBinding(newProjectResult.projectId, member, 'roles/editor'),
-    `addIamPolicyBinding roles/editor to ${member}`
-  );
-  console.log('Compute SA editor role added.');
-
-  console.log('Scenario-2: Starting deployment with invalid files...');
+test('Scenario-2: Starting deployment with invalid files...', async (testContext) => {
+  const projectId = await setupProject(testContext, true);
   const configFailingBuild = {
     projectId: projectId,
     serviceName: 'example-failing-app',
@@ -202,13 +176,15 @@ test('should create a project and deploy hello image to it', async () => {
       },
     ],
   };
-  try {
-    await deploy(configFailingBuild);
-  } catch (error) {
-    console.log('blah blah', error);
-  }
+  await assert.rejects(
+    deploy(configFailingBuild),
+    { message: /ERROR: failed to detect: no buildpacks participating/ },
+    'Deployment should have failed with a buildpack detection error'
+  );
+});
 
-  console.log('Scenario-3: Starting deployment of Go app with file content...');
+test('Scenario-3: Starting deployment of Go app with file content...', async (testContext) => {
+  const projectId = await setupProject(testContext, true);
   const mainGoContent = await fs.readFile(
     path.resolve('example-sources-to-deploy/main.go'),
     'utf-8'
@@ -228,8 +204,4 @@ test('should create a project and deploy hello image to it', async () => {
   };
   await deploy(configGoWithContent);
   console.log('Scenario-3: Deployment completed.');
-
-  console.log(
-    `Successfully deployed to project: ${newProjectResult.projectId}`
-  );
 });
