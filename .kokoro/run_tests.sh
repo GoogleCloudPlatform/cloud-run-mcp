@@ -23,6 +23,9 @@ cd "$(dirname "$0")"/..
 # Install dependencies
 npm install
 
+# Clean up any previously created test projects
+GCP_PARENT="folders/583132987080" npm run test:delete-projects
+
 # Run tests
 GCP_PARENT="folders/583132987080" npm run test:scenarios
 # GCP_PARENT="folders/583132987080" npm run test:projects
