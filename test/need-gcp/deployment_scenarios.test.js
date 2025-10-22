@@ -121,13 +121,13 @@ async function setupProject(testContext, isSourceDeploy = false) {
   console.log(`Successfully created project: ${newProjectResult.projectId}`);
   console.log(newProjectResult.billingMessage);
 
-  testContext.after(async () => {
-    try {
-      await deleteProject(projectId);
-    } catch (e) {
-      console.error(`Failed to delete project ${projectId}:`, e.message);
-    }
-  });
+  // testContext.after(async () => {
+  //   try {
+  //     await deleteProject(projectId);
+  //   } catch (e) {
+  //     console.error(`Failed to delete project ${projectId}:`, e.message);
+  //   }
+  // });
 
   if (isSourceDeploy) {
     const { ServiceUsageClient } = await import('@google-cloud/service-usage');
