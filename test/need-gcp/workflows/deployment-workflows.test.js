@@ -109,7 +109,7 @@ export async function addIamPolicyBinding(projectId, member, role) {
 async function setupProject(testContext, isSourceDeploy = false) {
   const projectId = 'test-' + generateProjectId();
   console.log(`Generated project ID: ${projectId}`);
-  const parent = process.env.GCP_PARENT || process.argv[2];
+  const parent = process.env.GCP_PARENT;
   const newProjectResult = await createProjectAndAttachBilling(
     projectId,
     parent
@@ -121,13 +121,13 @@ async function setupProject(testContext, isSourceDeploy = false) {
   console.log(`Successfully created project: ${newProjectResult.projectId}`);
   console.log(newProjectResult.billingMessage);
 
-  // testContext.after(async () => {
-  //   try {
-  //     await deleteProject(projectId);
-  //   } catch (e) {
-  //     console.error(`Failed to delete project ${projectId}:`, e.message);
-  //   }
-  // });
+  testContext.after(async () => {
+    try {
+      await deleteProject(projectId);
+    } catch (e) {
+      console.error(`Failed to delete project ${projectId}:`, e.message);
+    }
+  });
 
   if (isSourceDeploy) {
     const { ServiceUsageClient } = await import('@google-cloud/service-usage');

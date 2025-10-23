@@ -23,12 +23,9 @@ cd "$(dirname "$0")"/..
 # Install dependencies
 npm install
 
-# Clean up any previously created test projects
-# GCP_PARENT="folders/583132987080" npm run test:delete-projects
-
 # Run tests
-GCP_PARENT="folders/583132987080" npm run test:scenarios
-# GCP_PARENT="folders/583132987080" npm run test:projects
-# npm run test:services # Run tests related to services
-# npm run test:deploy # Run tests related to deployments
-# npm run test:gcp-auth # Run tests related to GCP authentication
+npm run test:workflows # Run tests related to all workflows
+npm run test:projects
+npm run test:services # Run tests related to services
+npm run test:deploy # Run tests related to deployments
+npm run test:gcp-auth # Run tests related to GCP authentication
