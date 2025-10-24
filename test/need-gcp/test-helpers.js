@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 import assert from 'node:assert';
 import {
   createProjectAndAttachBilling,
@@ -134,14 +135,14 @@ export async function setupProject(testContext) {
   console.log(`Successfully created project: ${newProjectResult.projectId}`);
   console.log(newProjectResult.billingMessage);
 
-  testContext.after(async () => {
-    try {
-      await deleteProject(projectId);
-      console.log(`Successfully deleted project: ${projectId}`);
-    } catch (e) {
-      console.error(`Failed to delete project ${projectId}:`, e.message);
-    }
-  });
+  //   testContext.after(async () => {
+  //     try {
+  //       await deleteProject(projectId);
+  //       console.log(`Successfully deleted project: ${projectId}`);
+  //     } catch (e) {
+  //       console.error(`Failed to delete project ${projectId}:`, e.message);
+  //     }
+  //   });
 
   return projectId;
 }

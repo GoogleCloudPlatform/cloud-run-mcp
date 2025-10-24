@@ -17,7 +17,12 @@ limitations under the License.
 import { test } from 'node:test';
 import { setupProject } from './test-helpers.js';
 
-test('should create a new project and attach billing', async (t) => {
-  console.log('Attempting to create a new project and attach billing...');
-  await setupProject(t);
+test('should create 100 projects and attach billing', async (t) => {
+  console.log('Attempting to create 100 new projects and attach billing...');
+  const promises = [];
+  for (let i = 0; i < 100; i++) {
+    promises.push(setupProject(t));
+  }
+  await Promise.all(promises);
+  console.log('Successfully created 100 projects.');
 });
