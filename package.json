@@ -9,6 +9,7 @@
   },
   "scripts": {
     "deploy": "gcloud run deploy cloud-run-mcp --source . --no-invoker-iam-check",
+    "test:workflows": "node --test test/need-gcp/workflows/*.test.js",
     "test:deploy": "node test/need-gcp/deployer.test.js",
     "test:projects": "node test/need-gcp/gcp-projects.test.js",
     "test:services": "node test/need-gcp/cloud-run-services.test.js",

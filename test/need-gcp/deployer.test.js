@@ -17,8 +17,6 @@ limitations under the License.
 import { describe, test } from 'node:test';
 import assert from 'node:assert';
 import { deploy, deployImage } from '../../lib/deployment/deployer.js';
-import fs from 'fs/promises';
-import path from 'path';
 
 const projectId = process.env.GOOGLE_CLOUD_PROJECT || process.argv[2];
 if (!projectId) {
@@ -27,53 +25,6 @@ if (!projectId) {
 }
 
 describe('Cloud Run Deployments', () => {
-  test('should deploy a container image', async () => {
-    const configImageDeploy = {
-      projectId: projectId,
-      serviceName: 'hello-from-image',
-      region: 'europe-west1',
-      imageUrl: 'gcr.io/cloudrun/hello',
-    };
-    await deployImage(configImageDeploy);
-  });
-
-  test('should fail to deploy with invalid files', async () => {
-    const configFailingBuild = {
-      projectId: projectId,
-      serviceName: 'example-failing-app',
-      region: 'europe-west1',
-      files: [
-        {
-          filename: 'main.txt',
-          content:
-            'This is not a valid application source file and should cause a build failure.',
-        },
-      ],
-    };
-    await assert.rejects(deploy(configFailingBuild));
-  });
-
-  test('should deploy a Go app with file content (Buildpacks)', async () => {
-    const mainGoContent = await fs.readFile(
-      path.resolve('example-sources-to-deploy/main.go'),
-      'utf-8'
-    );
-    const goModContent = await fs.readFile(
-      path.resolve('example-sources-to-deploy/go.mod'),
-      'utf-8'
-    );
-    const configGoWithContent = {
-      projectId: projectId,
-      serviceName: 'example-go-app-content',
-      region: 'europe-west1',
-      files: [
-        { filename: 'main.go', content: mainGoContent },
-        { filename: 'go.mod', content: goModContent },
-      ],
-    };
-    await deploy(configGoWithContent);
-  });
-
   test('should fail to deploy without a service name', async () => {
     const config = {
       projectId: projectId,
