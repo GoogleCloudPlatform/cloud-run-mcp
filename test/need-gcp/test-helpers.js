@@ -104,11 +104,10 @@ export async function addIamPolicyBinding(projectId, member, role) {
 }
 
 /**
- * Create project, attach billing and register cleanup.
- * @param {object} testContext
+ * Create project, attach billing.
  * @returns {Promise<string>} projectId
  */
-export async function setupProject(testContext) {
+export async function setupProject() {
   const projectId = 'test-' + generateProjectId();
   console.log(`Generated project ID: ${projectId}`);
   const parent = process.env.GCP_PARENT || process.argv[2];
@@ -134,20 +133,28 @@ export async function setupProject(testContext) {
   console.log(`Successfully created project: ${newProjectResult.projectId}`);
   console.log(newProjectResult.billingMessage);
 
-  testContext.after(async () => {
-    try {
-      await deleteProject(projectId);
-      console.log(`Successfully deleted project: ${projectId}`);
-    } catch (e) {
-      console.error(`Failed to delete project ${projectId}:`, e.message);
-    }
-  });
-
   return projectId;
 }
 
 /**
+ * Delete project
+ * @param {string} projectId
+ */
+export async function cleanupProject(projectId) {
+  try {
+    await deleteProject(projectId);
+    console.log(`Successfully deleted project: ${projectId}`);
+  } catch (e) {
+    console.error(`Failed to delete project ${projectId}:`, e.message);
+  }
+}
+
+/**
  * Enable APIs and set IAM permissions for source deployments.
+ * Note: This function is only needed for Cloud Build since it uses the compute
+ * default service account. The compute service account needs the editor role to
+ * deploy to Cloud Run, which is usually granted by default, but in this case we
+ * ensure it due to restrictions in some organizations.
  * @param {string} projectId
  */
 export async function setSourceDeployProjectPermissions(projectId) {
