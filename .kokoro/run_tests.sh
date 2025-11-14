@@ -24,6 +24,8 @@ cd "$(dirname "$0")"/..
 npm install
 
 # Run tests
+npm run test:workflows # Run tests related to all workflows
+npm run test:projects # Run tests related to GCP projects
 npm run test:services # Run tests related to services
 npm run test:deploy # Run tests related to deployments
 npm run test:gcp-auth # Run tests related to GCP authentication
