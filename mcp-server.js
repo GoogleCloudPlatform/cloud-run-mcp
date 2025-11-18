@@ -18,6 +18,7 @@ limitations under the License.
 
 import express from 'express';
 import session from 'express-session';
+import crypto from 'crypto'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
@@ -199,6 +200,10 @@ const mcpPostHandler = async (req, res) => {
   }
 };
 
+function generateRandomState(length = 32) {
+  return crypto.randomBytes(length).toString('hex');
+}
+
 // stdio
 if (shouldStartStdio()) {
   gcpCredentialsAvailable = await ensureGCPCredentials();
@@ -227,7 +232,8 @@ if (shouldStartStdio()) {
         authorization_servers: [
           "http://localhost:8080/auth/google"
         ],
-        authorization_endpoint: "http://localhost:8080/auth/google",
+        //authorization_endpoint: "http://localhost:8080/auth/google",
+        
         scopes_supported: [
           "openid",
           "https://www.googleapis.com/auth/userinfo.email"
@@ -240,18 +246,66 @@ if (shouldStartStdio()) {
     res.status(200).send();
   });
 
+  app.get('/.well-known/oauth-authorization-server', (req, res) => {
+    console.log('Call to well-known/oauth-authorizartion-server received');
+    res.json(
+      {
+        issuer: "http://localhost:8080/mcp",
+        //authorization_endpoint: "http://localhost:8080/auth/google",
+        authorization_endpoint: "https://accounts.google.com/o/oauth2/v2/auth",
+        token_endpoint: "https://oauth2.googleapis.com/token",
+        scopes_supported: [
+          'openid',
+        'https://www.googleapis.com/auth/userinfo.email',
+        //'https://www.googleapis.com/auth/cloud-platform',
+        //'https://www.googleapis.com/auth/appengine.admin',
+        //'https://www.googleapis.com/auth/sqlservice.login',
+        //'https://www.googleapis.com/auth/compute',
+        //'https://www.googleapis.com/auth/accounts.reauth'
+        ],
+        response_types_supported: [
+          "code"
+        ]
+      }
+    );
+    res.status(200).send();
+  });
+
+  app.get('/auth/google', async (req, res) => {
+    console.log('/auth/google: Initiating Google OAuth2 flow');
+    const authUrl = oauth2Client.generateAuthUrl({
+      access_type: 'offline',
+      state: generateRandomState(),
+      scope: [
+        'openid',
+        'https://www.googleapis.com/auth/userinfo.email',
+        //'https://www.googleapis.com/auth/cloud-platform',
+        //'https://www.googleapis.com/auth/appengine.admin',
+        //'https://www.googleapis.com/auth/sqlservice.login',
+        //'https://www.googleapis.com/auth/compute',
+        //'https://www.googleapis.com/auth/accounts.reauth',
+      ],
+    });
+    //res.redirect(authUrl);
+    console.log('Redirecting to:', authUrl);
+    res.writeHead(HTTP_REDIRECT, { Location: authUrl });
+    res.end();
+    return Promise.resolve();
+  });
+
   app.get('/authorize', async (req, res) => {
     console.log('Initiating Google OAuth2 flow');
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
+      state: generateRandomState(),
       scope: [
         'openid',
         'https://www.googleapis.com/auth/userinfo.email',
-        'https://www.googleapis.com/auth/cloud-platform',
-        'https://www.googleapis.com/auth/appengine.admin',
-        'https://www.googleapis.com/auth/sqlservice.login',
-        'https://www.googleapis.com/auth/compute',
-        'https://www.googleapis.com/auth/accounts.reauth',
+        //'https://www.googleapis.com/auth/cloud-platform',
+        //'https://www.googleapis.com/auth/appengine.admin',
+        //'https://www.googleapis.com/auth/sqlservice.login',
+        //'https://www.googleapis.com/auth/compute',
+        //'https://www.googleapis.com/auth/accounts.reauth',
       ],
     });
     //res.redirect(authUrl);
@@ -293,6 +347,22 @@ if (shouldStartStdio()) {
   });
 
   app.post('/mcp', mcpPostHandler);
+
+  app.post('/token', async (req, res) => {
+    console.log('/token endpoint called');
+    console.log('Request body:', req);
+    const code = req.body.code;
+    try {
+      const {tokens} = await oauth2Client.getToken(code);
+      console.log('Obtained tokens:', tokens);
+      res.json(tokens);
+      res.status(200).send();
+      console.log('Tokens sent successfully');
+    } catch (error) {
+      console.error('Error obtaining tokens:', error);
+      res.status(500).json({ error: 'Failed to obtain tokens' });
+    }
+  });
 
   app.get('/mcp', async (req, res) => {
     console.log('Received GET MCP request');
