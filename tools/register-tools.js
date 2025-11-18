@@ -26,6 +26,7 @@ import {
 } from '../lib/cloud-api/run.js';
 import { deploy, deployImage } from '../lib/deployment/deployer.js';
 
+
 function createProgressCallback(sendNotification) {
   return (progress) => {
     sendNotification({
@@ -341,52 +342,53 @@ function registerDeployLocalFolderTool(server, options) {
       description:
         'Deploy a local folder to Cloud Run. Takes an absolute folder path from the local filesystem that will be deployed. Use this tool if the entire folder content needs to be deployed.',
       inputSchema: {
-        project: z
-          .string()
-          .describe(
-            'Google Cloud project ID. Do not select it yourself, make sure the user provides or confirms the project ID.'
-          )
-          .default(options.defaultProjectId),
-        region: z
-          .string()
-          .optional()
-          .default(options.defaultRegion)
-          .describe('Region to deploy the service to'),
-        service: z
-          .string()
-          .optional()
-          .default(options.defaultServiceName)
-          .describe('Name of the Cloud Run service to deploy to'),
-        folderPath: z
-          .string()
-          .describe(
-            'Absolute path to the folder to deploy (e.g. "/home/user/project/src")'
-          ),
+        //project: z
+        //  .string()
+        //  .describe(
+        //    'Google Cloud project ID. Do not select it yourself, make sure the user provides or confirms the project ID.'
+        //  )
+        //  .default(options.defaultProjectId),
+        //region: z
+        //  .string()
+        //  .optional()
+        //  .default(options.defaultRegion)
+        //  .describe('Region to deploy the service to'),
+        //service: z
+        //  .string()
+        //  .optional()
+        //  .default(options.defaultServiceName)
+        //  .describe('Name of the Cloud Run service to deploy to'),
+        //folderPath: z
+        //  .string()
+        //  .describe(
+        //    'Absolute path to the folder to deploy (e.g. "/home/user/project/src")'
+        //  ),
       },
     },
     gcpTool(
-      options.gcpCredentialsAvailable,
+      true,
       async (
         { project, region, service, folderPath },
         { sendNotification }
       ) => {
-        if (typeof project !== 'string') {
-          throw new Error(
-            'Project must be specified, please prompt the user for a valid existing Google Cloud project ID.'
-          );
-        }
-        if (typeof folderPath !== 'string' || folderPath.trim() === '') {
-          throw new Error(
-            'Folder path must be specified and be a non-empty string.'
-          );
-        }
+        //if (typeof project !== 'string') {
+        //  throw new Error(
+        //    'Project must be specified, please prompt the user for a valid existing Google Cloud project ID.'
+        //  );
+        //}
+        //if (typeof folderPath !== 'string' || folderPath.trim() === '') {
+        //  throw new Error(
+        //    'Folder path must be specified and be a non-empty string.'
+        //  );
+        //}
 
         const progressCallback = createProgressCallback(sendNotification);
 
         // Deploy to Cloud Run
         try {
           await progressCallback({
-            data: `Starting deployment of local folder for service ${service} in project ${project}...`,
+            //data: `Starting deployment of local folder for service ${service} in project ${project}...`,
+            data: `Starting deployment of local folder for service in project...`,
           });
           const response = await deploy({
             projectId: project,
@@ -427,53 +429,53 @@ function registerDeployFileContentsTool(server, options) {
       description:
         'Deploy files to Cloud Run by providing their contents directly. Takes an array of file objects containing filename and content. Use this tool if the files only exist in the current chat context.',
       inputSchema: {
-        project: z
-          .string()
-          .describe(
-            'Google Cloud project ID. Leave unset for the app to be deployed in a new project. If provided, make sure the user confirms the project ID they want to deploy to.'
-          )
-          .default(options.defaultProjectId),
-        region: z
-          .string()
-          .optional()
-          .default(options.defaultRegion)
-          .describe('Region to deploy the service to'),
-        service: z
-          .string()
-          .optional()
-          .default(options.defaultServiceName)
-          .describe('Name of the Cloud Run service to deploy to'),
-        files: z
-          .array(
-            z.object({
-              filename: z
-                .string()
-                .describe(
-                  'Name and path of the file (e.g. "src/index.js" or "data/config.json")'
-                ),
-              content: z
-                .string()
-                .optional()
-                .describe('Text content of the file'),
-            })
-          )
-          .describe('Array of file objects containing filename and content'),
+        //project: z
+        //  .string()
+        //  .describe(
+        //    'Google Cloud project ID. Leave unset for the app to be deployed in a new project. If provided, make sure the user confirms the project ID they want to deploy to.'
+        //  )
+        //  .default(options.defaultProjectId),
+        //region: z
+        //  .string()
+        //  .optional()
+        //  .default(options.defaultRegion)
+        //  .describe('Region to deploy the service to'),
+        //service: z
+        //  .string()
+        //  .optional()
+        //  .default(options.defaultServiceName)
+        //  .describe('Name of the Cloud Run service to deploy to'),
+        //files: z
+        //  .array(
+        //    z.object({
+        //      filename: z
+        //        .string()
+        //        .describe(
+        //          'Name and path of the file (e.g. "src/index.js" or "data/config.json")'
+        //        ),
+        //      content: z
+        //        .string()
+        //        .optional()
+        //        .describe('Text content of the file'),
+        //    })
+        //  )
+        //  .describe('Array of file objects containing filename and content'),
       },
     },
     gcpTool(
-      options.gcpCredentialsAvailable,
+      true,
       async ({ project, region, service, files }, { sendNotification }) => {
-        if (typeof project !== 'string') {
-          throw new Error(
-            'Project must specified, please prompt the user for a valid existing Google Cloud project ID.'
-          );
-        }
-        if (typeof files !== 'object' || !Array.isArray(files)) {
-          throw new Error('Files must be specified');
-        }
-        if (files.length === 0) {
-          throw new Error('No files specified for deployment');
-        }
+        //if (typeof project !== 'string') {
+        //  throw new Error(
+        //    'Project must specified, please prompt the user for a valid existing Google Cloud project ID.'
+        //  );
+        //}
+        //if (typeof files !== 'object' || !Array.isArray(files)) {
+        //  throw new Error('Files must be specified');
+        //}
+        //if (files.length === 0) {
+        //  throw new Error('No files specified for deployment');
+        //}
 
         // Validate that each file has either content
         for (const file of files) {
@@ -487,7 +489,8 @@ function registerDeployFileContentsTool(server, options) {
         // Deploy to Cloud Run
         try {
           await progressCallback({
-            data: `Starting deployment of file contents for service ${service} in project ${project}...`,
+            //data: `Starting deployment of file contents for service ${service} in project ${project}...`,
+            data: `Starting deployment of file contents for service in project...`,
           });
           const response = await deploy({
             projectId: project,
