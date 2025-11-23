@@ -142,6 +142,28 @@ describe('ensureApisEnabled', () => {
       );
       assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 2);
     });
+
+    it('should not throw if apis is null', async () => {
+      billingMocks.isBillingEnabled.mock.mockImplementation(() =>
+        Promise.resolve(true)
+      );
+      mockServiceUsageClient.getService.mock.mockImplementation(() =>
+        Promise.resolve([{ state: 'ENABLED' }])
+      );
+
+      await ensureApisEnabled(
+        { serviceUsageClient: mockServiceUsageClient },
+        projectId,
+        null,
+        mockProgressCallback
+      );
+
+      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 0);
+      assert.strictEqual(
+        mockServiceUsageClient.enableService.mock.callCount(),
+        0
+      );
+    });
   });
 
   describe('Billing Disabled', () => {
