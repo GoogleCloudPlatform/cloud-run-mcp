@@ -45,10 +45,104 @@ describe('ensureApisEnabled', () => {
 
   afterEach(() => {
     mock.restoreAll();
+    delete process.env.SKIP_API_DELAY;
+  });
+
+  beforeEach(() => {
+    process.env.SKIP_API_DELAY = 'true';
+  });
+
+  describe('API Pre-checks', () => {
+    it('should enable serviceusage, cloudbilling, then check billing and enable api list', async () => {
+      billingMocks.isBillingEnabled.mock.mockImplementation(() =>
+        Promise.resolve(true)
+      );
+      // Return DISABLED for all APIs
+      mockServiceUsageClient.getService.mock.mockImplementation(() =>
+        Promise.resolve([{ state: 'DISABLED' }])
+      );
+
+      await ensureApisEnabled(
+        { serviceUsageClient: mockServiceUsageClient },
+        projectId,
+        apis,
+        mockProgressCallback
+      );
+
+      // getService should be called for serviceusage, cloudbilling, and the test api
+      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 3);
+      assert.match(
+        mockServiceUsageClient.getService.mock.calls[0].arguments[0].name,
+        /serviceusage\.googleapis\.com/
+      );
+      assert.match(
+        mockServiceUsageClient.getService.mock.calls[1].arguments[0].name,
+        /cloudbilling\.googleapis\.com/
+      );
+      assert.match(
+        mockServiceUsageClient.getService.mock.calls[2].arguments[0].name,
+        /test-api\.googleapis\.com/
+      );
+
+      // enableService should be called for serviceusage, cloudbilling, and the test api
+      assert.strictEqual(
+        mockServiceUsageClient.enableService.mock.callCount(),
+        3
+      );
+      assert.match(
+        mockServiceUsageClient.enableService.mock.calls[0].arguments[0].name,
+        /serviceusage\.googleapis\.com/
+      );
+      assert.match(
+        mockServiceUsageClient.enableService.mock.calls[1].arguments[0].name,
+        /cloudbilling\.googleapis\.com/
+      );
+      assert.match(
+        mockServiceUsageClient.enableService.mock.calls[2].arguments[0].name,
+        /test-api\.googleapis\.com/
+      );
+
+      // isBillingEnabled should be called once
+      assert.strictEqual(billingMocks.isBillingEnabled.mock.callCount(), 1);
+    });
+
+    it('should only check billing and api list if prereq APIs enabled', async () => {
+      billingMocks.isBillingEnabled.mock.mockImplementation(() =>
+        Promise.resolve(true)
+      );
+      // Only disable the test API
+      mockServiceUsageClient.getService.mock.mockImplementation(({ name }) => {
+        if (name.includes('test-api')) {
+          return Promise.resolve([{ state: 'DISABLED' }]);
+        }
+        return Promise.resolve([{ state: 'ENABLED' }]);
+      });
+
+      await ensureApisEnabled(
+        { serviceUsageClient: mockServiceUsageClient },
+        projectId,
+        apis,
+        mockProgressCallback
+      );
+
+      // getService should be called for serviceusage, cloudbilling, and the test api
+      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 3);
+      // enableService should only be called for the test api
+      assert.strictEqual(
+        mockServiceUsageClient.enableService.mock.callCount(),
+        1
+      );
+      assert.match(
+        mockServiceUsageClient.enableService.mock.calls[0].arguments[0].name,
+        /test-api\.googleapis\.com/
+      );
+      // isBillingEnabled should be called once
+      assert.strictEqual(billingMocks.isBillingEnabled.mock.callCount(), 1);
+    });
   });
 
   describe('Billing Enabled', () => {
-    it('should do nothing if API is already enabled', async () => {
+    it('should do nothing if all APIs are already enabled', async () => {
       billingMocks.isBillingEnabled.mock.mockImplementation(() =>
         Promise.resolve(true)
       );
@@ -63,7 +157,7 @@ describe('ensureApisEnabled', () => {
         mockProgressCallback
       );
 
-      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 1);
+      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 3);
       assert.strictEqual(
         mockServiceUsageClient.enableService.mock.callCount(),
         0
@@ -74,9 +168,12 @@ describe('ensureApisEnabled', () => {
       billingMocks.isBillingEnabled.mock.mockImplementation(() =>
         Promise.resolve(true)
       );
-      mockServiceUsageClient.getService.mock.mockImplementation(() =>
-        Promise.resolve([{ state: 'DISABLED' }])
-      );
+      mockServiceUsageClient.getService.mock.mockImplementation(({ name }) => {
+        if (name.includes('test-api')) {
+          return Promise.resolve([{ state: 'DISABLED' }]);
+        }
+        return Promise.resolve([{ state: 'ENABLED' }]);
+      });
 
       await ensureApisEnabled(
         { serviceUsageClient: mockServiceUsageClient },
@@ -85,7 +182,7 @@ describe('ensureApisEnabled', () => {
         mockProgressCallback
       );
 
-      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 1);
+      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 3);
       assert.strictEqual(
         mockServiceUsageClient.enableService.mock.callCount(),
         1
@@ -97,7 +194,12 @@ describe('ensureApisEnabled', () => {
         Promise.resolve(true)
       );
       let getServiceCallCount = 0;
-      mockServiceUsageClient.getService.mock.mockImplementation(() => {
+      mockServiceUsageClient.getService.mock.mockImplementation(({ name }) => {
+        // Ensure pre-checks pass
+        if (name.includes('serviceusage') || name.includes('cloudbilling')) {
+          return Promise.resolve([{ state: 'ENABLED' }]);
+        }
+        // Fail only for test-api on the first attempt
         getServiceCallCount++;
         if (getServiceCallCount === 1) {
           return Promise.reject(new Error('First fail'));
@@ -112,7 +214,7 @@ describe('ensureApisEnabled', () => {
         mockProgressCallback
       );
 
-      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 2);
+      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 4); // 2 pre-checks + 2 attempts for test-api
       assert.strictEqual(
         mockServiceUsageClient.enableService.mock.callCount(),
         0
@@ -123,9 +225,14 @@ describe('ensureApisEnabled', () => {
       billingMocks.isBillingEnabled.mock.mockImplementation(() =>
         Promise.resolve(true)
       );
-      mockServiceUsageClient.getService.mock.mockImplementation(() =>
-        Promise.reject(new Error('Always fail'))
-      );
+      mockServiceUsageClient.getService.mock.mockImplementation(({ name }) => {
+        // Ensure pre-checks pass
+        if (name.includes('serviceusage') || name.includes('cloudbilling')) {
+          return Promise.resolve([{ state: 'ENABLED' }]);
+        }
+        // Fail only for test-api
+        return Promise.reject(new Error('Always fail'));
+      });
 
       await assert.rejects(
         () =>
@@ -140,7 +247,7 @@ describe('ensureApisEnabled', () => {
             'Failed to ensure API [test-api.googleapis.com] is enabled after retry. Please check manually.',
         }
       );
-      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 2);
+      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 4); // 2 pre-checks + 2 attempts for test-api
     });
   });
 
@@ -151,6 +258,9 @@ describe('ensureApisEnabled', () => {
       );
       billingMocks.listBillingAccounts.mock.mockImplementation(() =>
         Promise.resolve([])
+      );
+      mockServiceUsageClient.getService.mock.mockImplementation(() =>
+        Promise.resolve([{ state: 'ENABLED' }])
       );
 
       await assert.rejects(
@@ -174,6 +284,9 @@ describe('ensureApisEnabled', () => {
       billingMocks.listBillingAccounts.mock.mockImplementation(() =>
         Promise.resolve([{}, {}])
       );
+      mockServiceUsageClient.getService.mock.mockImplementation(() =>
+        Promise.resolve([{ state: 'ENABLED' }])
+      );
 
       await assert.rejects(
         () =>
@@ -195,6 +308,9 @@ describe('ensureApisEnabled', () => {
       );
       billingMocks.listBillingAccounts.mock.mockImplementation(() =>
         Promise.resolve([{ displayName: 'Closed Account', open: false }])
+      );
+      mockServiceUsageClient.getService.mock.mockImplementation(() =>
+        Promise.resolve([{ state: 'ENABLED' }])
       );
 
       await assert.rejects(
@@ -242,7 +358,7 @@ describe('ensureApisEnabled', () => {
         billingMocks.attachProjectToBillingAccount.mock.callCount(),
         1
       );
-      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 1);
+      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 3);
       assert.strictEqual(
         mockServiceUsageClient.enableService.mock.callCount(),
         0
@@ -264,6 +380,9 @@ describe('ensureApisEnabled', () => {
       );
       billingMocks.attachProjectToBillingAccount.mock.mockImplementation(() =>
         Promise.resolve({ billingEnabled: false })
+      );
+      mockServiceUsageClient.getService.mock.mockImplementation(() =>
+        Promise.resolve([{ state: 'ENABLED' }])
       );
 
       await assert.rejects(
