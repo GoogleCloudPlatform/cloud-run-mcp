@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import { test } from 'node:test';
-import { getServiceLogs, listServices } from '../../lib/cloud-api/run.js';
+import { getService, getServiceLogs, listServices } from '../../lib/cloud-api/run.js';
 import assert from 'node:assert';
 
 /**
@@ -86,4 +86,12 @@ test('should fetch service logs', async () => {
   } else {
     console.log('No logs found for this service.');
   }
+});
+
+test('should get service details', async () => {
+  const { projectId, region, serviceId } = await getServiceDetails();
+  const service = await getService(projectId, region, serviceId);
+  assert(service, 'Service should not be null');
+  assert.strictEqual(service.name.split('/').pop(), serviceId);
+  console.log('Service details fetched successfully');
 });
