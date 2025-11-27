@@ -15,7 +15,11 @@ limitations under the License.
 */
 
 import { test } from 'node:test';
-import { getServiceLogs, listServices } from '../../lib/cloud-api/run.js';
+import {
+  getService,
+  getServiceLogs,
+  listServices,
+} from '../../lib/cloud-api/run.js';
 import assert from 'node:assert';
 
 /**
@@ -87,3 +91,5 @@ test('should fetch service logs', async () => {
     console.log('No logs found for this service.');
   }
 });
+
+
