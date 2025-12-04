@@ -77,6 +77,7 @@ Most MCP clients require a configuration file to be created or modified to add t
 
 The configuration file syntax can be different across clients. Please refer to the following links for the latest expected syntax:
 
+- [**Antigravity**](https://antigravity.google/docs/mcp)
 - [**Windsurf**](https://docs.windsurf.com/windsurf/mcp)
 - [**VSCode**](https://code.visualstudio.com/docs/copilot/chat/mcp-servers)
 - [**Claude Desktop**](https://modelcontextprotocol.io/quickstart/user)
