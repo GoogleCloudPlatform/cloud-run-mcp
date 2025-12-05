@@ -16,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import express from 'express';
+import { createMcpExpressApp } from '@modelcontextprotocol/sdk/server/express.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 // Support SSE for backward compatibility
@@ -65,6 +65,7 @@ async function getServer() {
     {
       name: 'cloud-run',
       version: '1.0.0',
+      websiteUrl: 'https://github.com/modelcontextprotocol/typescript-sdk',
     },
     { capabilities: { logging: {} } }
   );
@@ -125,11 +126,12 @@ if (shouldStartStdio()) {
   // non-stdio mode
   console.log('Stdio transport mode is turned off.');
   gcpCredentialsAvailable = await ensureGCPCredentials();
-  const app = express();
-  app.use(express.json());
+
+  const app = createMcpExpressApp();
 
   app.post('/mcp', async (req, res) => {
     console.log('/mcp Received:', req.body);
+    console.log('Request headers:', req.headers);
     const server = await getServer();
     try {
       const transport = new StreamableHTTPServerTransport({
