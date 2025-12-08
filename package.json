@@ -48,7 +48,7 @@
     "@google-cloud/run": "^2.0.1",
     "@google-cloud/service-usage": "^4.1.0",
     "@google-cloud/storage": "^7.16.0",
-    "@modelcontextprotocol/sdk": "^1.11.0",
+    "@modelcontextprotocol/sdk": "^1.24.3",
     "archiver": "^7.0.1",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
