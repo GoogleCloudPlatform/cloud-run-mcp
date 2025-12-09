@@ -130,11 +130,6 @@ if (shouldStartStdio()) {
   console.log('Stdio transport mode is turned off.');
   gcpCredentialsAvailable = await ensureGCPCredentials();
 
-  console.log(
-    'enableHostValidation: %s and allowedHosts: %s',
-    enableHostValidation,
-    allowedHosts
-  );
   const app = enableHostValidation
     ? createMcpExpressApp({ allowedHosts })
     : createMcpExpressApp({ host: null });
@@ -147,7 +142,6 @@ if (shouldStartStdio()) {
   }
 
   app.post('/mcp', async (req, res) => {
-    console.log('Request headers:', req.headers);
     console.log('/mcp Received:', req.body);
     const server = await getServer();
     try {

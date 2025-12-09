@@ -59,7 +59,7 @@ The Cloud Run MCP server can be configured using the following environment varia
 | `DEFAULT_SERVICE_NAME`   | The default service name to use for Cloud Run services.                                                                                                                                  |
 | `SKIP_IAM_CHECK`         | Controls whether to check for IAM permissions for a Cloud Run service. Set to `false` to enable checks. This is `true` by default which is a recommended way to make the service public. |
 | `ENABLE_HOST_VALIDATION` | Prevents [DNS Rebinding](https://en.wikipedia.org/wiki/DNS_rebinding) attacks by validating the Host header. This is disabled by default.                                                |
-| `ALLOWED_HOSTS`          | Comma-separated list of allowed Host headers (if host validation is enabled). The default value is `localhost,127.0.0.1,::1`. Note                                                       |
+| `ALLOWED_HOSTS`          | Comma-separated list of allowed Host headers (if host validation is enabled). The default value is `localhost,127.0.0.1,::1`.                                                            |
 
 ## Use as a Gemini CLI extension
 
