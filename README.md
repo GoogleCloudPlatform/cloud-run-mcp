@@ -48,6 +48,19 @@ Prompts are natural language commands that can be used to perform common tasks. 
 - `deploy`: Deploys the current working directory to Cloud Run. If a service name is not provided, it will use the `DEFAULT_SERVICE_NAME` environment variable, or the name of the current working directory.
 - `logs`: Gets the logs for a Cloud Run service. If a service name is not provided, it will use the `DEFAULT_SERVICE_NAME` environment variable, or the name of the current working directory.
 
+## Environment Variables
+
+The Cloud Run MCP server can be configured using the following environment variables:
+
+| Variable                 | Description                                                                                                                                                                              |
+| :----------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GOOGLE_CLOUD_PROJECT`   | The default project ID to use for Cloud Run services.                                                                                                                                    |
+| `GOOGLE_CLOUD_REGION`    | The default region to use for Cloud Run services.                                                                                                                                        |
+| `DEFAULT_SERVICE_NAME`   | The default service name to use for Cloud Run services.                                                                                                                                  |
+| `SKIP_IAM_CHECK`         | Controls whether to check for IAM permissions for a Cloud Run service. Set to `false` to enable checks. This is `true` by default which is a recommended way to make the service public. |
+| `ENABLE_HOST_VALIDATION` | Prevents [DNS Rebinding](https://en.wikipedia.org/wiki/DNS_rebinding) attacks by validating the Host header. This is disabled by default.                                                |
+| `ALLOWED_HOSTS`          | Comma-separated list of allowed Host headers (if host validation is enabled). The default value is `localhost,127.0.0.1,::1`. Note                                                       |
+
 ## Use as a Gemini CLI extension
 
 To install this as a [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension, run the following command:
