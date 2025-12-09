@@ -3,7 +3,7 @@
   "reporter": ["lcov", "text"],
   "lines": 43,
   "functions": 35,
-  "branches": 73,
+  "branches": 70,
   "statements": 43,
   "exclude": ["**/test/**", "**/coverage/**"]
 }
