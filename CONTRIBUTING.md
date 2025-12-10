@@ -126,7 +126,7 @@ This script requires an existing Google Cloud Project ID to be provided when pro
 
 ## Publishing to npm
 
-To update the [npm package]https://www.npmjs.com/package/@google-cloud/cloud-run-mcp)
+To update the [npm package](https://www.npmjs.com/package/@google-cloud/cloud-run-mcp)
 
 Run the following:
 
