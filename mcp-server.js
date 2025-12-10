@@ -16,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import express from 'express';
+import { createMcpExpressApp } from '@modelcontextprotocol/sdk/server/express.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 // Support SSE for backward compatibility
@@ -58,6 +58,10 @@ const envProjectId = process.env.GOOGLE_CLOUD_PROJECT || undefined;
 const envRegion = process.env.GOOGLE_CLOUD_REGION;
 const defaultServiceName = process.env.DEFAULT_SERVICE_NAME;
 const skipIamCheck = process.env.SKIP_IAM_CHECK !== 'false';
+const enableHostValidation = process.env.ENABLE_HOST_VALIDATION === 'true';
+const allowedHosts = process.env.ALLOWED_HOSTS
+  ? process.env.ALLOWED_HOSTS.split(',')
+  : undefined;
 
 async function getServer() {
   // Create an MCP server with implementation details
@@ -125,8 +129,17 @@ if (shouldStartStdio()) {
   // non-stdio mode
   console.log('Stdio transport mode is turned off.');
   gcpCredentialsAvailable = await ensureGCPCredentials();
-  const app = express();
-  app.use(express.json());
+
+  const app = enableHostValidation
+    ? createMcpExpressApp({ allowedHosts })
+    : createMcpExpressApp({ host: null });
+
+  if (!enableHostValidation) {
+    console.warn(
+      `Warning: Server is running without DNS rebinding protection. ` +
+        'Consider enabling host validation by passing env variable ENABLE_HOST_VALIDATION=true and adding the ALLOWED_HOSTS to restrict allowed hosts'
+    );
+  }
 
   app.post('/mcp', async (req, res) => {
     console.log('/mcp Received:', req.body);
