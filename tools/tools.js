@@ -25,6 +25,7 @@ import {
   registerDeployLocalFolderTool,
   registerDeployFileContentsTool,
   registerDeployContainerImageTool,
+  registerDeployZipTool,
 } from './register-tools.js';
 
 export const registerTools = (server, options = {}) => {
@@ -36,6 +37,7 @@ export const registerTools = (server, options = {}) => {
   registerDeployLocalFolderTool(server, options);
   registerDeployFileContentsTool(server, options);
   registerDeployContainerImageTool(server, options);
+  registerDeployZipTool(server, options);
 };
 
 export const registerToolsRemote = (server, options = {}) => {

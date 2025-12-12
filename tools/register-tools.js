@@ -24,7 +24,7 @@ import {
   getService,
   getServiceLogs,
 } from '../lib/cloud-api/run.js';
-import { deploy, deployImage } from '../lib/deployment/deployer.js';
+import { deploy, deployImage, deployZip } from '../lib/deployment/deployer.js';
 
 function createProgressCallback(sendNotification) {
   return (progress) => {
@@ -600,6 +600,81 @@ function registerDeployContainerImageTool(server, options) {
   );
 }
 
+// Tool to deploy to Cloud Run from a local tar gzip file
+function registerDeployZipTool(server, options) {
+  server.registerTool(
+    'deploy_zip',
+    {
+      description:
+        'Deploys a Cloud Run service from a local fat tar gzip file (source code).',
+      inputSchema: {
+        project: z
+          .string()
+          .describe(
+            'Google Cloud project ID. Do not select it yourself, make sure the user provides or confirms the project ID.'
+          )
+          .default(options.defaultProjectId),
+        region: z
+          .string()
+          .optional()
+          .default(options.defaultRegion)
+          .describe('Region to deploy the service to'),
+        service: z
+          .string()
+          .optional()
+          .default(options.defaultServiceName)
+          .describe('Name of the Cloud Run service to deploy to'),
+        zipPath: z
+          .string()
+          .describe(
+            'Absolute path to the local tar gzip file containing source code'
+          ),
+      },
+    },
+    gcpTool(
+      options.gcpCredentialsAvailable,
+      async ({ project, region, service, zipPath }, { sendNotification }) => {
+        if (typeof project !== 'string') {
+          throw new Error('Project must be specified.');
+        }
+        if (typeof zipPath !== 'string' || zipPath.trim() === '') {
+          throw new Error('zipPath must be specified and non-empty.');
+        }
+
+        const progressCallback = createProgressCallback(sendNotification);
+
+        try {
+          const response = await deployZip({
+            projectId: project,
+            serviceName: service,
+            region: region,
+            zipPath: zipPath,
+            progressCallback,
+            skipIamCheck: options.skipIamCheck, // Pass the new flag
+          });
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Cloud Run service ${service} deployed in project ${project}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error deploying zip to Cloud Run: ${error.message || error}`,
+              },
+            ],
+          };
+        }
+      }
+    )
+  );
+}
+
 export {
   registerListProjectsTool,
   registerCreateProjectTool,
@@ -609,4 +684,5 @@ export {
   registerDeployLocalFolderTool,
   registerDeployFileContentsTool,
   registerDeployContainerImageTool,
+  registerDeployZipTool,
 };
