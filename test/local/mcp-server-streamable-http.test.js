@@ -3,6 +3,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'child_process';
+import { waitForString } from './test-utils.js';
 
 class MCPClient {
   client = null;
@@ -29,29 +30,32 @@ class MCPClient {
 describe('MCP Server in Streamble HTTP mode', () => {
   let client;
   let serverProcess;
+  let stdout = '';
+  const httpMsg = 'Cloud Run MCP server listening on port 3000';
 
-  before(async () => {
-    // Start MCP server as a child process
-    serverProcess = spawn('node', ['mcp-server.js'], {
-      cwd: process.cwd(),
-      env: { ...process.env, GCP_STDIO: 'false' },
-      stdio: 'inherit',
+  describe('when GCP_STDIO=false', () => {
+    before(async () => {
+      stdout = '';
+      // Start MCP server as a child process
+      serverProcess = spawn('node', ['mcp-server.js'], {
+        cwd: process.cwd(),
+        env: { ...process.env, GCP_STDIO: 'false' },
+      });
+      stdout = await waitForString(serverProcess.stdout, httpMsg);
+
+      client = new MCPClient('http-server');
     });
 
-    // Wait for server to start (better: poll the port, here we just wait)
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    after(async () => {
+      await client.cleanup();
+      if (serverProcess) {
+        serverProcess.kill();
+      }
+    });
 
-    client = new MCPClient('http-server');
-  });
-
-  after(async () => {
-    await client.cleanup();
-    if (serverProcess) {
-      serverProcess.kill();
-    }
-  });
-
-  test('should start an HTTP server', async () => {
-    await client.connectToServer('http://localhost:3000/mcp');
+    test('should start an HTTP server', async () => {
+      await client.connectToServer('http://localhost:3000/mcp');
+      assert.ok(stdout.includes(httpMsg));
+    });
   });
 });
