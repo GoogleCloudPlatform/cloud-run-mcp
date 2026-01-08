@@ -31,6 +31,7 @@ describe('ensureApisEnabled', () => {
       isBillingEnabled: mock.fn(),
       listBillingAccounts: mock.fn(),
       attachProjectToBillingAccount: mock.fn(),
+      ensureBillingEnabled: mock.fn(),
     };
     const helpers = await esmock('../../lib/cloud-api/helpers.js', {
       '../../lib/cloud-api/billing.js': billingMocks,
@@ -49,7 +50,7 @@ describe('ensureApisEnabled', () => {
 
   describe('Billing Enabled', () => {
     it('should do nothing if API is already enabled', async () => {
-      billingMocks.isBillingEnabled.mock.mockImplementation(() =>
+      billingMocks.ensureBillingEnabled.mock.mockImplementation(() =>
         Promise.resolve(true)
       );
       mockServiceUsageClient.getService.mock.mockImplementation(() =>
@@ -63,7 +64,8 @@ describe('ensureApisEnabled', () => {
         mockProgressCallback
       );
 
-      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 3);
+      assert.strictEqual(billingMocks.ensureBillingEnabled.mock.callCount(), 1);
+      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 1);
       assert.strictEqual(
         mockServiceUsageClient.enableService.mock.callCount(),
         0
@@ -71,7 +73,7 @@ describe('ensureApisEnabled', () => {
     });
 
     it('should enable API if it is disabled', async () => {
-      billingMocks.isBillingEnabled.mock.mockImplementation(() =>
+      billingMocks.ensureBillingEnabled.mock.mockImplementation(() =>
         Promise.resolve(true)
       );
       mockServiceUsageClient.getService.mock.mockImplementation(() =>
@@ -85,15 +87,16 @@ describe('ensureApisEnabled', () => {
         mockProgressCallback
       );
 
-      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 3);
+      assert.strictEqual(billingMocks.ensureBillingEnabled.mock.callCount(), 1);
+      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 1);
       assert.strictEqual(
         mockServiceUsageClient.enableService.mock.callCount(),
-        3
+        1
       );
     });
 
     it('should retry enabling API if checkAndEnableApi fails once', async () => {
-      billingMocks.isBillingEnabled.mock.mockImplementation(() =>
+      billingMocks.ensureBillingEnabled.mock.mockImplementation(() =>
         Promise.resolve(true)
       );
       let getServiceCallCount = 0;
@@ -112,7 +115,8 @@ describe('ensureApisEnabled', () => {
         mockProgressCallback
       );
 
-      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 4);
+      assert.strictEqual(billingMocks.ensureBillingEnabled.mock.callCount(), 1);
+      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 2);
       assert.strictEqual(
         mockServiceUsageClient.enableService.mock.callCount(),
         0
@@ -120,7 +124,7 @@ describe('ensureApisEnabled', () => {
     });
 
     it('should throw if checkAndEnableApi fails after retry', async () => {
-      billingMocks.isBillingEnabled.mock.mockImplementation(() =>
+      billingMocks.ensureBillingEnabled.mock.mockImplementation(() =>
         Promise.resolve(true)
       );
       mockServiceUsageClient.getService.mock.mockImplementation(() =>
@@ -137,23 +141,22 @@ describe('ensureApisEnabled', () => {
           ),
         {
           message:
-            'Failed to ensure API [serviceusage.googleapis.com] is enabled after retry. Please check manually.',
+            'Failed to ensure API [test-api.googleapis.com] is enabled after retry. Please check manually.',
         }
       );
+      assert.strictEqual(billingMocks.ensureBillingEnabled.mock.callCount(), 1);
       assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 2);
     });
   });
 
   describe('Billing Disabled', () => {
     it('should throw if no billing accounts are found', async () => {
-      mockServiceUsageClient.getService.mock.mockImplementation(() =>
-        Promise.resolve([{ state: 'ENABLED' }])
-      );
-      billingMocks.isBillingEnabled.mock.mockImplementation(() =>
-        Promise.resolve(false)
-      );
-      billingMocks.listBillingAccounts.mock.mockImplementation(() =>
-        Promise.resolve([])
+      billingMocks.ensureBillingEnabled.mock.mockImplementation(() =>
+        Promise.reject(
+          new Error(
+            `Billing is not enabled for project ${projectId}, and it could not be enabled automatically because no billing accounts were found. Please enable billing to use Google Cloud services: https://console.cloud.google.com/billing/linkedaccount?project=${projectId}`
+          )
+        )
       );
 
       await assert.rejects(
@@ -168,132 +171,102 @@ describe('ensureApisEnabled', () => {
           message: `Billing is not enabled for project ${projectId}, and it could not be enabled automatically because no billing accounts were found. Please enable billing to use Google Cloud services: https://console.cloud.google.com/billing/linkedaccount?project=${projectId}`,
         }
       );
+      assert.strictEqual(billingMocks.ensureBillingEnabled.mock.callCount(), 1);
+      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 0);
     });
+  });
+  it('should throw if multiple billing accounts are found', async () => {
+    billingMocks.ensureBillingEnabled.mock.mockImplementation(() =>
+      Promise.reject(
+        new Error(
+          `Billing is not enabled for project ${projectId}, and it could not be enabled automatically because multiple billing accounts were found. Please enable billing to use Google Cloud services: https://console.cloud.google.com/billing/linkedaccount?project=${projectId}`
+        )
+      )
+    );
 
-    it('should throw if multiple billing accounts are found', async () => {
-      mockServiceUsageClient.getService.mock.mockImplementation(() =>
-        Promise.resolve([{ state: 'ENABLED' }])
-      );
-      billingMocks.isBillingEnabled.mock.mockImplementation(() =>
-        Promise.resolve(false)
-      );
-      billingMocks.listBillingAccounts.mock.mockImplementation(() =>
-        Promise.resolve([{}, {}])
-      );
+    await assert.rejects(
+      () =>
+        ensureApisEnabled(
+          { serviceUsageClient: mockServiceUsageClient },
+          projectId,
+          apis,
+          mockProgressCallback
+        ),
+      {
+        message: `Billing is not enabled for project ${projectId}, and it could not be enabled automatically because multiple billing accounts were found. Please enable billing to use Google Cloud services: https://console.cloud.google.com/billing/linkedaccount?project=${projectId}`,
+      }
+    );
+    assert.strictEqual(billingMocks.ensureBillingEnabled.mock.callCount(), 1);
+    assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 0);
+  });
+  it('should throw if the only billing account is not open', async () => {
+    billingMocks.ensureBillingEnabled.mock.mockImplementation(() =>
+      Promise.reject(
+        new Error(
+          `Billing is not enabled for project ${projectId}, and it could not be enabled automatically because the only available billing account 'Closed Account' is not open. Please enable billing to use Google Cloud services: https://console.cloud.google.com/billing/linkedaccount?project=${projectId}`
+        )
+      )
+    );
 
-      await assert.rejects(
-        () =>
-          ensureApisEnabled(
-            { serviceUsageClient: mockServiceUsageClient },
-            projectId,
-            apis,
-            mockProgressCallback
-          ),
-        {
-          message: `Billing is not enabled for project ${projectId}, and it could not be enabled automatically because multiple billing accounts were found. Please enable billing to use Google Cloud services: https://console.cloud.google.com/billing/linkedaccount?project=${projectId}`,
-        }
-      );
-    });
+    await assert.rejects(
+      () =>
+        ensureApisEnabled(
+          { serviceUsageClient: mockServiceUsageClient },
+          projectId,
+          apis,
+          mockProgressCallback
+        ),
+      {
+        message: `Billing is not enabled for project ${projectId}, and it could not be enabled automatically because the only available billing account 'Closed Account' is not open. Please enable billing to use Google Cloud services: https://console.cloud.google.com/billing/linkedaccount?project=${projectId}`,
+      }
+    );
+    assert.strictEqual(billingMocks.ensureBillingEnabled.mock.callCount(), 1);
+    assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 0);
+  });
+  it('should attach billing and enable API if one open account is found', async () => {
+    billingMocks.ensureBillingEnabled.mock.mockImplementation(() =>
+      Promise.resolve(true)
+    );
+    mockServiceUsageClient.getService.mock.mockImplementation(() =>
+      Promise.resolve([{ state: 'DISABLED' }])
+    );
 
-    it('should throw if the only billing account is not open', async () => {
-      mockServiceUsageClient.getService.mock.mockImplementation(() =>
-        Promise.resolve([{ state: 'ENABLED' }])
-      );
-      billingMocks.isBillingEnabled.mock.mockImplementation(() =>
-        Promise.resolve(false)
-      );
-      billingMocks.listBillingAccounts.mock.mockImplementation(() =>
-        Promise.resolve([{ displayName: 'Closed Account', open: false }])
-      );
+    await ensureApisEnabled(
+      { serviceUsageClient: mockServiceUsageClient },
+      projectId,
+      apis,
+      mockProgressCallback
+    );
 
-      await assert.rejects(
-        () =>
-          ensureApisEnabled(
-            { serviceUsageClient: mockServiceUsageClient },
-            projectId,
-            apis,
-            mockProgressCallback
-          ),
-        {
-          message: `Billing is not enabled for project ${projectId}, and it could not be enabled automatically because the only available billing account 'Closed Account' is not open. Please enable billing to use Google Cloud services: https://console.cloud.google.com/billing/linkedaccount?project=${projectId}`,
-        }
-      );
-    });
+    assert.strictEqual(billingMocks.ensureBillingEnabled.mock.callCount(), 1);
+    assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 1);
+    assert.strictEqual(
+      mockServiceUsageClient.enableService.mock.callCount(),
+      1
+    );
+  });
+  it('should throw if attaching the billing account fails', async () => {
+    billingMocks.ensureBillingEnabled.mock.mockImplementation(() =>
+      Promise.reject(
+        new Error(
+          `Failed to automatically attach project ${projectId} to billing account billingAccounts/123. Please enable billing manually: https://console.cloud.google.com/billing/linkedaccount?project=${projectId}`
+        )
+      )
+    );
 
-    it('should attach billing and enable API if one open account is found', async () => {
-      billingMocks.isBillingEnabled.mock.mockImplementation(() =>
-        Promise.resolve(false)
-      );
-      billingMocks.listBillingAccounts.mock.mockImplementation(() =>
-        Promise.resolve([
-          {
-            name: 'billingAccounts/123',
-            displayName: 'Open Account',
-            open: true,
-          },
-        ])
-      );
-      billingMocks.attachProjectToBillingAccount.mock.mockImplementation(() =>
-        Promise.resolve({ billingEnabled: true })
-      );
-      mockServiceUsageClient.getService.mock.mockImplementation(() =>
-        Promise.resolve([{ state: 'ENABLED' }])
-      );
-
-      await ensureApisEnabled(
-        { serviceUsageClient: mockServiceUsageClient },
-        projectId,
-        apis,
-        mockProgressCallback
-      );
-
-      assert.strictEqual(
-        billingMocks.attachProjectToBillingAccount.mock.callCount(),
-        1
-      );
-      assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 3);
-      assert.strictEqual(
-        mockServiceUsageClient.enableService.mock.callCount(),
-        0
-      );
-    });
-
-    it('should throw if attaching the billing account fails', async () => {
-      mockServiceUsageClient.getService.mock.mockImplementation(() =>
-        Promise.resolve([{ state: 'ENABLED' }])
-      );
-      billingMocks.isBillingEnabled.mock.mockImplementation(() =>
-        Promise.resolve(false)
-      );
-      billingMocks.listBillingAccounts.mock.mockImplementation(() =>
-        Promise.resolve([
-          {
-            name: 'billingAccounts/123',
-            displayName: 'Open Account',
-            open: true,
-          },
-        ])
-      );
-      billingMocks.attachProjectToBillingAccount.mock.mockImplementation(() =>
-        Promise.resolve({ billingEnabled: false })
-      );
-
-      await assert.rejects(
-        () =>
-          ensureApisEnabled(
-            { serviceUsageClient: mockServiceUsageClient },
-            projectId,
-            apis,
-            mockProgressCallback
-          ),
-        {
-          message: `Failed to automatically attach project ${projectId} to billing account billingAccounts/123. Please enable billing manually: https://console.cloud.google.com/billing/linkedaccount?project=${projectId}`,
-        }
-      );
-      assert.strictEqual(
-        billingMocks.attachProjectToBillingAccount.mock.callCount(),
-        1
-      );
-    });
+    await assert.rejects(
+      () =>
+        ensureApisEnabled(
+          { serviceUsageClient: mockServiceUsageClient },
+          projectId,
+          apis,
+          mockProgressCallback
+        ),
+      {
+        message: `Failed to automatically attach project ${projectId} to billing account billingAccounts/123. Please enable billing manually: https://console.cloud.google.com/billing/linkedaccount?project=${projectId}`,
+      }
+    );
+    assert.strictEqual(billingMocks.ensureBillingEnabled.mock.callCount(), 1);
+    assert.strictEqual(mockServiceUsageClient.getService.mock.callCount(), 0);
   });
 });
