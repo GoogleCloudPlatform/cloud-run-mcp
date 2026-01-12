@@ -137,7 +137,7 @@ describe('Deployment Helpers', () => {
     assert.equal(result.deploymentAttrs.runtime, undefined);
   });
 
-  test('checkIfZipDeploymentFeasible returns true for valid Node.js zip deploy', async () => {
+  test('canDeployWithoutBuild returns true for valid Node.js zip deploy', async () => {
     const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
       fs: fsMock,
     });
@@ -152,13 +152,10 @@ describe('Deployment Helpers', () => {
       },
     };
 
-    assert.equal(
-      deploymentHelpers.checkIfZipDeploymentFeasible(metadata),
-      true
-    );
+    assert.equal(deploymentHelpers.canDeployWithoutBuild(metadata), true);
   });
 
-  test('checkIfZipDeploymentFeasible returns false if Dockerfile exists', async () => {
+  test('canDeployWithoutBuild returns false if Dockerfile exists', async () => {
     const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
       fs: fsMock,
     });
@@ -172,10 +169,7 @@ describe('Deployment Helpers', () => {
       },
     };
 
-    assert.equal(
-      deploymentHelpers.checkIfZipDeploymentFeasible(metadata),
-      false
-    );
+    assert.equal(deploymentHelpers.canDeployWithoutBuild(metadata), false);
   });
 
   test('createDirectSourceDeploymentContainer creates correct object', async () => {
@@ -197,7 +191,7 @@ describe('Deployment Helpers', () => {
       deploymentHelpers.createDirectSourceDeploymentContainer(input);
 
     assert.deepEqual(result, {
-      image: DEPLOYMENT_CONFIG.NO_BUILD_IMAGE_TAG,
+      image: DEPLOYMENT_CONFIG.NO_BUILD_IMAGE_TYPE,
       baseImageUri: 'gcr.io/google-appengine/nodejs',
       sourceCode: {
         cloudStorageSource: {
