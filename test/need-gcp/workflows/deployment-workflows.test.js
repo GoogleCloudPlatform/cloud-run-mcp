@@ -43,7 +43,7 @@ describe('Deployment workflows', () => {
     const configImageDeploy = {
       projectId: projectId,
       serviceName: 'hello-scenario',
-      region: 'europe-west1',
+      region: 'us-central1',
       imageUrl: 'gcr.io/cloudrun/hello',
     };
     await deployImage(configImageDeploy);
@@ -55,7 +55,7 @@ describe('Deployment workflows', () => {
     const configFailingBuild = {
       projectId: projectId,
       serviceName: 'example-failing-app',
-      region: 'europe-west1',
+      region: 'us-central1',
       files: [
         {
           filename: 'main.txt',
@@ -83,7 +83,7 @@ describe('Deployment workflows', () => {
     const configGoWithContent = {
       projectId: projectId,
       serviceName: 'example-go-app-content',
-      region: 'europe-west1',
+      region: 'us-central1',
       files: [
         { filename: 'main.go', content: mainGoContent },
         { filename: 'go.mod', content: goModContent },
