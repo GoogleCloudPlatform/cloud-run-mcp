@@ -29,16 +29,21 @@ describe('MCP Server stdio startup', () => {
     });
   });
 
-  describe('when GCP_STDIO is unset', () => {
+  describe('when GCP_STDIO=false', () => {
     before(async () => {
       stderr = '';
       const env = { ...process.env };
-      delete env.GCP_STDIO;
+      env.GCP_STDIO = 'false';
       serverProcess = spawn('node', ['mcp-server.js'], {
         cwd: process.cwd(),
         env: env,
       });
-      stderr = await waitForString(serverProcess.stderr, stdioMsg);
+      const stderrChunks = [];
+      serverProcess.stderr.on('data', (chunk) => {
+        stderrChunks.push(chunk);
+      });
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      stderr = Buffer.concat(stderrChunks).toString();
     });
 
     after(() => {
@@ -47,8 +52,8 @@ describe('MCP Server stdio startup', () => {
       }
     });
 
-    test('should start in stdio mode', () => {
-      assert.ok(stderr.includes(stdioMsg));
+    test('should not start in stdio mode', () => {
+      assert.ok(!stderr.includes(stdioMsg));
     });
   });
 });
