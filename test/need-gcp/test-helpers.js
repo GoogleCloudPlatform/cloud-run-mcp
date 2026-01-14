@@ -163,7 +163,7 @@ export async function setSourceDeployProjectPermissions(projectId) {
   const context = {
     serviceUsageClient: serviceUsageClient,
   };
-  await ensureApisEnabled(context, projectId, ['run.googleapis.com']);
+  await ensureApisEnabled(projectId, ['run.googleapis.com']);
   console.log('Adding editor role to Compute SA...');
   const projectNumber = await getProjectNumber(projectId);
   const member = `serviceAccount:${projectNumber}-compute@developer.gserviceaccount.com`;
