@@ -1,4 +1,3 @@
-
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
 import {
@@ -16,13 +15,21 @@ describe('Client Factory Caching', () => {
     const projectId = 'test-project-run';
     const client1 = await getRunClient(projectId);
     const client2 = await getRunClient(projectId);
-    assert.strictEqual(client1, client2, 'Run clients should be the same instance');
+    assert.strictEqual(
+      client1,
+      client2,
+      'Run clients should be the same instance'
+    );
   });
 
   test('getRunClient returns different instances for different projectIds', async () => {
     const client1 = await getRunClient('project-1');
     const client2 = await getRunClient('project-2');
-    assert.notStrictEqual(client1, client2, 'Run clients should be different instances');
+    assert.notStrictEqual(
+      client1,
+      client2,
+      'Run clients should be different instances'
+    );
   });
 
   test('getServiceUsageClient caches instances', async () => {
