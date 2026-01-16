@@ -1,48 +1,99 @@
 import assert from 'node:assert/strict';
-import { describe, it, mock } from 'node:test';
+import { describe, it, mock, beforeEach, afterEach } from 'node:test';
 import esmock from 'esmock';
 
 describe('triggerCloudBuild', () => {
-  it('should return a successful build and log correct messages', async () => {
-    const mockBuildId = 'mock-build-id';
-    const mockSuccessResult = {
-      id: mockBuildId,
-      status: 'SUCCESS',
-      results: { images: [{ name: 'gcr.io/mock-project/mock-image' }] },
-    };
+  const mockBuildId = 'mock-build-id';
+  // bW9jay1idWlsZC1pZA== is Buffer.from('mock-build-id').toString('base64')
+  const base64BuildId = 'bW9jay1idWlsZC1pZA==';
+  const goodSubmitBuildResponse = [
+    {
+      buildOperation: {
+        name: `projects/mock-project/locations/mock-location/operations/${base64BuildId}`,
+      },
+    },
+  ];
+  const mockSuccessResult = {
+    id: mockBuildId,
+    status: 'SUCCESS',
+    results: { images: [{ name: 'gcr.io/mock-project/mock-image' }] },
+  };
+  const mockFailureResult = {
+    id: mockBuildId,
+    status: 'FAILURE',
+    logUrl: 'http://mock-log-url.com',
+    results: { images: [{ name: 'gcr.io/mock-project/mock-image' }] },
+  };
 
-    const getBuildMock = mock.fn(() => Promise.resolve([mockSuccessResult]));
-    const logAndProgressMock = mock.fn();
+  let logAndProgressMock;
+  let getServiceMock;
+  let createServiceMock;
+  let updateServiceMock;
+  let servicePathMock;
+  let locationPathMock;
+  let submitBuildMock;
+  let getBuildMock;
+  let getEntriesMock;
+  let context;
+  let setTimeoutMock;
 
-    const { triggerCloudBuild } = await esmock(
-      '../../../lib/cloud-api/build.js',
-      {
-        '../../../lib/cloud-api/helpers.js': {
-          callWithRetry: (fn) => fn(), // Directly execute the function
-        },
-        '../../../lib/util/helpers.js': {
-          logAndProgress: logAndProgressMock,
-        },
-      }
+  beforeEach(() => {
+    logAndProgressMock = mock.fn();
+    getServiceMock = mock.fn(() => Promise.reject({ code: 5 })); // Default: service not found
+    createServiceMock = mock.fn(() => Promise.resolve());
+    updateServiceMock = mock.fn(() => Promise.resolve());
+    servicePathMock = mock.fn(
+      (projectId, location, serviceId) =>
+        `projects/${projectId}/locations/${location}/services/${serviceId}`
     );
+    locationPathMock = mock.fn(
+      (projectId, location) => `projects/${projectId}/locations/${location}`
+    );
+    submitBuildMock = mock.fn(() => Promise.resolve(goodSubmitBuildResponse));
+    getBuildMock = mock.fn(() => Promise.resolve([mockSuccessResult]));
+    getEntriesMock = mock.fn(() =>
+      Promise.resolve([[{ data: 'log line 1' }, { data: 'log line 2' }]])
+    );
+    setTimeoutMock = mock.fn((cb) => cb());
+    mock.method(global, 'setTimeout', setTimeoutMock);
 
-    const context = {
+    context = {
+      runClient: {
+        getService: getServiceMock,
+        createService: createServiceMock,
+        updateService: updateServiceMock,
+        servicePath: servicePathMock,
+        locationPath: locationPathMock,
+      },
+      buildsClient: {
+        submitBuild: submitBuildMock,
+      },
       cloudBuildClient: {
-        createBuild: mock.fn(() =>
-          Promise.resolve([
-            {
-              metadata: {
-                build: {
-                  id: mockBuildId,
-                },
-              },
-            },
-          ])
-        ),
         getBuild: getBuildMock,
       },
+      loggingClient: {
+        getEntries: getEntriesMock,
+      },
     };
+  });
 
+  afterEach(() => {
+    mock.restoreAll();
+  });
+
+  async function getTriggerCloudBuild() {
+    return await esmock('../../../lib/cloud-api/build.js', {
+      '../../../lib/cloud-api/helpers.js': {
+        callWithRetry: (fn) => fn(),
+      },
+      '../../../lib/util/helpers.js': {
+        logAndProgress: logAndProgressMock,
+      },
+    });
+  }
+
+  it('should run successfully and create service when service does not exist', async () => {
+    const { triggerCloudBuild } = await getTriggerCloudBuild();
     const result = await triggerCloudBuild(
       context,
       'mock-project',
@@ -56,145 +107,26 @@ describe('triggerCloudBuild', () => {
     );
 
     assert.deepStrictEqual(result, mockSuccessResult);
-    assert.strictEqual(
-      context.cloudBuildClient.createBuild.mock.callCount(),
-      1
-    );
-    assert.strictEqual(context.cloudBuildClient.getBuild.mock.callCount(), 1);
+    assert.strictEqual(getServiceMock.mock.callCount(), 1);
+    assert.strictEqual(submitBuildMock.mock.callCount(), 1);
+    assert.strictEqual(getBuildMock.mock.callCount(), 1);
+    assert.strictEqual(createServiceMock.mock.callCount(), 1); // 1 dry run
+    assert.strictEqual(updateServiceMock.mock.callCount(), 0);
 
     const { calls: logCalls } = logAndProgressMock.mock;
-    assert.match(logCalls[0].arguments[0], /Initiating Cloud Build/);
-    assert.match(logCalls[1].arguments[0], /Cloud Build job started/);
-    assert.match(logCalls[2].arguments[0], /completed successfully/);
-    assert.match(logCalls[3].arguments[0], /Image built/);
+    assert.match(logCalls[0].arguments[0], /Performing dry-run creation/);
+    assert.match(logCalls[1].arguments[0], /Dry-run validation successful/);
+    assert.match(logCalls[2].arguments[0], /Initiating Cloud Build/);
+    assert.match(logCalls[3].arguments[0], /Cloud Build job started/);
+    assert.match(logCalls[4].arguments[0], /completed successfully/);
+    assert.match(logCalls[5].arguments[0], /Image built/);
   });
 
-  it('should throw an error for a failed build and log correct messages', async () => {
-    const mockBuildId = 'mock-build-id-failure';
-    const mockFailureResult = {
-      id: mockBuildId,
-      status: 'FAILURE',
-      logUrl: 'http://mock-log-url.com',
-    };
-
-    const getBuildMock = mock.fn(() => Promise.resolve([mockFailureResult]));
-    const logAndProgressMock = mock.fn();
-    const setTimeoutMock = mock.fn((resolve) => resolve());
-    mock.method(global, 'setTimeout', setTimeoutMock);
-
-    const { triggerCloudBuild } = await esmock(
-      '../../../lib/cloud-api/build.js',
-      {
-        '../../../lib/cloud-api/helpers.js': {
-          callWithRetry: (fn) => fn(),
-        },
-        '../../../lib/util/helpers.js': {
-          logAndProgress: logAndProgressMock,
-        },
-      }
+  it('should run successfully and update service when service exists', async () => {
+    getServiceMock.mock.mockImplementation(() =>
+      Promise.resolve([mockSuccessResult])
     );
-
-    const context = {
-      cloudBuildClient: {
-        createBuild: mock.fn(() =>
-          Promise.resolve([
-            {
-              metadata: {
-                build: {
-                  id: mockBuildId,
-                },
-              },
-            },
-          ])
-        ),
-        getBuild: getBuildMock,
-      },
-      loggingClient: {
-        getEntries: mock.fn(() =>
-          Promise.resolve([[{ data: 'log line 1' }, { data: 'log line 2' }]])
-        ),
-      },
-    };
-
-    await assert.rejects(
-      () =>
-        triggerCloudBuild(
-          context,
-          'mock-project',
-          'mock-location',
-          'mock-bucket',
-          'mock-blob',
-          'mock-repo',
-          'gcr.io/mock-project/mock-image',
-          true,
-          () => {}
-        ),
-      (err) => {
-        assert.match(err.message, /Build mock-build-id-failure failed/);
-        assert.match(err.message, /log line 1/);
-        assert.match(err.message, /log line 2/);
-        return true;
-      }
-    );
-
-    assert.strictEqual(
-      context.cloudBuildClient.createBuild.mock.callCount(),
-      1
-    );
-    assert.strictEqual(context.cloudBuildClient.getBuild.mock.callCount(), 1);
-    assert.strictEqual(context.loggingClient.getEntries.mock.callCount(), 1);
-    assert.strictEqual(setTimeoutMock.mock.callCount(), 1);
-    assert.strictEqual(setTimeoutMock.mock.calls[0].arguments[1], 10000);
-
-    const { calls: logCalls } = logAndProgressMock.mock;
-    assert.match(logCalls[0].arguments[0], /Initiating Cloud Build/);
-    assert.match(logCalls[1].arguments[0], /Cloud Build job started/);
-    assert.match(logCalls[2].arguments[0], /failed with status: FAILURE/);
-    assert.match(logCalls[3].arguments[0], /Build logs:/);
-    assert.match(logCalls[4].arguments[0], /Attempting to fetch last/);
-    assert.match(logCalls[5].arguments[0], /Successfully fetched snippet/);
-  });
-
-  it('should use buildpacks when no Dockerfile is present', async () => {
-    const mockBuildId = 'mock-build-id-buildpacks';
-    const mockSuccessResult = {
-      id: mockBuildId,
-      status: 'SUCCESS',
-      results: { images: [{ name: 'gcr.io/mock-project/mock-image' }] },
-    };
-
-    const getBuildMock = mock.fn(() => Promise.resolve([mockSuccessResult]));
-    const createBuildMock = mock.fn(() =>
-      Promise.resolve([
-        {
-          metadata: {
-            build: {
-              id: mockBuildId,
-            },
-          },
-        },
-      ])
-    );
-
-    const { triggerCloudBuild } = await esmock(
-      '../../../lib/cloud-api/build.js',
-      {
-        '../../../lib/cloud-api/helpers.js': {
-          callWithRetry: (fn) => fn(),
-        },
-        '../../../lib/util/helpers.js': {
-          logAndProgress: () => {},
-        },
-      }
-    );
-
-    const context = {
-      cloudBuildClient: {
-        createBuild: createBuildMock,
-        getBuild: getBuildMock,
-      },
-    };
-
+    const { triggerCloudBuild } = await getTriggerCloudBuild(true);
     await triggerCloudBuild(
       context,
       'mock-project',
@@ -203,67 +135,73 @@ describe('triggerCloudBuild', () => {
       'mock-blob',
       'mock-repo',
       'gcr.io/mock-project/mock-image',
-      false, // hasDockerfile = false
+      true,
       () => {}
     );
 
-    assert.strictEqual(createBuildMock.mock.callCount(), 1);
-    const buildArg = createBuildMock.mock.calls[0].arguments[0].build;
-    const buildStep = buildArg.steps[0];
-    assert.strictEqual(buildStep.name, 'gcr.io/k8s-skaffold/pack');
+    assert.strictEqual(getServiceMock.mock.callCount(), 1);
+    assert.strictEqual(submitBuildMock.mock.callCount(), 1);
+    assert.strictEqual(getBuildMock.mock.callCount(), 1);
+    assert.strictEqual(createServiceMock.mock.callCount(), 0);
+    assert.strictEqual(updateServiceMock.mock.callCount(), 1); // 1 dry run
+    const { calls: logCalls } = logAndProgressMock.mock;
+    assert.match(logCalls[0].arguments[0], /Performing dry-run update/);
+  });
+
+  it('should use buildpacks when no Dockerfile is present', async () => {
+    const { triggerCloudBuild } = await getTriggerCloudBuild();
+    const result = await triggerCloudBuild(
+      context,
+      'mock-project',
+      'mock-location',
+      'mock-bucket',
+      'mock-blob',
+      'mock-repo',
+      'gcr.io/mock-project/mock-image',
+      false,
+      () => {}
+    );
+
+    assert.deepStrictEqual(result, mockSuccessResult);
+    assert.strictEqual(submitBuildMock.mock.callCount(), 1);
+    const submitBuildRequest = submitBuildMock.mock.calls[0].arguments[0];
+    assert.deepStrictEqual(submitBuildRequest.buildpackBuild, {});
+    assert.strictEqual(submitBuildRequest.dockerBuild, undefined);
+  });
+
+  it('should use docker build when Dockerfile is present', async () => {
+    const { triggerCloudBuild } = await getTriggerCloudBuild();
+    await triggerCloudBuild(
+      context,
+      'mock-project',
+      'mock-location',
+      'mock-bucket',
+      'mock-blob',
+      'mock-repo',
+      'gcr.io/mock-project/mock-image',
+      true, // hasDockerfile = true
+      () => {}
+    );
+
+    assert.strictEqual(submitBuildMock.mock.callCount(), 1);
+    const submitBuildRequest = submitBuildMock.mock.calls[0].arguments[0];
+    assert.deepStrictEqual(submitBuildRequest.dockerBuild, {});
+    assert.strictEqual(submitBuildRequest.buildpackBuild, undefined);
   });
 
   it('should poll for build status until completion', async () => {
-    const mockBuildId = 'mock-build-id-polling';
     const mockWorkingResult = { id: mockBuildId, status: 'WORKING' };
-    const mockSuccessResult = {
-      id: mockBuildId,
-      status: 'SUCCESS',
-      results: { images: [{ name: 'gcr.io/mock-project/mock-image' }] },
-    };
-
     let getBuildCallCount = 0;
-    const getBuildMock = mock.fn(() => {
+    getBuildMock = mock.fn(() => {
       getBuildCallCount++;
       if (getBuildCallCount === 1) {
         return Promise.resolve([mockWorkingResult]);
       }
       return Promise.resolve([mockSuccessResult]);
     });
+    context.cloudBuildClient.getBuild = getBuildMock;
 
-    const logAndProgressMock = mock.fn();
-    const setTimeoutMock = mock.fn((resolve) => resolve());
-    mock.method(global, 'setTimeout', setTimeoutMock);
-
-    const { triggerCloudBuild } = await esmock(
-      '../../../lib/cloud-api/build.js',
-      {
-        '../../../lib/cloud-api/helpers.js': {
-          callWithRetry: (fn) => fn(),
-        },
-        '../../../lib/util/helpers.js': {
-          logAndProgress: logAndProgressMock,
-        },
-      }
-    );
-
-    const context = {
-      cloudBuildClient: {
-        createBuild: mock.fn(() =>
-          Promise.resolve([
-            {
-              metadata: {
-                build: {
-                  id: mockBuildId,
-                },
-              },
-            },
-          ])
-        ),
-        getBuild: getBuildMock,
-      },
-    };
-
+    const { triggerCloudBuild } = await getTriggerCloudBuild();
     await triggerCloudBuild(
       context,
       'mock-project',
@@ -280,56 +218,149 @@ describe('triggerCloudBuild', () => {
     assert.strictEqual(setTimeoutMock.mock.callCount(), 1);
     assert.strictEqual(setTimeoutMock.mock.calls[0].arguments[1], 5000);
     const { calls: logCalls } = logAndProgressMock.mock;
-    assert.match(logCalls[0].arguments[0], /Initiating Cloud Build/);
-    assert.match(logCalls[1].arguments[0], /Cloud Build job started/);
-    assert.match(logCalls[2].arguments[0], /Build status: WORKING/);
-    assert.match(logCalls[3].arguments[0], /completed successfully/);
-    assert.match(logCalls[4].arguments[0], /Image built/);
+    assert.match(logCalls[4].arguments[0], /Build status: WORKING/);
+    assert.match(logCalls[5].arguments[0], /completed successfully/);
+  });
+
+  it('should throw an error for a failed build and fetch logs', async () => {
+    getBuildMock = mock.fn(() => Promise.resolve([mockFailureResult]));
+    context.cloudBuildClient.getBuild = getBuildMock;
+
+    const { triggerCloudBuild } = await getTriggerCloudBuild();
+    await assert.rejects(
+      () =>
+        triggerCloudBuild(
+          context,
+          'mock-project',
+          'mock-location',
+          'mock-bucket',
+          'mock-blob',
+          'mock-repo',
+          'gcr.io/mock-project/mock-image',
+          true,
+          () => {}
+        ),
+      (err) => {
+        assert.match(err.message, /Build mock-build-id failed/);
+        assert.match(err.message, /log line 1/);
+        assert.match(err.message, /log line 2/);
+        return true;
+      }
+    );
+
+    assert.strictEqual(getBuildMock.mock.callCount(), 1);
+    assert.strictEqual(getEntriesMock.mock.callCount(), 1);
+    assert.strictEqual(setTimeoutMock.mock.callCount(), 1);
+    assert.strictEqual(setTimeoutMock.mock.calls[0].arguments[1], 10000);
+
+    const { calls: logCalls } = logAndProgressMock.mock;
+    assert.match(logCalls[4].arguments[0], /failed with status: FAILURE/);
+    assert.match(logCalls[5].arguments[0], /Build logs:/);
+    assert.match(logCalls[6].arguments[0], /Attempting to fetch last/);
+    assert.match(logCalls[7].arguments[0], /Successfully fetched snippet/);
+  });
+
+  it('should throw if dry-run creation fails', async () => {
+    createServiceMock = mock.fn(() =>
+      Promise.reject(new Error('Dry run fail'))
+    );
+    context.runClient.createService = createServiceMock;
+    const { triggerCloudBuild } = await getTriggerCloudBuild();
+    await assert.rejects(
+      () =>
+        triggerCloudBuild(
+          context,
+          'mock-project',
+          'mock-location',
+          'mock-bucket',
+          'mock-blob',
+          'mock-repo',
+          'gcr.io/mock-project/mock-image',
+          true,
+          () => {}
+        ),
+      /Dry-run deployment failed: Dry run fail/
+    );
+    assert.strictEqual(submitBuildMock.mock.callCount(), 0);
+  });
+
+  it('should throw if dry-run update fails', async () => {
+    getServiceMock.mock.mockImplementation(() =>
+      Promise.resolve([mockSuccessResult])
+    );
+    updateServiceMock = mock.fn(() =>
+      Promise.reject(new Error('Dry run fail'))
+    );
+    context.runClient.updateService = updateServiceMock;
+    const { triggerCloudBuild } = await getTriggerCloudBuild(true);
+    await assert.rejects(
+      () =>
+        triggerCloudBuild(
+          context,
+          'mock-project',
+          'mock-location',
+          'mock-bucket',
+          'mock-blob',
+          'mock-repo',
+          'gcr.io/mock-project/mock-image',
+          true,
+          () => {}
+        ),
+      /Dry-run deployment failed: Dry run fail/
+    );
+    assert.strictEqual(submitBuildMock.mock.callCount(), 0);
+  });
+
+  it('should throw if getService fails with unexpected error', async () => {
+    getServiceMock.mock.mockImplementation(() =>
+      Promise.reject(new Error('Permission denied'))
+    );
+    const { triggerCloudBuild } = await getTriggerCloudBuild();
+    await assert.rejects(
+      () =>
+        triggerCloudBuild(
+          context,
+          'mock-project',
+          'mock-location',
+          'mock-bucket',
+          'mock-blob',
+          'mock-repo',
+          'gcr.io/mock-project/mock-image',
+          true,
+          () => {}
+        ),
+      /Permission denied/
+    );
+  });
+
+  it('should throw if submitBuild fails', async () => {
+    submitBuildMock = mock.fn(() => Promise.reject(new Error('Submit failed')));
+    context.buildsClient.submitBuild = submitBuildMock;
+    const { triggerCloudBuild } = await getTriggerCloudBuild();
+    await assert.rejects(
+      () =>
+        triggerCloudBuild(
+          context,
+          'mock-project',
+          'mock-location',
+          'mock-bucket',
+          'mock-blob',
+          'mock-repo',
+          'gcr.io/mock-project/mock-image',
+          true,
+          () => {}
+        ),
+      /Submit failed/
+    );
   });
 
   it('should handle failed build when no logs are found', async () => {
-    const mockBuildId = 'mock-build-id-no-logs';
-    const mockFailureResult = {
-      id: mockBuildId,
-      status: 'FAILURE',
-      logUrl: 'http://mock-log-url.com',
-    };
+    getBuildMock = mock.fn(() => Promise.resolve([mockFailureResult]));
+    getEntriesMock = mock.fn(() => Promise.resolve([[]])); // No log entries
+    context.cloudBuildClient.getBuild = getBuildMock;
+    context.loggingClient.getEntries = getEntriesMock;
 
-    const getBuildMock = mock.fn(() => Promise.resolve([mockFailureResult]));
-    const logAndProgressMock = mock.fn();
-
-    const { triggerCloudBuild } = await esmock(
-      '../../../lib/cloud-api/build.js',
-      {
-        '../../../lib/cloud-api/helpers.js': {
-          callWithRetry: (fn) => fn(),
-        },
-        '../../../lib/util/helpers.js': {
-          logAndProgress: logAndProgressMock,
-        },
-      }
-    );
-
-    const context = {
-      cloudBuildClient: {
-        createBuild: mock.fn(() =>
-          Promise.resolve([
-            {
-              metadata: {
-                build: {
-                  id: mockBuildId,
-                },
-              },
-            },
-          ])
-        ),
-        getBuild: getBuildMock,
-      },
-      loggingClient: {
-        getEntries: mock.fn(() => Promise.resolve([[]])), // No log entries
-      },
-    };
-
+    const { triggerCloudBuild } = await getTriggerCloudBuild();
     await assert.rejects(
       () =>
         triggerCloudBuild(
@@ -344,64 +375,26 @@ describe('triggerCloudBuild', () => {
           () => {}
         ),
       (err) => {
-        assert.match(err.message, /Build mock-build-id-no-logs failed/);
-        assert.doesNotMatch(err.message, /Last log lines/);
+        assert.match(err.message, /Build mock-build-id failed/);
+        assert.doesNotMatch(err.message, /Last log lines from build/);
         return true;
       }
     );
 
     const { calls: logCalls } = logAndProgressMock.mock;
-    assert.match(logCalls[0].arguments[0], /Initiating Cloud Build/);
-    assert.match(logCalls[1].arguments[0], /Cloud Build job started/);
-    assert.match(logCalls[2].arguments[0], /failed with status: FAILURE/);
-    assert.match(logCalls[3].arguments[0], /Build logs:/);
-    assert.match(logCalls[4].arguments[0], /Attempting to fetch last/);
-    assert.match(logCalls[5].arguments[0], /No specific log entries retrieved/);
+    assert.match(logCalls[6].arguments[0], /Attempting to fetch last/);
+    assert.match(logCalls[7].arguments[0], /No specific log entries retrieved/);
   });
 
   it('should handle error when fetching logs for a failed build', async () => {
-    const mockBuildId = 'mock-build-id-log-error';
-    const mockFailureResult = {
-      id: mockBuildId,
-      status: 'FAILURE',
-      logUrl: 'http://mock-log-url.com',
-    };
-
-    const getBuildMock = mock.fn(() => Promise.resolve([mockFailureResult]));
-    const logAndProgressMock = mock.fn();
-
-    const { triggerCloudBuild } = await esmock(
-      '../../../lib/cloud-api/build.js',
-      {
-        '../../../lib/cloud-api/helpers.js': {
-          callWithRetry: (fn) => fn(),
-        },
-        '../../../lib/util/helpers.js': {
-          logAndProgress: logAndProgressMock,
-        },
-      }
+    getBuildMock = mock.fn(() => Promise.resolve([mockFailureResult]));
+    getEntriesMock = mock.fn(() =>
+      Promise.reject(new Error('Log fetch error'))
     );
+    context.cloudBuildClient.getBuild = getBuildMock;
+    context.loggingClient.getEntries = getEntriesMock;
 
-    const context = {
-      cloudBuildClient: {
-        createBuild: mock.fn(() =>
-          Promise.resolve([
-            {
-              metadata: {
-                build: {
-                  id: mockBuildId,
-                },
-              },
-            },
-          ])
-        ),
-        getBuild: getBuildMock,
-      },
-      loggingClient: {
-        getEntries: mock.fn(() => Promise.reject(new Error('Log fetch error'))),
-      },
-    };
-
+    const { triggerCloudBuild } = await getTriggerCloudBuild();
     await assert.rejects(
       () =>
         triggerCloudBuild(
@@ -416,20 +409,16 @@ describe('triggerCloudBuild', () => {
           () => {}
         ),
       (err) => {
-        assert.match(err.message, /Build mock-build-id-log-error failed/);
-        assert.doesNotMatch(err.message, /Last log lines/);
+        assert.match(err.message, /Build mock-build-id failed/);
+        assert.doesNotMatch(err.message, /Last log lines from build/);
         return true;
       }
     );
 
     const { calls: logCalls } = logAndProgressMock.mock;
-    assert.match(logCalls[0].arguments[0], /Initiating Cloud Build/);
-    assert.match(logCalls[1].arguments[0], /Cloud Build job started/);
-    assert.match(logCalls[2].arguments[0], /failed with status: FAILURE/);
-    assert.match(logCalls[3].arguments[0], /Build logs:/);
-    assert.match(logCalls[4].arguments[0], /Attempting to fetch last/);
+    assert.match(logCalls[6].arguments[0], /Attempting to fetch last/);
     assert.match(
-      logCalls[5].arguments[0],
+      logCalls[7].arguments[0],
       /Failed to fetch build logs snippet/
     );
   });
