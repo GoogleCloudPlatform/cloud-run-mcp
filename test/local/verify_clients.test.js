@@ -77,7 +77,7 @@ describe('Client Factory Caching', () => {
   test('getBillingClient with explicit projectId caches separately', async () => {
     const projectId = 'billing-project-1';
     const client1 = await getBillingClient(projectId);
-    const client2 = await getBillingClient(projectId); 
+    const client2 = await getBillingClient(projectId);
     const globalClient = await getBillingClient();
 
     assert.strictEqual(client1, client2);
