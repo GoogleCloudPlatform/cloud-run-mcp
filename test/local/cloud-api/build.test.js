@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it, mock, beforeEach, afterEach } from 'node:test';
 import esmock from 'esmock';
+import { getMockCloudBuildClient } from '../mock-clients.js';
 
 describe('triggerCloudBuild', () => {
   const mockBuildId = 'mock-build-id';

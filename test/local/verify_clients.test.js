@@ -8,6 +8,7 @@ import {
   getArtifactRegistryClient,
   getLoggingClient,
   getBillingClient,
+  getProjectsClient,
 } from '../../lib/clients.js';
 
 describe('Client Factory Caching', () => {
@@ -76,10 +77,16 @@ describe('Client Factory Caching', () => {
   test('getBillingClient with explicit projectId caches separately', async () => {
     const projectId = 'billing-project-1';
     const client1 = await getBillingClient(projectId);
-    const client2 = await getBillingClient(projectId);
+    const client2 = await getBillingClient(projectId); 
     const globalClient = await getBillingClient();
 
     assert.strictEqual(client1, client2);
     assert.notStrictEqual(client1, globalClient);
+  });
+
+  test('getProjectsClient caches instances', async () => {
+    const client1 = await getProjectsClient();
+    const client2 = await getProjectsClient();
+    assert.strictEqual(client1, client2);
   });
 });
