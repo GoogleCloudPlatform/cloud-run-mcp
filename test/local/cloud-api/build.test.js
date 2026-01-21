@@ -114,7 +114,7 @@ describe('triggerCloudBuild', () => {
       'mock-repo',
       'gcr.io/mock-project/mock-image',
       true,
-      () => { }
+      () => {}
     );
 
     assert.strictEqual(result, mockSuccessResult);
@@ -144,7 +144,7 @@ describe('triggerCloudBuild', () => {
       'mock-repo',
       'gcr.io/mock-project/mock-image',
       true,
-      () => { }
+      () => {}
     );
 
     assert.strictEqual(checkServiceMock.mock.callCount(), 1);
@@ -166,7 +166,7 @@ describe('triggerCloudBuild', () => {
       'mock-repo',
       'gcr.io/mock-project/mock-image',
       false,
-      () => { }
+      () => {}
     );
 
     assert.deepStrictEqual(result, mockSuccessResult);
@@ -186,7 +186,7 @@ describe('triggerCloudBuild', () => {
       'mock-repo',
       'gcr.io/mock-project/mock-image',
       true, // hasDockerfile = true
-      () => { }
+      () => {}
     );
 
     assert.strictEqual(submitBuildMock.mock.callCount(), 1);
@@ -216,7 +216,7 @@ describe('triggerCloudBuild', () => {
       'mock-repo',
       'gcr.io/mock-project/mock-image',
       true,
-      () => { }
+      () => {}
     );
 
     assert.strictEqual(getBuildMock.mock.callCount(), 2);
@@ -242,7 +242,7 @@ describe('triggerCloudBuild', () => {
           'mock-repo',
           'gcr.io/mock-project/mock-image',
           true,
-          () => { }
+          () => {}
         ),
       (err) => {
         assert.match(err.message, /Build mock-build-id failed/);
@@ -280,7 +280,7 @@ describe('triggerCloudBuild', () => {
           'mock-repo',
           'gcr.io/mock-project/mock-image',
           true,
-          () => { }
+          () => {}
         ),
       /Dry-run deployment failed: Dry run fail/
     );
@@ -304,7 +304,7 @@ describe('triggerCloudBuild', () => {
           'mock-repo',
           'gcr.io/mock-project/mock-image',
           true,
-          () => { }
+          () => {}
         ),
       /Dry-run deployment failed: Dry run fail/
     );
@@ -326,7 +326,7 @@ describe('triggerCloudBuild', () => {
           'mock-repo',
           'gcr.io/mock-project/mock-image',
           true,
-          () => { }
+          () => {}
         ),
       /Permission denied/
     );
@@ -346,7 +346,7 @@ describe('triggerCloudBuild', () => {
           'mock-repo',
           'gcr.io/mock-project/mock-image',
           true,
-          () => { }
+          () => {}
         ),
       /Submit failed/
     );
@@ -369,7 +369,7 @@ describe('triggerCloudBuild', () => {
           'mock-repo',
           'gcr.io/mock-project/mock-image',
           true,
-          () => { }
+          () => {}
         ),
       (err) => {
         assert.match(err.message, /Build mock-build-id failed/);
@@ -402,7 +402,7 @@ describe('triggerCloudBuild', () => {
           'mock-repo',
           'gcr.io/mock-project/mock-image',
           true,
-          () => { }
+          () => {}
         ),
       (err) => {
         assert.match(err.message, /Build mock-build-id failed/);
