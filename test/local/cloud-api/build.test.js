@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it, mock, beforeEach, afterEach } from 'node:test';
 import esmock from 'esmock';
-import { getMockCloudBuildClient } from '../mock-clients.js';
 
 describe('triggerCloudBuild', () => {
   const mockBuildId = 'mock-build-id';
@@ -117,7 +116,7 @@ describe('triggerCloudBuild', () => {
       () => {}
     );
 
-    assert.strictEqual(result, mockSuccessResult);
+    assert.deepStrictEqual(result, mockSuccessResult);
     assert.strictEqual(checkServiceMock.mock.callCount(), 1);
     assert.strictEqual(submitBuildMock.mock.callCount(), 1);
     assert.strictEqual(getBuildMock.mock.callCount(), 1);
