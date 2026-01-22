@@ -36,9 +36,11 @@ describe('triggerCloudBuild', () => {
   let getEntriesMock;
   let context;
   let setTimeoutMock;
+  let checkServiceMock;
 
   beforeEach(() => {
     logAndProgressMock = mock.fn();
+    checkServiceMock = mock.fn(() => Promise.resolve(false));
     getServiceMock = mock.fn(() => Promise.reject({ code: 5 })); // Default: service not found
     createServiceMock = mock.fn(() => Promise.resolve());
     updateServiceMock = mock.fn(() => Promise.resolve());
@@ -89,13 +91,21 @@ describe('triggerCloudBuild', () => {
       '../../../lib/util/helpers.js': {
         logAndProgress: logAndProgressMock,
       },
+      '../../../lib/cloud-api/run.js': {
+        checkCloudRunServiceExists: checkServiceMock,
+      },
+      '../../../lib/clients.js': {
+        getRunClient: () => Promise.resolve(context.runClient),
+        getBuildsClient: () => Promise.resolve(context.buildsClient),
+        getCloudBuildClient: () => Promise.resolve(context.cloudBuildClient),
+        getLoggingClient: () => Promise.resolve(context.loggingClient),
+      },
     });
   }
 
   it('should run successfully and create service when service does not exist', async () => {
     const { triggerCloudBuild } = await getTriggerCloudBuild();
     const result = await triggerCloudBuild(
-      context,
       'mock-project',
       'mock-location',
       'mock-bucket',
@@ -107,7 +117,7 @@ describe('triggerCloudBuild', () => {
     );
 
     assert.deepStrictEqual(result, mockSuccessResult);
-    assert.strictEqual(getServiceMock.mock.callCount(), 1);
+    assert.strictEqual(checkServiceMock.mock.callCount(), 1);
     assert.strictEqual(submitBuildMock.mock.callCount(), 1);
     assert.strictEqual(getBuildMock.mock.callCount(), 1);
     assert.strictEqual(createServiceMock.mock.callCount(), 1); // 1 dry run
@@ -123,12 +133,9 @@ describe('triggerCloudBuild', () => {
   });
 
   it('should run successfully and update service when service exists', async () => {
-    getServiceMock.mock.mockImplementation(() =>
-      Promise.resolve([mockSuccessResult])
-    );
-    const { triggerCloudBuild } = await getTriggerCloudBuild(true);
+    checkServiceMock.mock.mockImplementation(() => Promise.resolve(true));
+    const { triggerCloudBuild } = await getTriggerCloudBuild();
     await triggerCloudBuild(
-      context,
       'mock-project',
       'mock-location',
       'mock-bucket',
@@ -139,7 +146,7 @@ describe('triggerCloudBuild', () => {
       () => {}
     );
 
-    assert.strictEqual(getServiceMock.mock.callCount(), 1);
+    assert.strictEqual(checkServiceMock.mock.callCount(), 1);
     assert.strictEqual(submitBuildMock.mock.callCount(), 1);
     assert.strictEqual(getBuildMock.mock.callCount(), 1);
     assert.strictEqual(createServiceMock.mock.callCount(), 0);
@@ -151,7 +158,6 @@ describe('triggerCloudBuild', () => {
   it('should use buildpacks when no Dockerfile is present', async () => {
     const { triggerCloudBuild } = await getTriggerCloudBuild();
     const result = await triggerCloudBuild(
-      context,
       'mock-project',
       'mock-location',
       'mock-bucket',
@@ -172,7 +178,6 @@ describe('triggerCloudBuild', () => {
   it('should use docker build when Dockerfile is present', async () => {
     const { triggerCloudBuild } = await getTriggerCloudBuild();
     await triggerCloudBuild(
-      context,
       'mock-project',
       'mock-location',
       'mock-bucket',
@@ -203,7 +208,6 @@ describe('triggerCloudBuild', () => {
 
     const { triggerCloudBuild } = await getTriggerCloudBuild();
     await triggerCloudBuild(
-      context,
       'mock-project',
       'mock-location',
       'mock-bucket',
@@ -230,7 +234,6 @@ describe('triggerCloudBuild', () => {
     await assert.rejects(
       () =>
         triggerCloudBuild(
-          context,
           'mock-project',
           'mock-location',
           'mock-bucket',
@@ -269,7 +272,6 @@ describe('triggerCloudBuild', () => {
     await assert.rejects(
       () =>
         triggerCloudBuild(
-          context,
           'mock-project',
           'mock-location',
           'mock-bucket',
@@ -285,18 +287,15 @@ describe('triggerCloudBuild', () => {
   });
 
   it('should throw if dry-run update fails', async () => {
-    getServiceMock.mock.mockImplementation(() =>
-      Promise.resolve([mockSuccessResult])
-    );
+    checkServiceMock.mock.mockImplementation(() => Promise.resolve(true));
     updateServiceMock = mock.fn(() =>
       Promise.reject(new Error('Dry run fail'))
     );
     context.runClient.updateService = updateServiceMock;
-    const { triggerCloudBuild } = await getTriggerCloudBuild(true);
+    const { triggerCloudBuild } = await getTriggerCloudBuild();
     await assert.rejects(
       () =>
         triggerCloudBuild(
-          context,
           'mock-project',
           'mock-location',
           'mock-bucket',
@@ -311,15 +310,14 @@ describe('triggerCloudBuild', () => {
     assert.strictEqual(submitBuildMock.mock.callCount(), 0);
   });
 
-  it('should throw if getService fails with unexpected error', async () => {
-    getServiceMock.mock.mockImplementation(() =>
+  it('should throw if checkCloudRunServiceExists fails with unexpected error', async () => {
+    checkServiceMock.mock.mockImplementation(() =>
       Promise.reject(new Error('Permission denied'))
     );
     const { triggerCloudBuild } = await getTriggerCloudBuild();
     await assert.rejects(
       () =>
         triggerCloudBuild(
-          context,
           'mock-project',
           'mock-location',
           'mock-bucket',
@@ -340,7 +338,6 @@ describe('triggerCloudBuild', () => {
     await assert.rejects(
       () =>
         triggerCloudBuild(
-          context,
           'mock-project',
           'mock-location',
           'mock-bucket',
@@ -364,7 +361,6 @@ describe('triggerCloudBuild', () => {
     await assert.rejects(
       () =>
         triggerCloudBuild(
-          context,
           'mock-project',
           'mock-location',
           'mock-bucket',
@@ -398,7 +394,6 @@ describe('triggerCloudBuild', () => {
     await assert.rejects(
       () =>
         triggerCloudBuild(
-          context,
           'mock-project',
           'mock-location',
           'mock-bucket',
