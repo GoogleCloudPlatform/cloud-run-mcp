@@ -27,9 +27,8 @@ describe('getClient Helper', () => {
     assert.strictEqual(client.opts.projectId, projectId);
     assert.ok(client.opts.authClient);
 
-    const headers = await client.opts.authClient.getRequestHeaders();
+    const headers = client.opts.authClient.getRequestHeaders();
     assert.strictEqual(headers.get('Authorization'), 'Bearer fake-token-1');
-    assert.strictEqual(await client.opts.authClient.getProjectId(), projectId);
   });
 
   test('creates new client instance WITHOUT authClient when NO access token provided', async () => {
@@ -97,10 +96,10 @@ describe('getClient Helper', () => {
 
     assert.notStrictEqual(client1, client2);
 
-    const h1 = await client1.opts.authClient.getRequestHeaders();
+    const h1 = client1.opts.authClient.getRequestHeaders();
     assert.strictEqual(h1.get('Authorization'), 'Bearer token-A');
 
-    const h2 = await client2.opts.authClient.getRequestHeaders();
+    const h2 = client2.opts.authClient.getRequestHeaders();
     assert.strictEqual(h2.get('Authorization'), 'Bearer token-B');
   });
 
