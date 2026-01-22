@@ -4,8 +4,8 @@ import { getClient } from '../../lib/clients.js';
 
 describe('getClient Helper', () => {
   class MockClient {
-    constructor(opts) {
-      this.opts = opts;
+    constructor(options) {
+      this.options = options;
     }
   }
 
@@ -24,10 +24,10 @@ describe('getClient Helper', () => {
     );
 
     assert.ok(client instanceof MockClient);
-    assert.strictEqual(client.opts.projectId, projectId);
-    assert.ok(client.opts.authClient);
+    assert.strictEqual(client.options.projectId, projectId);
+    assert.ok(client.options.authClient);
 
-    const headers = client.opts.authClient.getRequestHeaders();
+    const headers = client.options.authClient.getRequestHeaders();
     assert.strictEqual(headers.get('Authorization'), 'Bearer fake-token-1');
   });
 
@@ -45,8 +45,8 @@ describe('getClient Helper', () => {
     );
 
     assert.ok(client instanceof MockClient);
-    assert.strictEqual(client.opts.projectId, projectId);
-    assert.strictEqual(client.opts.authClient, undefined);
+    assert.strictEqual(client.options.projectId, projectId);
+    assert.strictEqual(client.options.authClient, undefined);
   });
 
   test('caches client instances by key', async () => {
@@ -96,10 +96,10 @@ describe('getClient Helper', () => {
 
     assert.notStrictEqual(client1, client2);
 
-    const h1 = client1.opts.authClient.getRequestHeaders();
+    const h1 = client1.options.authClient.getRequestHeaders();
     assert.strictEqual(h1.get('Authorization'), 'Bearer token-A');
 
-    const h2 = client2.opts.authClient.getRequestHeaders();
+    const h2 = client2.options.authClient.getRequestHeaders();
     assert.strictEqual(h2.get('Authorization'), 'Bearer token-B');
   });
 
@@ -124,8 +124,8 @@ describe('getClient Helper', () => {
     );
 
     assert.notStrictEqual(runClient, storageClient); // Different maps
-    assert.ok(runClient.opts.authClient);
-    assert.ok(storageClient.opts.authClient);
+    assert.ok(runClient.options.authClient);
+    assert.ok(storageClient.options.authClient);
   });
 
   test('passes additional options correctly', async () => {
@@ -141,6 +141,6 @@ describe('getClient Helper', () => {
       null
     );
 
-    assert.strictEqual(client.opts.extraOpt, extraOpt);
+    assert.strictEqual(client.options.extraOpt, extraOpt);
   });
 });
