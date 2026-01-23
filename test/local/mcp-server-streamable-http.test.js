@@ -4,7 +4,7 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'child_process';
 import { waitForString } from './test-utils.js';
-import { SCOPES } from '../../constants.js';
+import { SCOPES, BEARER_METHODS_SUPPORTED, RESPONSE_TYPES_SUPPORTED } from '../../constants.js';
 
 class MCPClient {
   client = null;
@@ -106,7 +106,7 @@ describe('OAuth Endpoints', () => {
         SCOPES.EMAIL,
         SCOPES.CLOUD_PLATFORM,
       ],
-      bearer_methods_supported: [...SCOPES.BEARER_METHODS_SUPPORTED],
+      bearer_methods_supported: [...BEARER_METHODS_SUPPORTED],
     });
   });
 
@@ -124,7 +124,7 @@ describe('OAuth Endpoints', () => {
         SCOPES.EMAIL,
         SCOPES.CLOUD_PLATFORM,
       ],
-      response_types_supported: [...SCOPES.RESPONSE_TYPES_SUPPORTED],
+      response_types_supported: [...RESPONSE_TYPES_SUPPORTED],
     });
   });
 });

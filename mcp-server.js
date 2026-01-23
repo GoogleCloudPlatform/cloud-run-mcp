@@ -29,7 +29,7 @@ import { registerPrompts } from './prompts.js';
 import { checkGCP } from './lib/cloud-api/metadata.js';
 import { ensureGCPCredentials } from './lib/cloud-api/auth.js';
 import '@dotenvx/dotenvx/config';
-import { SCOPES } from './constants.js';
+import { SCOPES, BEARER_METHODS_SUPPORTED, RESPONSE_TYPES_SUPPORTED } from './constants.js';
 
 const gcpInfo = await checkGCP();
 let gcpCredentialsAvailable = false;
@@ -133,7 +133,7 @@ const getOAuthProtectedResource = (req, res) => {
         SCOPES.CLOUD_PLATFORM
       ],
       bearer_methods_supported: [
-        ...SCOPES.BEARER_METHODS_SUPPORTED
+        ...BEARER_METHODS_SUPPORTED
       ]
     }
   );
@@ -153,7 +153,7 @@ const getOAuthAuthorizationServer = (req, res) => {
         SCOPES.CLOUD_PLATFORM
       ],
       response_types_supported: [
-        ...SCOPES.RESPONSE_TYPES_SUPPORTED
+        ...RESPONSE_TYPES_SUPPORTED
       ]
     }
   );
