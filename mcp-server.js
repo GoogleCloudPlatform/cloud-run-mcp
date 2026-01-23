@@ -28,7 +28,8 @@ import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { registerPrompts } from './prompts.js';
 import { checkGCP } from './lib/cloud-api/metadata.js';
 import { ensureGCPCredentials } from './lib/cloud-api/auth.js';
-import 'dotenv/config';
+import '@dotenvx/dotenvx/config';
+import { SCOPES } from './constants.js';
 
 const gcpInfo = await checkGCP();
 let gcpCredentialsAvailable = false;
@@ -118,6 +119,47 @@ async function getServer() {
   return server;
 }
 
+const getOAuthProtectedResource = (req, res) => {
+  console.log('Call to well-known/oauth-protected-resource received');
+  res.json(
+    {
+      resource: process.env.OAUTH_PROTECTED_RESOURCE,
+      authorization_servers: [
+        process.env.OAUTH_AUTHORIZATION_SERVER
+      ],
+      scopes_supported: [
+        SCOPES.OPENID,
+        SCOPES.EMAIL,
+        SCOPES.CLOUD_PLATFORM
+      ],
+      bearer_methods_supported: [
+        ...SCOPES.BEARER_METHODS_SUPPORTED
+      ]
+    }
+  );
+  res.status(200).send();
+}
+
+const getOAuthAuthorizationServer = (req, res) => {
+  console.log('Call to well-known/oauth-authorization-server received');
+  res.json(
+    {
+      issuer: process.env.OAUTH_PROTECTED_RESOURCE,
+      authorization_endpoint: process.env.OAUTH_AUTHORIZATION_ENDPOINT,
+      token_endpoint: process.env.OAUTH_TOKEN_ENDPOINT,
+      scopes_supported: [
+        SCOPES.OPENID,
+        SCOPES.EMAIL,
+        SCOPES.CLOUD_PLATFORM
+      ],
+      response_types_supported: [
+        ...SCOPES.RESPONSE_TYPES_SUPPORTED
+      ]
+    }
+  );
+  res.status(200).send();
+}
+
 // stdio
 if (shouldStartStdio()) {
   gcpCredentialsAvailable = await ensureGCPCredentials();
@@ -140,6 +182,10 @@ if (shouldStartStdio()) {
         'Consider enabling host validation by passing env variable ENABLE_HOST_VALIDATION=true and adding the ALLOWED_HOSTS to restrict allowed hosts'
     );
   }
+
+  app.get('/.well-known/oauth-protected-resource', getOAuthProtectedResource);
+
+  app.get('/.well-known/oauth-authorization-server', getOAuthAuthorizationServer);
 
   app.post('/mcp', async (req, res) => {
     console.log('/mcp Received:', req.body);
