@@ -29,7 +29,11 @@ import { registerPrompts } from './prompts.js';
 import { checkGCP } from './lib/cloud-api/metadata.js';
 import { ensureGCPCredentials } from './lib/cloud-api/auth.js';
 import '@dotenvx/dotenvx/config';
-import { SCOPES, BEARER_METHODS_SUPPORTED, RESPONSE_TYPES_SUPPORTED } from './constants.js';
+import {
+  SCOPES,
+  BEARER_METHODS_SUPPORTED,
+  RESPONSE_TYPES_SUPPORTED,
+} from './constants.js';
 
 const gcpInfo = await checkGCP();
 let gcpCredentialsAvailable = false;
@@ -121,44 +125,26 @@ async function getServer() {
 
 const getOAuthProtectedResource = (req, res) => {
   console.log('Call to well-known/oauth-protected-resource received');
-  res.json(
-    {
-      resource: process.env.OAUTH_PROTECTED_RESOURCE,
-      authorization_servers: [
-        process.env.OAUTH_AUTHORIZATION_SERVER
-      ],
-      scopes_supported: [
-        SCOPES.OPENID,
-        SCOPES.EMAIL,
-        SCOPES.CLOUD_PLATFORM
-      ],
-      bearer_methods_supported: [
-        ...BEARER_METHODS_SUPPORTED
-      ]
-    }
-  );
+  res.json({
+    resource: process.env.OAUTH_PROTECTED_RESOURCE,
+    authorization_servers: [process.env.OAUTH_AUTHORIZATION_SERVER],
+    scopes_supported: [SCOPES.OPENID, SCOPES.EMAIL, SCOPES.CLOUD_PLATFORM],
+    bearer_methods_supported: [...BEARER_METHODS_SUPPORTED],
+  });
   res.status(200).send();
-}
+};
 
 const getOAuthAuthorizationServer = (req, res) => {
   console.log('Call to well-known/oauth-authorization-server received');
-  res.json(
-    {
-      issuer: process.env.OAUTH_PROTECTED_RESOURCE,
-      authorization_endpoint: process.env.OAUTH_AUTHORIZATION_ENDPOINT,
-      token_endpoint: process.env.OAUTH_TOKEN_ENDPOINT,
-      scopes_supported: [
-        SCOPES.OPENID,
-        SCOPES.EMAIL,
-        SCOPES.CLOUD_PLATFORM
-      ],
-      response_types_supported: [
-        ...RESPONSE_TYPES_SUPPORTED
-      ]
-    }
-  );
+  res.json({
+    issuer: process.env.OAUTH_PROTECTED_RESOURCE,
+    authorization_endpoint: process.env.OAUTH_AUTHORIZATION_ENDPOINT,
+    token_endpoint: process.env.OAUTH_TOKEN_ENDPOINT,
+    scopes_supported: [SCOPES.OPENID, SCOPES.EMAIL, SCOPES.CLOUD_PLATFORM],
+    response_types_supported: [...RESPONSE_TYPES_SUPPORTED],
+  });
   res.status(200).send();
-}
+};
 
 // stdio
 if (shouldStartStdio()) {
@@ -185,7 +171,10 @@ if (shouldStartStdio()) {
 
   app.get('/.well-known/oauth-protected-resource', getOAuthProtectedResource);
 
-  app.get('/.well-known/oauth-authorization-server', getOAuthAuthorizationServer);
+  app.get(
+    '/.well-known/oauth-authorization-server',
+    getOAuthAuthorizationServer
+  );
 
   app.post('/mcp', async (req, res) => {
     console.log('/mcp Received:', req.body);

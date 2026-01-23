@@ -4,7 +4,11 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'child_process';
 import { waitForString } from './test-utils.js';
-import { SCOPES, BEARER_METHODS_SUPPORTED, RESPONSE_TYPES_SUPPORTED } from '../../constants.js';
+import {
+  SCOPES,
+  BEARER_METHODS_SUPPORTED,
+  RESPONSE_TYPES_SUPPORTED,
+} from '../../constants.js';
 
 class MCPClient {
   client = null;
@@ -82,7 +86,7 @@ describe('OAuth Endpoints', () => {
         OAUTH_AUTHORIZATION_SERVER: oauthAuthorizationServer,
         OAUTH_AUTHORIZATION_ENDPOINT: oauthAuthorizationEndpoint,
         OAUTH_TOKEN_ENDPOINT: oauthTokenEndpoint,
-      }
+      },
     });
     stdout = await waitForString(serverProcess.stdout, httpMsg);
   });
@@ -94,24 +98,24 @@ describe('OAuth Endpoints', () => {
   });
 
   test('should return correct OAuth protected resource configuration', async () => {
-    const response = await fetch('http://localhost:3001/.well-known/oauth-protected-resource');
+    const response = await fetch(
+      'http://localhost:3001/.well-known/oauth-protected-resource'
+    );
     assert.equal(response.status, 200);
     const data = await response.json();
 
     assert.deepStrictEqual(data, {
       resource: oauthProtectedResource,
       authorization_servers: [oauthAuthorizationServer],
-      scopes_supported: [
-        SCOPES.OPENID,
-        SCOPES.EMAIL,
-        SCOPES.CLOUD_PLATFORM,
-      ],
+      scopes_supported: [SCOPES.OPENID, SCOPES.EMAIL, SCOPES.CLOUD_PLATFORM],
       bearer_methods_supported: [...BEARER_METHODS_SUPPORTED],
     });
   });
 
   test('should return correct OAuth authorization server configuration', async () => {
-    const response = await fetch('http://localhost:3001/.well-known/oauth-authorization-server');
+    const response = await fetch(
+      'http://localhost:3001/.well-known/oauth-authorization-server'
+    );
     assert.equal(response.status, 200);
     const data = await response.json();
 
@@ -119,11 +123,7 @@ describe('OAuth Endpoints', () => {
       issuer: oauthProtectedResource,
       authorization_endpoint: oauthAuthorizationEndpoint,
       token_endpoint: oauthTokenEndpoint,
-      scopes_supported: [
-        SCOPES.OPENID,
-        SCOPES.EMAIL,
-        SCOPES.CLOUD_PLATFORM,
-      ],
+      scopes_supported: [SCOPES.OPENID, SCOPES.EMAIL, SCOPES.CLOUD_PLATFORM],
       response_types_supported: [...RESPONSE_TYPES_SUPPORTED],
     });
   });
