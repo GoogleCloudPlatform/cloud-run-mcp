@@ -271,7 +271,7 @@ function registerGetServiceLogTool(server, options) {
     'get_service_log',
     {
       description:
-        'Gets Logs and Error Messages for a specific Cloud Run service.',
+        'Gets Logs and Error Messages for a specific Cloud Run service. Supports optional filtering by severity, time range, and text content.',
       inputSchema: {
         project: z
           .string()
@@ -285,13 +285,47 @@ function registerGetServiceLogTool(server, options) {
           .string()
           .describe('Name of the Cloud Run service')
           .default(options.defaultServiceName),
+        severity: z
+          .enum(['DEFAULT', 'DEBUG', 'INFO', 'NOTICE', 'WARNING', 'ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'])
+          .optional()
+          .describe('Minimum log severity level to fetch (default: DEFAULT). Use ERROR or WARNING to reduce results.'),
+        freshnessMinutes: z
+          .number()
+          .positive()
+          .optional()
+          .describe('Only fetch logs from the last N minutes (e.g., 5 for last 5 minutes). Recommended to reduce API quota usage.'),
+        textFilter: z
+          .string()
+          .optional()
+          .describe('Filter logs containing this text (case-sensitive regex match on textPayload).'),
+        limit: z
+          .number()
+          .positive()
+          .max(1000)
+          .optional()
+          .describe('Maximum number of log entries per page (default: 100, max: 1000).'),
+        maxPages: z
+          .number()
+          .positive()
+          .optional()
+          .describe('Maximum number of pages to fetch. If not specified, fetches all available pages. Each page is one API request.'),
       },
     },
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({ project, region, service }) => {
+      async ({ project, region, service, severity, freshnessMinutes, textFilter, limit, maxPages }) => {
         let allLogs = [];
         let requestOptions;
+        let pageCount = 0;
+
+        // Build filter options
+        const filterOptions = {
+          severity: severity || 'DEFAULT',
+          freshnessMinutes: freshnessMinutes,
+          textFilter: textFilter,
+          pageSize: limit || 100,
+        };
+
         try {
           do {
             // Fetch a page of logs
@@ -299,17 +333,25 @@ function registerGetServiceLogTool(server, options) {
               project,
               region,
               service,
-              requestOptions
+              requestOptions,
+              filterOptions
             );
 
             if (response.logs) {
               allLogs.push(response.logs);
             }
 
-            // Set the requestOptions incl pagintion token for the next iteration
+            pageCount++;
 
+            // Set the requestOptions incl pagination token for the next iteration
             requestOptions = response.requestOptions;
+
+            // Stop if we've reached the maximum number of pages (if specified)
+            if (maxPages && pageCount >= maxPages) {
+              break;
+            }
           } while (requestOptions); // Continue as long as there is a next page token
+
           return {
             content: [
               {
