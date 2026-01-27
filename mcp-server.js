@@ -144,7 +144,7 @@ const getOAuthAuthorizationServer = (req, res) => {
   res.status(200).send();
 };
 
-// stdio
+// stdio mode
 if (shouldStartStdio()) {
   gcpCredentialsAvailable = await ensureGCPCredentials();
   const stdioTransport = new StdioServerTransport();
