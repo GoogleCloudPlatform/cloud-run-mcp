@@ -37,7 +37,6 @@ import {
   RESPONSE_TYPES_SUPPORTED,
 } from './constants.js';
 
-
 const gcpInfo = await checkGCP();
 let gcpCredentialsAvailable = false;
 
@@ -159,7 +158,8 @@ if (shouldStartStdio()) {
 } else {
   // non-stdio mode
   console.log('Stdio transport mode is turned off.');
-  gcpCredentialsAvailable = await ensureGCPCredentials() || process.env.OAUTH_ENABLED === 'true';
+  gcpCredentialsAvailable =
+    (await ensureGCPCredentials()) || process.env.OAUTH_ENABLED === 'true';
 
   const app = enableHostValidation
     ? createMcpExpressApp({ allowedHosts })
@@ -181,7 +181,9 @@ if (shouldStartStdio()) {
 
   app.post('/mcp', oauthMiddleware, async (req, res) => {
     console.log('/mcp Received:', req.body);
-    const accessToken = req.headers.authorization ? req.headers.authorization.split(' ')[1] : undefined;
+    const accessToken = req.headers.authorization
+      ? req.headers.authorization.split(' ')[1]
+      : undefined;
     const server = await getServer(accessToken);
     try {
       const transport = new StreamableHTTPServerTransport({
@@ -243,7 +245,9 @@ if (shouldStartStdio()) {
   // Legacy SSE endpoint for older clients
   app.get('/sse', async (req, res) => {
     console.log('/sse Received:', req.body);
-    const accessToken = req.headers.authorization ? req.headers.authorization.split(' ')[1] : undefined;
+    const accessToken = req.headers.authorization
+      ? req.headers.authorization.split(' ')[1]
+      : undefined;
     const server = await getServer(accessToken);
     // Create SSE transport for legacy clients
     const transport = new SSEServerTransport('/messages', res);

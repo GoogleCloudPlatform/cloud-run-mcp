@@ -113,7 +113,11 @@ function registerCreateProjectTool(server, options) {
         };
       }
       try {
-        const result = await createProjectAndAttachBilling(projectId, undefined, options.accessToken);
+        const result = await createProjectAndAttachBilling(
+          projectId,
+          undefined,
+          options.accessToken
+        );
         return {
           content: [
             {
@@ -230,7 +234,12 @@ function registerGetServiceTool(server, options) {
           };
         }
         try {
-          const serviceDetails = await getService(project, region, service, options.accessToken);
+          const serviceDetails = await getService(
+            project,
+            region,
+            service,
+            options.accessToken
+          );
           if (serviceDetails) {
             return {
               content: [

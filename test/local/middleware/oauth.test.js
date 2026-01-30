@@ -30,7 +30,10 @@ describe('oauthMiddleware', () => {
 
   it('should call next() if OAUTH_ENABLED is not "true"', async () => {
     process.env.OAUTH_ENABLED = 'false';
-    const { oauthMiddleware } = await esmock('../../../lib/middleware/oauth.js', {});
+    const { oauthMiddleware } = await esmock(
+      '../../../lib/middleware/oauth.js',
+      {}
+    );
 
     await oauthMiddleware(req, res, next);
 
@@ -41,10 +44,13 @@ describe('oauthMiddleware', () => {
   it('should call next() if method is not tools/call', async () => {
     process.env.OAUTH_ENABLED = 'true';
     req.body.method = 'other/method';
-    
+
     // We don't verify token if it's not a tool call (based on current implementation)
     // So we don't need to mock successful verification here
-    const { oauthMiddleware } = await esmock('../../../lib/middleware/oauth.js', {});
+    const { oauthMiddleware } = await esmock(
+      '../../../lib/middleware/oauth.js',
+      {}
+    );
 
     await oauthMiddleware(req, res, next);
 
@@ -54,8 +60,11 @@ describe('oauthMiddleware', () => {
   it('should return 401 if Authorization header is missing for tool call', async () => {
     process.env.OAUTH_ENABLED = 'true';
     req.body.method = 'tools/call';
-    
-    const { oauthMiddleware } = await esmock('../../../lib/middleware/oauth.js', {});
+
+    const { oauthMiddleware } = await esmock(
+      '../../../lib/middleware/oauth.js',
+      {}
+    );
 
     await oauthMiddleware(req, res, next);
 
@@ -75,11 +84,14 @@ describe('oauthMiddleware', () => {
       getTokenInfo: mockGetTokenInfo,
     }));
 
-    const { oauthMiddleware } = await esmock('../../../lib/middleware/oauth.js', {
-      '../../../lib/clients.js': {
-        getOAuthClient: mockGetOAuthClient,
-      },
-    });
+    const { oauthMiddleware } = await esmock(
+      '../../../lib/middleware/oauth.js',
+      {
+        '../../../lib/clients.js': {
+          getOAuthClient: mockGetOAuthClient,
+        },
+      }
+    );
 
     await oauthMiddleware(req, res, next);
 
@@ -94,14 +106,19 @@ describe('oauthMiddleware', () => {
     req.headers.authorization = 'Bearer invalid-token';
 
     const mockGetOAuthClient = mock.fn(async () => ({
-      getTokenInfo: async () => { throw new Error('Invalid token'); },
+      getTokenInfo: async () => {
+        throw new Error('Invalid token');
+      },
     }));
 
-    const { oauthMiddleware } = await esmock('../../../lib/middleware/oauth.js', {
-      '../../../lib/clients.js': {
-        getOAuthClient: mockGetOAuthClient,
-      },
-    });
+    const { oauthMiddleware } = await esmock(
+      '../../../lib/middleware/oauth.js',
+      {
+        '../../../lib/clients.js': {
+          getOAuthClient: mockGetOAuthClient,
+        },
+      }
+    );
 
     await oauthMiddleware(req, res, next);
 
@@ -121,11 +138,14 @@ describe('oauthMiddleware', () => {
       getTokenInfo: mockGetTokenInfo,
     }));
 
-    const { oauthMiddleware } = await esmock('../../../lib/middleware/oauth.js', {
-      '../../../lib/clients.js': {
-        getOAuthClient: mockGetOAuthClient,
-      },
-    });
+    const { oauthMiddleware } = await esmock(
+      '../../../lib/middleware/oauth.js',
+      {
+        '../../../lib/clients.js': {
+          getOAuthClient: mockGetOAuthClient,
+        },
+      }
+    );
 
     await oauthMiddleware(req, res, next);
 

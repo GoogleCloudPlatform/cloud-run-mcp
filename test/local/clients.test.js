@@ -134,8 +134,12 @@ describe('getClient Helper', () => {
     const runHeaders = await runClient.options.authClient.getRequestHeaders();
     assert.ok(runHeaders instanceof Map, 'Run client headers should be a Map');
 
-    const storageHeaders = await storageClient.options.authClient.getRequestHeaders();
-    assert.ok(!(storageHeaders instanceof Map), 'Storage client headers should NOT be a Map');
+    const storageHeaders =
+      await storageClient.options.authClient.getRequestHeaders();
+    assert.ok(
+      !(storageHeaders instanceof Map),
+      'Storage client headers should NOT be a Map'
+    );
     assert.strictEqual(storageHeaders.Authorization, `Bearer ${accessToken}`);
 
     const loggingClient = await getClient(
@@ -145,8 +149,12 @@ describe('getClient Helper', () => {
       { projectId },
       accessToken
     );
-    const loggingHeaders = await loggingClient.options.authClient.getRequestHeaders();
-    assert.ok(!(loggingHeaders instanceof Map), 'Logging client headers should NOT be a Map');
+    const loggingHeaders =
+      await loggingClient.options.authClient.getRequestHeaders();
+    assert.ok(
+      !(loggingHeaders instanceof Map),
+      'Logging client headers should NOT be a Map'
+    );
     assert.strictEqual(loggingHeaders.Authorization, `Bearer ${accessToken}`);
   });
 
