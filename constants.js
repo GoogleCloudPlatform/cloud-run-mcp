@@ -5,3 +5,4 @@ export const SCOPES = {
 };
 export const BEARER_METHODS_SUPPORTED = ['header'];
 export const RESPONSE_TYPES_SUPPORTED = ['code'];
+export const GCLOUD_AUTH = 'gcloud_auth';

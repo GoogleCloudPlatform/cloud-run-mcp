@@ -27,7 +27,9 @@ describe('getClient Helper', () => {
     assert.strictEqual(client.options.projectId, projectId);
     assert.ok(client.options.authClient);
 
-    const headers = client.options.authClient.getRequestHeaders();
+    const headers = await client.options.authClient.getRequestHeaders();
+    // 'run' is a gRPC service, so it should be wrapped to return a Map
+    assert.ok(headers instanceof Map);
     assert.strictEqual(headers.get('Authorization'), 'Bearer fake-token-1');
   });
 
@@ -96,10 +98,12 @@ describe('getClient Helper', () => {
 
     assert.notStrictEqual(client1, client2);
 
-    const h1 = client1.options.authClient.getRequestHeaders();
+    const h1 = await client1.options.authClient.getRequestHeaders();
+    assert.ok(h1 instanceof Map);
     assert.strictEqual(h1.get('Authorization'), 'Bearer token-A');
 
-    const h2 = client2.options.authClient.getRequestHeaders();
+    const h2 = await client2.options.authClient.getRequestHeaders();
+    assert.ok(h2 instanceof Map);
     assert.strictEqual(h2.get('Authorization'), 'Bearer token-B');
   });
 
@@ -126,6 +130,24 @@ describe('getClient Helper', () => {
     assert.notStrictEqual(runClient, storageClient); // Different maps
     assert.ok(runClient.options.authClient);
     assert.ok(storageClient.options.authClient);
+
+    const runHeaders = await runClient.options.authClient.getRequestHeaders();
+    assert.ok(runHeaders instanceof Map, 'Run client headers should be a Map');
+
+    const storageHeaders = await storageClient.options.authClient.getRequestHeaders();
+    assert.ok(!(storageHeaders instanceof Map), 'Storage client headers should NOT be a Map');
+    assert.strictEqual(storageHeaders.Authorization, `Bearer ${accessToken}`);
+
+    const loggingClient = await getClient(
+      'logging',
+      projectId + accessToken,
+      async () => MockClient,
+      { projectId },
+      accessToken
+    );
+    const loggingHeaders = await loggingClient.options.authClient.getRequestHeaders();
+    assert.ok(!(loggingHeaders instanceof Map), 'Logging client headers should NOT be a Map');
+    assert.strictEqual(loggingHeaders.Authorization, `Bearer ${accessToken}`);
   });
 
   test('passes additional options correctly', async () => {

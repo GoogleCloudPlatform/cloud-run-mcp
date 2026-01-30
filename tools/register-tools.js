@@ -41,7 +41,7 @@ function gcpTool(gcpCredentialsAvailable, fn) {
       content: [
         {
           type: 'text',
-          text: 'GCP credentials are not available. Please configure your environment.',
+          text: 'GCP credentials are not available. Please configure your environment using OAuth or `gcloud auth`.',
         },
       ],
     });
@@ -59,7 +59,7 @@ function registerListProjectsTool(server, options) {
     },
     gcpTool(options.gcpCredentialsAvailable, async () => {
       try {
-        const projects = await listProjects();
+        const projects = await listProjects(options.accessToken);
         return {
           content: [
             {
@@ -113,7 +113,7 @@ function registerCreateProjectTool(server, options) {
         };
       }
       try {
-        const result = await createProjectAndAttachBilling(projectId);
+        const result = await createProjectAndAttachBilling(projectId, undefined, options.accessToken);
         return {
           content: [
             {
@@ -161,7 +161,7 @@ function registerListServicesTool(server, options) {
         };
       }
       try {
-        const allServices = await listServices(project);
+        const allServices = await listServices(project, options.accessToken);
         const content = [];
         for (const region of Object.keys(allServices)) {
           const serviceList = allServices[region];
@@ -230,7 +230,7 @@ function registerGetServiceTool(server, options) {
           };
         }
         try {
-          const serviceDetails = await getService(project, region, service);
+          const serviceDetails = await getService(project, region, service, options.accessToken);
           if (serviceDetails) {
             return {
               content: [
@@ -299,6 +299,7 @@ function registerGetServiceLogTool(server, options) {
               project,
               region,
               service,
+              options.accessToken,
               requestOptions
             );
 
@@ -394,6 +395,7 @@ function registerDeployLocalFolderTool(server, options) {
             region: region,
             files: [folderPath],
             skipIamCheck: options.skipIamCheck, // Pass the new flag
+            accessToken: options.accessToken,
             progressCallback,
           });
           return {
@@ -495,6 +497,7 @@ function registerDeployFileContentsTool(server, options) {
             region: region,
             files: files,
             skipIamCheck: options.skipIamCheck, // Pass the new flag
+            accessToken: options.accessToken,
             progressCallback,
           });
           return {
@@ -575,6 +578,7 @@ function registerDeployContainerImageTool(server, options) {
             region: region,
             imageUrl: imageUrl,
             skipIamCheck: options.skipIamCheck,
+            accessToken: options.accessToken,
             progressCallback,
           });
           return {

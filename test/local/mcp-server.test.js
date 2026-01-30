@@ -11,6 +11,7 @@ describe('MCP Server in stdio mode', () => {
     transport = new StdioClientTransport({
       command: 'node',
       args: ['mcp-server.js'],
+      env: { ...process.env, GCP_STDIO: 'true' },
     });
     client = new Client({
       name: 'test-client',

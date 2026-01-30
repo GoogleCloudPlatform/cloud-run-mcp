@@ -42,7 +42,7 @@ describe('registerTools', () => {
         {},
         {
           '../../lib/cloud-api/projects.js': {
-            listProjects: () =>
+            listProjects: (token) =>
               Promise.resolve([{ id: 'project1' }, { id: 'project2' }]),
           },
         }
@@ -433,7 +433,7 @@ describe('registerTools', () => {
           content: [
             {
               type: 'text',
-              text: 'GCP credentials are not available. Please configure your environment.',
+              text: 'GCP credentials are not available. Please configure your environment using OAuth or `gcloud auth`.',
             },
           ],
         });

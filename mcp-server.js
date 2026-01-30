@@ -28,12 +28,15 @@ import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { registerPrompts } from './prompts.js';
 import { checkGCP } from './lib/cloud-api/metadata.js';
 import { ensureGCPCredentials } from './lib/cloud-api/auth.js';
+import { oauthMiddleware } from './lib/middleware/oauth.js';
 import '@dotenvx/dotenvx/config';
 import {
   SCOPES,
+  GCLOUD_AUTH,
   BEARER_METHODS_SUPPORTED,
   RESPONSE_TYPES_SUPPORTED,
 } from './constants.js';
+
 
 const gcpInfo = await checkGCP();
 let gcpCredentialsAvailable = false;
@@ -68,7 +71,7 @@ const allowedHosts = process.env.ALLOWED_HOSTS
   ? process.env.ALLOWED_HOSTS.split(',')
   : undefined;
 
-async function getServer() {
+async function getServer(accessToken) {
   // Create an MCP server with implementation details
   const server = new McpServer(
     {
@@ -102,6 +105,7 @@ async function getServer() {
       defaultServiceName,
       skipIamCheck,
       gcpCredentialsAvailable,
+      accessToken,
     });
   } else {
     console.log(
@@ -114,6 +118,7 @@ async function getServer() {
       defaultServiceName,
       skipIamCheck,
       gcpCredentialsAvailable,
+      accessToken,
     });
   }
 
@@ -148,13 +153,13 @@ const getOAuthAuthorizationServer = (req, res) => {
 if (shouldStartStdio()) {
   gcpCredentialsAvailable = await ensureGCPCredentials();
   const stdioTransport = new StdioServerTransport();
-  const server = await getServer();
+  const server = await getServer(GCLOUD_AUTH);
   await server.connect(stdioTransport);
   console.log('Cloud Run MCP server stdio transport connected');
 } else {
   // non-stdio mode
   console.log('Stdio transport mode is turned off.');
-  gcpCredentialsAvailable = await ensureGCPCredentials();
+  gcpCredentialsAvailable = await ensureGCPCredentials() || process.env.OAUTH_ENABLED === 'true';
 
   const app = enableHostValidation
     ? createMcpExpressApp({ allowedHosts })
@@ -174,9 +179,10 @@ if (shouldStartStdio()) {
     getOAuthAuthorizationServer
   );
 
-  app.post('/mcp', async (req, res) => {
+  app.post('/mcp', oauthMiddleware, async (req, res) => {
     console.log('/mcp Received:', req.body);
-    const server = await getServer();
+    const accessToken = req.headers.authorization ? req.headers.authorization.split(' ')[1] : undefined;
+    const server = await getServer(accessToken);
     try {
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,
@@ -237,7 +243,8 @@ if (shouldStartStdio()) {
   // Legacy SSE endpoint for older clients
   app.get('/sse', async (req, res) => {
     console.log('/sse Received:', req.body);
-    const server = await getServer();
+    const accessToken = req.headers.authorization ? req.headers.authorization.split(' ')[1] : undefined;
+    const server = await getServer(accessToken);
     // Create SSE transport for legacy clients
     const transport = new SSEServerTransport('/messages', res);
     sseTransports[transport.sessionId] = transport;
