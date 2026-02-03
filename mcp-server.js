@@ -28,6 +28,7 @@ import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { registerPrompts } from './prompts.js';
 import { checkGCP } from './lib/cloud-api/metadata.js';
 import { ensureGCPCredentials } from './lib/cloud-api/auth.js';
+import { extractAccessToken } from './lib/util/helpers.js';
 import { oauthMiddleware } from './lib/middleware/oauth.js';
 import '@dotenvx/dotenvx/config';
 import {
@@ -70,7 +71,7 @@ const allowedHosts = process.env.ALLOWED_HOSTS
   ? process.env.ALLOWED_HOSTS.split(',')
   : undefined;
 
-async function getServer(accessToken) {
+async function getServer(accessToken = GCLOUD_AUTH) {
   // Create an MCP server with implementation details
   const server = new McpServer(
     {
@@ -152,14 +153,14 @@ const getOAuthAuthorizationServer = (req, res) => {
 if (shouldStartStdio()) {
   gcpCredentialsAvailable = await ensureGCPCredentials();
   const stdioTransport = new StdioServerTransport();
-  const server = await getServer(GCLOUD_AUTH);
+  const server = await getServer();
   await server.connect(stdioTransport);
   console.log('Cloud Run MCP server stdio transport connected');
 } else {
   // non-stdio mode
   console.log('Stdio transport mode is turned off.');
   gcpCredentialsAvailable =
-    (await ensureGCPCredentials()) || process.env.OAUTH_ENABLED === 'true';
+    process.env.OAUTH_ENABLED === 'true' || (await ensureGCPCredentials());
 
   const app = enableHostValidation
     ? createMcpExpressApp({ allowedHosts })
@@ -181,9 +182,7 @@ if (shouldStartStdio()) {
 
   app.post('/mcp', oauthMiddleware, async (req, res) => {
     console.log('/mcp Received:', req.body);
-    const accessToken = req.headers.authorization
-      ? req.headers.authorization.split(' ')[1]
-      : undefined;
+    const accessToken = extractAccessToken(req.headers.authorization);
     const server = await getServer(accessToken);
     try {
       const transport = new StreamableHTTPServerTransport({
@@ -245,9 +244,7 @@ if (shouldStartStdio()) {
   // Legacy SSE endpoint for older clients
   app.get('/sse', async (req, res) => {
     console.log('/sse Received:', req.body);
-    const accessToken = req.headers.authorization
-      ? req.headers.authorization.split(' ')[1]
-      : undefined;
+    const accessToken = extractAccessToken(req.headers.authorization);
     const server = await getServer(accessToken);
     // Create SSE transport for legacy clients
     const transport = new SSEServerTransport('/messages', res);
