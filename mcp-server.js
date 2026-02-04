@@ -31,13 +31,15 @@ import { ensureGCPCredentials } from './lib/cloud-api/auth.js';
 import { extractAccessToken } from './lib/util/helpers.js';
 import { oauthMiddleware } from './lib/middleware/oauth.js';
 import { config } from '@dotenvx/dotenvx';
-config({ quiet: true, ignore: ['MISSING_ENV_FILE'] });
 import {
   SCOPES,
   GCLOUD_AUTH,
   BEARER_METHODS_SUPPORTED,
   RESPONSE_TYPES_SUPPORTED,
 } from './constants.js';
+
+//Suppress the warning related to missing .env file in case of non-OAuth mode
+config({ quiet: true, ignore: ['MISSING_ENV_FILE'] });
 
 const gcpInfo = await checkGCP();
 let gcpCredentialsAvailable = false;
