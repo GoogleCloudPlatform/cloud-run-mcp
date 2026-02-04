@@ -30,7 +30,8 @@ import { checkGCP } from './lib/cloud-api/metadata.js';
 import { ensureGCPCredentials } from './lib/cloud-api/auth.js';
 import { extractAccessToken } from './lib/util/helpers.js';
 import { oauthMiddleware } from './lib/middleware/oauth.js';
-import '@dotenvx/dotenvx/config';
+import { config } from '@dotenvx/dotenvx';
+config({ quiet: true, ignore: ['MISSING_ENV_FILE'] });
 import {
   SCOPES,
   GCLOUD_AUTH,
