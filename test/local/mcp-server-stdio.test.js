@@ -13,7 +13,6 @@ describe('MCP Server stdio startup', () => {
       stderr = '';
       serverProcess = spawn('node', ['mcp-server.js'], {
         cwd: process.cwd(),
-        env: { ...process.env, GCP_STDIO: 'true' },
       });
       stderr = await waitForString(serverProcess.stderr, stdioMsg);
     });
