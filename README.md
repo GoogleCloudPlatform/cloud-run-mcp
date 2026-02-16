@@ -235,4 +235,42 @@ With this option, you will only be able to deploy code to the same Google Cloud 
       }
    ```
 
+## Using MCP Server with OAuth
+
+Cloud Run MCP server supports OAuth as an authentication mechanism. In order to use OAuth, create the OAuth client, and configure a `.env` file with the appropriate values pertaining to your OAuth client. A `.env.example` is provided for reference.
+
+The Cloud Run MCP server works seamlessly with Google Cloud SDK OAuth client. In order to leverage the Google Cloud SDK OAuth client, you can use the `.env.gcloud-sdk-oauth` file as your `.env` file as follows:
+
+```bash
+cp .env.gcloud-sdk-oauth .env
+node mcp-server.js
+```
+
+### Configure MCP Server on Gemini CLI to use OAuth
+
+When the Cloud Run MCP server is started in the OAuth mode, the MCP client should also be configured to use OAuth. You can setup the MCP server in OAuth mode in the Gemini CLI by using the following JSON in the `~/.gemini/settings.json` file:
+
+```json
+{
+  "mcpServers": {
+    "cloud-run": {
+      "httpUrl": "http://localhost:3000/mcp",
+      "oauth": {
+        "enabled": true,
+        "clientId": "<OAUTH_CLIENT_ID>",
+        "clientSecret": "<OAUTH_CLIENT_SECRET>"
+      }
+    }
+  }
+}
+```
+
+Post the configuration changes as shown above, start the Gemini CLI. You should authenticate the Cloud Run MCP server using the following prompt in the Gemini CLI:
+
+```
+/mcp auth cloud-run
+```
+
+This will take you to the authentication page on your browser, wherein you need to sign in using the appropriate gmail id, and accept the terms and conditions. Once the authentication is succcessful, you can come back to the Gemini CLI, and the Cloud Run MCP server will be ready to use.
+
 The Google Cloud Platform Terms of Service (available at https://cloud.google.com/terms/) and the Data Processing and Security Terms (available at https://cloud.google.com/terms/data-processing-terms) do not apply to any component of the Cloud Run MCP Server software.
