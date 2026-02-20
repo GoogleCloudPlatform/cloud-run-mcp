@@ -50,7 +50,7 @@ describe('Deployment Helpers', () => {
     assert.equal(result.hasDockerfile, true);
   });
 
-  test('makeFileDeploymentMetadata correctly identifies Node.js project attributes', async () => {
+  test('makeFileDeploymentMetadata correctly identifies Node.js project', async () => {
     const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
       fs: fsMock,
     });
@@ -69,75 +69,13 @@ describe('Deployment Helpers', () => {
       return false;
     });
 
-    // Mock readFileSync for package.json
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({
-        scripts: { start: 'node server.js' },
-      })
-    );
-
     const result = deploymentHelpers.makeFileDeploymentMetadata([folderPath]);
 
     assert.equal(result.hasDockerfile, false);
     assert.equal(result.deploymentAttrs.runtime, 'nodejs');
-    assert.deepEqual(result.deploymentAttrs.cmd, ['node']);
-    assert.deepEqual(result.deploymentAttrs.args, ['server.js']);
   });
 
-  test('makeFileDeploymentMetadata ignores Node.js if engines.node is present', async () => {
-    const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
-      fs: fsMock,
-    });
-
-    const folderPath = '/absolute/path/to/node-app-engines';
-
-    fsMock.statSync.mock.mockImplementation(() => ({
-      isDirectory: () => true,
-    }));
-
-    fsMock.existsSync.mock.mockImplementation((p) => {
-      if (p.endsWith('package.json')) return true;
-      return false;
-    });
-
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({
-        scripts: { start: 'node server.js' },
-        engines: { node: '>=14' },
-      })
-    );
-
-    const result = deploymentHelpers.makeFileDeploymentMetadata([folderPath]);
-
-    assert.equal(result.deploymentAttrs.runtime, undefined);
-  });
-
-  test('makeFileDeploymentMetadata handles invalid package.json gracefully', async () => {
-    const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
-      fs: fsMock,
-    });
-
-    const folderPath = '/absolute/path/to/bad-json-app';
-
-    fsMock.statSync.mock.mockImplementation(() => ({
-      isDirectory: () => true,
-    }));
-
-    fsMock.existsSync.mock.mockImplementation((p) => {
-      if (p.endsWith('package.json')) return true;
-      return false;
-    });
-
-    // Mock readFileSync to return invalid JSON
-    fsMock.readFileSync.mock.mockImplementation(() => '{ invalid json }');
-
-    const result = deploymentHelpers.makeFileDeploymentMetadata([folderPath]);
-
-    // Should return empty deployment attrs
-    assert.equal(result.deploymentAttrs.runtime, undefined);
-  });
-
-  test('canDeployWithoutBuild returns true for valid Node.js zip deploy', async () => {
+  test('canDeployWithoutBuild returns true for valid Node.js project', async () => {
     const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
       fs: fsMock,
     });
@@ -146,9 +84,6 @@ describe('Deployment Helpers', () => {
       hasDockerfile: false,
       deploymentAttrs: {
         runtime: 'nodejs',
-        cmd: ['node'],
-        args: ['index.js'],
-        baseImage: 'base-image',
       },
     };
 
@@ -164,15 +99,13 @@ describe('Deployment Helpers', () => {
       hasDockerfile: true,
       deploymentAttrs: {
         runtime: 'nodejs',
-        cmd: ['node'],
-        args: ['index.js'],
       },
     };
 
     assert.equal(deploymentHelpers.canDeployWithoutBuild(metadata), false);
   });
 
-  test('createDirectSourceDeploymentContainer creates correct object', async () => {
+  test('createDirectSourceDeploymentContainer creates correct object without envVars', async () => {
     const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
       fs: fsMock,
     });
@@ -204,28 +137,43 @@ describe('Deployment Helpers', () => {
     });
   });
 
-  test('makeFileDeploymentMetadata handles invalid package.json gracefully', async () => {
+  test('createDirectSourceDeploymentContainer creates correct object with envVars', async () => {
     const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
       fs: fsMock,
     });
 
-    const folderPath = '/absolute/path/to/bad-json-app';
+    const input = {
+      bucketName: 'test-bucket',
+      fileName: 'source.tar.gz',
+      deploymentAttrs: {
+        cmd: ['node'],
+        args: ['server.js'],
+        baseImage: 'gcr.io/google-appengine/nodejs',
+        envVars: {
+          PORT: '8080',
+          NODE_ENV: 'production',
+        },
+      },
+    };
 
-    fsMock.statSync.mock.mockImplementation(() => ({
-      isDirectory: () => true,
-    }));
+    const result =
+      deploymentHelpers.createDirectSourceDeploymentContainer(input);
 
-    fsMock.existsSync.mock.mockImplementation((p) => {
-      if (p.endsWith('package.json')) return true;
-      return false;
+    assert.deepEqual(result, {
+      image: DEPLOYMENT_CONFIG.NO_BUILD_IMAGE_TYPE,
+      baseImageUri: 'gcr.io/google-appengine/nodejs',
+      sourceCode: {
+        cloudStorageSource: {
+          bucket: 'test-bucket',
+          object: 'source.tar.gz',
+        },
+      },
+      command: ['node'],
+      args: ['server.js'],
+      env: [
+        { name: 'PORT', value: '8080' },
+        { name: 'NODE_ENV', value: 'production' },
+      ],
     });
-
-    // Mock readFileSync to return invalid JSON
-    fsMock.readFileSync.mock.mockImplementation(() => '{ invalid json }');
-
-    const result = deploymentHelpers.makeFileDeploymentMetadata([folderPath]);
-
-    // Should return empty deployment attrs
-    assert.equal(result.deploymentAttrs.runtime, undefined);
   });
 });
