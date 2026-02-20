@@ -26,6 +26,11 @@ describe('Universal Maker', () => {
     chmodSync: mock.fn(),
     readFileSync: mock.fn(),
     rmSync: mock.fn(),
+    unlinkSync: mock.fn(),
+  };
+
+  const cryptoMock = {
+    createHash: mock.fn(),
   };
 
   const childProcessMock = {
@@ -42,12 +47,26 @@ describe('Universal Maker', () => {
   };
 
   test('runUniversalMaker skips download if binary exists and runs successfully', async () => {
+    fsMock.existsSync.mock.resetCalls();
+    fsMock.readFileSync.mock.resetCalls();
+    childProcessMock.exec.mock.resetCalls();
+
     const um = await esmock('../../lib/deployment/universal-maker.js', {
       fs: fsMock,
       child_process: childProcessMock,
       os: osMock,
+      crypto: cryptoMock,
       '../../lib/util/helpers.js': helpersMock,
     });
+
+    const localContent = 'local content';
+    const sha256 = '8db9f600450531c34988770b0cc88f28fa699134'; // Dummy hex
+
+    cryptoMock.createHash.mock.mockImplementation(() => ({
+      update: mock.fn().mockImplementation(() => ({
+        digest: mock.fn().mockImplementation(() => sha256),
+      })),
+    }));
 
     // Mock binary exists
     fsMock.existsSync.mock.mockImplementation((p) => {
@@ -56,20 +75,36 @@ describe('Universal Maker', () => {
       return false;
     });
 
-    // Mock exec for binary execution
-    childProcessMock.exec.mock.mockImplementation((cmd, cb) => {
-      cb(null, { stdout: '', stderr: '' });
+    fsMock.readFileSync.mock.mockImplementation((p) => {
+      if (p.includes('universal_maker')) return localContent;
+      if (p.includes('build_output.json')) {
+        return JSON.stringify({
+          command: 'node',
+          args: ['index.js'],
+          runtime: 'nodejs20',
+          envVars: { DEBUG: 'true' },
+        });
+      }
+      return '';
     });
 
-    // Mock build_output.json content
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({
-        command: 'node',
-        args: ['index.js'],
-        runtime: 'nodejs20',
-        envVars: { DEBUG: 'true' },
-      })
-    );
+    // Mock exec for metadata AND binary execution
+    childProcessMock.exec.mock.mockImplementation((cmd, cb) => {
+      if (cmd.includes('curl') && !cmd.includes('-o')) {
+        // Metadata call
+        const metadata = {
+          hashes: [
+            {
+              type: 'SHA256',
+              value: Buffer.from(sha256, 'hex').toString('base64'),
+            },
+          ],
+        };
+        cb(null, { stdout: JSON.stringify(metadata), stderr: '' });
+      } else {
+        cb(null, { stdout: '', stderr: '' });
+      }
+    });
 
     const result = await um.runUniversalMaker('/app/dir', mock.fn());
 
@@ -86,10 +121,15 @@ describe('Universal Maker', () => {
   });
 
   test('runUniversalMaker downloads binary if missing', async () => {
+    fsMock.existsSync.mock.resetCalls();
+    fsMock.readFileSync.mock.resetCalls();
+    childProcessMock.exec.mock.resetCalls();
+
     const um = await esmock('../../lib/deployment/universal-maker.js', {
       fs: fsMock,
       child_process: childProcessMock,
       os: osMock,
+      crypto: cryptoMock,
       '../../lib/util/helpers.js': helpersMock,
     });
 
@@ -137,6 +177,7 @@ describe('Universal Maker', () => {
         fs: fsMock,
         child_process: childProcessMock,
         os: osMock,
+        crypto: cryptoMock,
         '../../lib/util/helpers.js': helpersMock,
       });
 
