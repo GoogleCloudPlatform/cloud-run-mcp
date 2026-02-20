@@ -75,7 +75,6 @@ describe('Source Processor', () => {
     assert.ok(cpCall, 'Should call cp -R for directories');
   });
 
-
   test('cleanupTempDirectory removes directory', async () => {
     const fsMock = {
       existsSync: mock.fn(() => true),
