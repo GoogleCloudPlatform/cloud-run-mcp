@@ -11,7 +11,7 @@
     {
       "name": "Project ID",
       "description": "GCP Project ID",
-      "envVar": "GOOGLE_CLOUD_PROJECT" 
+      "envVar": "GOOGLE_CLOUD_PROJECT"
     },
     {
       "name": "Region",
