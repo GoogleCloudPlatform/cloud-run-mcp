@@ -15,7 +15,7 @@
     },
     {
       "name": "Region",
-      "description": "The Google Cloud region where Cloud Run services will be managed.",
+      "description": "Google Cloud region where Cloud Run services will be managed.",
       "envVar": "GOOGLE_CLOUD_REGION"
     }
   ],
