@@ -10,7 +10,7 @@
   "settings": [
     {
       "name": "Project ID",
-      "description": "The Google Cloud project ID to use for Cloud Run operations.",
+      "description": "Google Cloud project ID to use for Cloud Run operations.",
       "envVar": "GOOGLE_CLOUD_PROJECT"
     },
     {
