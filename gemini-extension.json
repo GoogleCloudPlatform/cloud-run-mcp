@@ -10,12 +10,12 @@
   "settings": [
     {
       "name": "Project ID",
-      "description": "GCP Project ID",
+      "description": "The Google Cloud project ID to use for Cloud Run operations.",
       "envVar": "GOOGLE_CLOUD_PROJECT"
     },
     {
       "name": "Region",
-      "description": "GCP Region",
+      "description": "The Google Cloud region where Cloud Run services will be managed.",
       "envVar": "GOOGLE_CLOUD_REGION"
     }
   ],
