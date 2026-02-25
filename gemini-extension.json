@@ -7,5 +7,17 @@
       "args": ["-y", "@google-cloud/cloud-run-mcp"]
     }
   },
+  "settings": [
+    {
+      "name": "Project ID",
+      "description": "GCP Project ID",
+      "envVar": "GOOGLE_CLOUD_PROJECT" 
+    },
+    {
+      "name": "Region",
+      "description": "GCP Region",
+      "envVar": "GOOGLE_CLOUD_REGION"
+    }
+  ],
   "contextFileName": "gemini-extension/GEMINI.md"
 }
