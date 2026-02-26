@@ -56,7 +56,8 @@ describe('Universal Maker', () => {
     childProcessMock.exec.mock.resetCalls();
 
     const localContent = 'local content';
-    const sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+    const sha256 =
+      'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
 
     cryptoMock.createHash.mock.mockImplementation(() => ({
       update: mock.fn(() => ({
@@ -86,12 +87,24 @@ describe('Universal Maker', () => {
 
     // Mock Artifact Registry client
     const artifactRegistryClientMock = {
-      filePath: mock.fn((p, l, r, f) => `projects/${p}/locations/${l}/repositories/${r}/files/${f}`),
-      getFile: mock.fn(() => [{
-        hashes: [{ type: 'SHA256', value: Buffer.from(sha256, 'hex').toString('base64') }]
-      }]),
+      filePath: mock.fn(
+        (p, l, r, f) =>
+          `projects/${p}/locations/${l}/repositories/${r}/files/${f}`
+      ),
+      getFile: mock.fn(() => [
+        {
+          hashes: [
+            {
+              type: 'SHA256',
+              value: Buffer.from(sha256, 'hex').toString('base64'),
+            },
+          ],
+        },
+      ]),
     };
-    clientsMock.getArtifactRegistryClient.mock.mockImplementation(() => artifactRegistryClientMock);
+    clientsMock.getArtifactRegistryClient.mock.mockImplementation(
+      () => artifactRegistryClientMock
+    );
 
     const um = await esmock('../../lib/deployment/universal-maker.js', {
       fs: fsMock,
@@ -108,7 +121,11 @@ describe('Universal Maker', () => {
     });
 
     // runUniversalMaker(appDir, accessToken, progressCallback)
-    const result = await um.runUniversalMaker('/app/dir', 'fake-token', mock.fn());
+    const result = await um.runUniversalMaker(
+      '/app/dir',
+      'fake-token',
+      mock.fn()
+    );
 
     assert.ok(result);
     assert.equal(result.command, 'node');
@@ -138,7 +155,10 @@ describe('Universal Maker', () => {
 
     // Mock Artifact Registry client for download
     const artifactRegistryClientMock = {
-      filePath: mock.fn((p, l, r, f) => `projects/${p}/locations/${l}/repositories/${r}/files/${f}`),
+      filePath: mock.fn(
+        (p, l, r, f) =>
+          `projects/${p}/locations/${l}/repositories/${r}/files/${f}`
+      ),
       getFile: mock.fn(() => [{ hashes: [] }]), // trigger download
       auth: {
         request: mock.fn(() => {
@@ -148,13 +168,15 @@ describe('Universal Maker', () => {
               pipe: (dest) => {
                 setTimeout(() => dest.emit('finish'), 10);
                 return dest;
-              }
-            }
+              },
+            },
           };
         }),
       },
     };
-    clientsMock.getArtifactRegistryClient.mock.mockImplementation(() => artifactRegistryClientMock);
+    clientsMock.getArtifactRegistryClient.mock.mockImplementation(
+      () => artifactRegistryClientMock
+    );
 
     const writeStreamMock = {
       on: mock.fn(function (event, cb) {
@@ -164,7 +186,7 @@ describe('Universal Maker', () => {
       emit: mock.fn(function (event) {
         if (event === 'finish' && this.finishCb) this.finishCb();
       }),
-      pipeFrom: mock.fn()
+      pipeFrom: mock.fn(),
     };
     fsMock.createWriteStream = mock.fn(() => writeStreamMock);
 
@@ -187,7 +209,11 @@ describe('Universal Maker', () => {
     });
 
     // runUniversalMaker(appDir, accessToken, progressCallback)
-    const result = await um.runUniversalMaker('/app/dir', 'fake-token', mock.fn());
+    const result = await um.runUniversalMaker(
+      '/app/dir',
+      'fake-token',
+      mock.fn()
+    );
 
     assert.ok(result);
     assert.equal(result.command, 'npm');
@@ -209,7 +235,11 @@ describe('Universal Maker', () => {
         '../../lib/clients.js': clientsMock,
       });
 
-      const result = await um.runUniversalMaker('/app/dir', 'fake-token', mock.fn());
+      const result = await um.runUniversalMaker(
+        '/app/dir',
+        'fake-token',
+        mock.fn()
+      );
       assert.equal(result, null);
     } finally {
       Object.defineProperty(process, 'platform', { value: originalPlatform });
