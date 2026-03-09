@@ -173,7 +173,9 @@ describe('Deployment workflows', () => {
 
   test('Scenario-7: Starting deployment of pyproject-based Python app with file-based content... uses source build deploy', async () => {
     const mainPyContent = await fs.readFile(
-      path.resolve('example-sources-to-deploy/python/pyproject-project/main.py'),
+      path.resolve(
+        'example-sources-to-deploy/python/pyproject-project/main.py'
+      ),
       'utf-8'
     );
     const pyprojectContent = await fs.readFile(
