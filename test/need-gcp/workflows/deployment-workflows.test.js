@@ -93,11 +93,6 @@ describe('Deployment workflows', () => {
     console.log('Scenario-3: Deployment completed.');
   });
 
-  after(async () => {
-    // Clean up: delete the project created for tests
-    cleanupProject(projectId);
-  });
-
   test('Scenario-4: Starting deployment of pip-based Python app with folder path... uses zip deploy', async () => {
     const configPipProject = {
       projectId: projectId,
@@ -117,11 +112,6 @@ describe('Deployment workflows', () => {
       'Deployment completed successfully with zip deploy'
     );
     console.log('Scenario-4: Deployment completed.');
-  });
-
-  after(async () => {
-    // Clean up: delete the project created for tests
-    cleanupProject(projectId);
   });
 
   test('Scenario-5: Starting deployment of pip-based Python app with file-based content... uses source build deploy', async () => {
@@ -144,6 +134,7 @@ describe('Deployment workflows', () => {
         { filename: 'requirements.txt', content: requirementsTxtContent },
       ],
     };
+    let successMessage = '';
     configPipProject.progressCallback = (p) => {
       if (
         p.data === 'Deployment completed successfully with source build deploy'
@@ -157,11 +148,6 @@ describe('Deployment workflows', () => {
       'Deployment completed successfully with source build deploy'
     );
     console.log('Scenario-5: Deployment completed.');
-  });
-
-  after(async () => {
-    // Clean up: delete the project created for tests
-    cleanupProject(projectId);
   });
 
   test('Scenario-6: Starting deployment of pyproject-based Python app with folder path... uses zip deploy', async () => {
@@ -182,22 +168,17 @@ describe('Deployment workflows', () => {
       successMessage,
       'Deployment completed successfully with zip deploy'
     );
-    console.log('Scenario-4: Deployment completed.');
-  });
-
-  after(async () => {
-    // Clean up: delete the project created for tests
-    cleanupProject(projectId);
+    console.log('Scenario-6: Deployment completed.');
   });
 
   test('Scenario-7: Starting deployment of pyproject-based Python app with file-based content... uses source build deploy', async () => {
     const mainPyContent = await fs.readFile(
-      path.resolve('example-sources-to-deploy/python/pip-project/main.py'),
+      path.resolve('example-sources-to-deploy/python/pyproject-project/main.py'),
       'utf-8'
     );
     const pyprojectContent = await fs.readFile(
       path.resolve(
-        'example-sources-to-deploy/python/pip-project/pyproject.toml'
+        'example-sources-to-deploy/python/pyproject-project/pyproject.toml'
       ),
       'utf-8'
     );
@@ -210,6 +191,7 @@ describe('Deployment workflows', () => {
         { filename: 'pyproject.toml', content: pyprojectContent },
       ],
     };
+    let successMessage = '';
     configPipProject.progressCallback = (p) => {
       if (
         p.data === 'Deployment completed successfully with source build deploy'
