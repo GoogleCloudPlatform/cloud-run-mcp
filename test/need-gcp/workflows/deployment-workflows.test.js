@@ -151,19 +151,19 @@ describe('Deployment workflows', () => {
   });
 
   test('Scenario-6: Starting deployment of pyproject-based Python app with folder path... uses zip deploy', async () => {
-    const configPipProject = {
+    const configPyprojectProject = {
       projectId: projectId,
       serviceName: 'example-pyproject-project-folder-path',
       region: 'us-central1',
       files: ['example-sources-to-deploy/python/pyproject-project'],
     };
     let successMessage = '';
-    configPipProject.progressCallback = (p) => {
+    configPyprojectProject.progressCallback = (p) => {
       if (p.data === 'Deployment completed successfully with zip deploy') {
         successMessage = p.data;
       }
     };
-    await deploy(configPipProject);
+    await deploy(configPyprojectProject);
     assert.strictEqual(
       successMessage,
       'Deployment completed successfully with zip deploy'
@@ -184,7 +184,7 @@ describe('Deployment workflows', () => {
       ),
       'utf-8'
     );
-    const configPipProject = {
+    const configPyprojectProject = {
       projectId: projectId,
       serviceName: 'example-pyproject-project-file-content',
       region: 'us-central1',
@@ -194,14 +194,14 @@ describe('Deployment workflows', () => {
       ],
     };
     let successMessage = '';
-    configPipProject.progressCallback = (p) => {
+    configPyprojectProject.progressCallback = (p) => {
       if (
         p.data === 'Deployment completed successfully with source build deploy'
       ) {
         successMessage = p.data;
       }
     };
-    await deploy(configPipProject);
+    await deploy(configPyprojectProject);
     assert.strictEqual(
       successMessage,
       'Deployment completed successfully with source build deploy'
