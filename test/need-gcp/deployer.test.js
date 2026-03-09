@@ -51,7 +51,7 @@ describe('Cloud Run Deployments', () => {
     const config = {
       serviceName: 'hello-from-image',
       region: 'europe-west1',
-      files: ['example-sources-to-deploy/main.go'],
+      files: ['example-sources-to-deploy/golang/main.go'],
     };
     await assert.rejects(deploy(config), {
       message: 'Error: projectId is required in the configuration object.',

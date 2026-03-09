@@ -73,11 +73,11 @@ describe('Deployment workflows', () => {
 
   test('Scenario-3: Starting deployment of Go app with file content...', async () => {
     const mainGoContent = await fs.readFile(
-      path.resolve('example-sources-to-deploy/main.go'),
+      path.resolve('example-sources-to-deploy/golang/main.go'),
       'utf-8'
     );
     const goModContent = await fs.readFile(
-      path.resolve('example-sources-to-deploy/go.mod'),
+      path.resolve('example-sources-to-deploy/golang/go.mod'),
       'utf-8'
     );
     const configGoWithContent = {
@@ -91,6 +91,122 @@ describe('Deployment workflows', () => {
     };
     await deploy(configGoWithContent);
     console.log('Scenario-3: Deployment completed.');
+  });
+
+  test('Scenario-4: Starting deployment of pip-based Python app with folder path... uses zip deploy', async () => {
+    const configPipProject = {
+      projectId: projectId,
+      serviceName: 'example-pip-project-folder-path',
+      region: 'us-central1',
+      files: ['example-sources-to-deploy/python/pip-project'],
+    };
+    let successMessage = '';
+    configPipProject.progressCallback = (p) => {
+      if (p.data === 'Deployment completed successfully with zip deploy') {
+        successMessage = p.data;
+      }
+    };
+    await deploy(configPipProject);
+    assert.strictEqual(
+      successMessage,
+      'Deployment completed successfully with zip deploy'
+    );
+    console.log('Scenario-4: Deployment completed.');
+  });
+
+  test('Scenario-5: Starting deployment of pip-based Python app with file-based content... uses source build deploy', async () => {
+    const mainPyContent = await fs.readFile(
+      path.resolve('example-sources-to-deploy/python/pip-project/main.py'),
+      'utf-8'
+    );
+    const requirementsTxtContent = await fs.readFile(
+      path.resolve(
+        'example-sources-to-deploy/python/pip-project/requirements.txt'
+      ),
+      'utf-8'
+    );
+    const configPipProject = {
+      projectId: projectId,
+      serviceName: 'example-pip-project-file-content',
+      region: 'us-central1',
+      files: [
+        { filename: 'main.py', content: mainPyContent },
+        { filename: 'requirements.txt', content: requirementsTxtContent },
+      ],
+    };
+    let successMessage = '';
+    configPipProject.progressCallback = (p) => {
+      if (
+        p.data === 'Deployment completed successfully with source build deploy'
+      ) {
+        successMessage = p.data;
+      }
+    };
+    await deploy(configPipProject);
+    assert.strictEqual(
+      successMessage,
+      'Deployment completed successfully with source build deploy'
+    );
+    console.log('Scenario-5: Deployment completed.');
+  });
+
+  test('Scenario-6: Starting deployment of pyproject-based Python app with folder path... uses zip deploy', async () => {
+    const configPyprojectProject = {
+      projectId: projectId,
+      serviceName: 'example-pyproject-project-folder-path',
+      region: 'us-central1',
+      files: ['example-sources-to-deploy/python/pyproject-project'],
+    };
+    let successMessage = '';
+    configPyprojectProject.progressCallback = (p) => {
+      if (p.data === 'Deployment completed successfully with zip deploy') {
+        successMessage = p.data;
+      }
+    };
+    await deploy(configPyprojectProject);
+    assert.strictEqual(
+      successMessage,
+      'Deployment completed successfully with zip deploy'
+    );
+    console.log('Scenario-6: Deployment completed.');
+  });
+
+  test('Scenario-7: Starting deployment of pyproject-based Python app with file-based content... uses source build deploy', async () => {
+    const mainPyContent = await fs.readFile(
+      path.resolve(
+        'example-sources-to-deploy/python/pyproject-project/main.py'
+      ),
+      'utf-8'
+    );
+    const pyprojectContent = await fs.readFile(
+      path.resolve(
+        'example-sources-to-deploy/python/pyproject-project/pyproject.toml'
+      ),
+      'utf-8'
+    );
+    const configPyprojectProject = {
+      projectId: projectId,
+      serviceName: 'example-pyproject-project-file-content',
+      region: 'us-central1',
+      files: [
+        { filename: 'main.py', content: mainPyContent },
+        { filename: 'pyproject.toml', content: pyprojectContent },
+      ],
+    };
+    let successMessage = '';
+    configPyprojectProject.progressCallback = (p) => {
+      if (
+        p.data === 'Deployment completed successfully with source build deploy'
+      ) {
+        successMessage = p.data;
+      }
+    };
+    await deploy(configPyprojectProject);
+    assert.strictEqual(
+      successMessage,
+      'Deployment completed successfully with source build deploy'
+    );
+    console.log('Scenario-7: Deployment completed.');
   });
 
   after(async () => {
