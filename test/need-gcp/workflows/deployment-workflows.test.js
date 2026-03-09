@@ -112,7 +112,10 @@ describe('Deployment workflows', () => {
       }
     };
     await deploy(configPipProject);
-    assert.strictEqual(successMessage, 'Deployment completed successfully with zip deploy');
+    assert.strictEqual(
+      successMessage,
+      'Deployment completed successfully with zip deploy'
+    );
     console.log('Scenario-4: Deployment completed.');
   });
 
@@ -127,7 +130,9 @@ describe('Deployment workflows', () => {
       'utf-8'
     );
     const requirementsTxtContent = await fs.readFile(
-      path.resolve('example-sources-to-deploy/python/pip-project/requirements.txt'),
+      path.resolve(
+        'example-sources-to-deploy/python/pip-project/requirements.txt'
+      ),
       'utf-8'
     );
     const configPipProject = {
@@ -140,12 +145,17 @@ describe('Deployment workflows', () => {
       ],
     };
     configPipProject.progressCallback = (p) => {
-      if (p.data === 'Deployment completed successfully with source build deploy') {
+      if (
+        p.data === 'Deployment completed successfully with source build deploy'
+      ) {
         successMessage = p.data;
       }
     };
     await deploy(configPipProject);
-    assert.strictEqual(successMessage, 'Deployment completed successfully with source build deploy');
+    assert.strictEqual(
+      successMessage,
+      'Deployment completed successfully with source build deploy'
+    );
     console.log('Scenario-5: Deployment completed.');
   });
 
@@ -168,7 +178,10 @@ describe('Deployment workflows', () => {
       }
     };
     await deploy(configPipProject);
-    assert.strictEqual(successMessage, 'Deployment completed successfully with zip deploy');
+    assert.strictEqual(
+      successMessage,
+      'Deployment completed successfully with zip deploy'
+    );
     console.log('Scenario-4: Deployment completed.');
   });
 
@@ -183,7 +196,9 @@ describe('Deployment workflows', () => {
       'utf-8'
     );
     const pyprojectContent = await fs.readFile(
-      path.resolve('example-sources-to-deploy/python/pip-project/pyproject.toml'),
+      path.resolve(
+        'example-sources-to-deploy/python/pip-project/pyproject.toml'
+      ),
       'utf-8'
     );
     const configPipProject = {
@@ -196,12 +211,17 @@ describe('Deployment workflows', () => {
       ],
     };
     configPipProject.progressCallback = (p) => {
-      if (p.data === 'Deployment completed successfully with source build deploy') {
+      if (
+        p.data === 'Deployment completed successfully with source build deploy'
+      ) {
         successMessage = p.data;
       }
     };
     await deploy(configPipProject);
-    assert.strictEqual(successMessage, 'Deployment completed successfully with source build deploy');
+    assert.strictEqual(
+      successMessage,
+      'Deployment completed successfully with source build deploy'
+    );
     console.log('Scenario-7: Deployment completed.');
   });
 
