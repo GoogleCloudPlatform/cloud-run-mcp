@@ -26,6 +26,23 @@ import {
   setupProject,
 } from '../test-helpers.js';
 
+const GCP_REGION = 'us-central1';
+const ZIP_DEPLOY_SUCCESS_MESSAGE =
+  'Deployment completed successfully with zip deploy';
+const SOURCE_BUILD_DEPLOY_SUCCESS_MESSAGE =
+  'Deployment completed successfully with source build deploy';
+
+async function assertDeploymentSuccess(config, expectedMessage) {
+  let successMessage = '';
+  config.progressCallback = (p) => {
+    if (p.data === expectedMessage) {
+      successMessage = p.data;
+    }
+  };
+  await deploy(config);
+  assert.strictEqual(successMessage, expectedMessage);
+}
+
 describe('Deployment workflows', () => {
   let projectId;
 
@@ -43,7 +60,7 @@ describe('Deployment workflows', () => {
     const configImageDeploy = {
       projectId: projectId,
       serviceName: 'hello-scenario',
-      region: 'us-central1',
+      region: GCP_REGION,
       imageUrl: 'gcr.io/cloudrun/hello',
     };
     await deployImage(configImageDeploy);
@@ -55,7 +72,7 @@ describe('Deployment workflows', () => {
     const configFailingBuild = {
       projectId: projectId,
       serviceName: 'example-failing-app',
-      region: 'us-central1',
+      region: GCP_REGION,
       files: [
         {
           filename: 'main.txt',
@@ -83,13 +100,16 @@ describe('Deployment workflows', () => {
     const configGoWithContent = {
       projectId: projectId,
       serviceName: 'example-go-app-content',
-      region: 'us-central1',
+      region: GCP_REGION,
       files: [
         { filename: 'main.go', content: mainGoContent },
         { filename: 'go.mod', content: goModContent },
       ],
     };
-    await deploy(configGoWithContent);
+    await assertDeploymentSuccess(
+      configGoWithContent,
+      SOURCE_BUILD_DEPLOY_SUCCESS_MESSAGE
+    );
     console.log('Scenario-3: Deployment completed.');
   });
 
@@ -97,20 +117,10 @@ describe('Deployment workflows', () => {
     const configPipProject = {
       projectId: projectId,
       serviceName: 'example-pip-project-folder-path',
-      region: 'us-central1',
+      region: GCP_REGION,
       files: ['example-sources-to-deploy/python/pip-project'],
     };
-    let successMessage = '';
-    configPipProject.progressCallback = (p) => {
-      if (p.data === 'Deployment completed successfully with zip deploy') {
-        successMessage = p.data;
-      }
-    };
-    await deploy(configPipProject);
-    assert.strictEqual(
-      successMessage,
-      'Deployment completed successfully with zip deploy'
-    );
+    await assertDeploymentSuccess(configPipProject, ZIP_DEPLOY_SUCCESS_MESSAGE);
     console.log('Scenario-4: Deployment completed.');
   });
 
@@ -128,24 +138,15 @@ describe('Deployment workflows', () => {
     const configPipProject = {
       projectId: projectId,
       serviceName: 'example-pip-project-file-content',
-      region: 'us-central1',
+      region: GCP_REGION,
       files: [
         { filename: 'main.py', content: mainPyContent },
         { filename: 'requirements.txt', content: requirementsTxtContent },
       ],
     };
-    let successMessage = '';
-    configPipProject.progressCallback = (p) => {
-      if (
-        p.data === 'Deployment completed successfully with source build deploy'
-      ) {
-        successMessage = p.data;
-      }
-    };
-    await deploy(configPipProject);
-    assert.strictEqual(
-      successMessage,
-      'Deployment completed successfully with source build deploy'
+    await assertDeploymentSuccess(
+      configPipProject,
+      SOURCE_BUILD_DEPLOY_SUCCESS_MESSAGE
     );
     console.log('Scenario-5: Deployment completed.');
   });
@@ -154,19 +155,12 @@ describe('Deployment workflows', () => {
     const configPyprojectProject = {
       projectId: projectId,
       serviceName: 'example-pyproject-project-folder-path',
-      region: 'us-central1',
+      region: GCP_REGION,
       files: ['example-sources-to-deploy/python/pyproject-project'],
     };
-    let successMessage = '';
-    configPyprojectProject.progressCallback = (p) => {
-      if (p.data === 'Deployment completed successfully with zip deploy') {
-        successMessage = p.data;
-      }
-    };
-    await deploy(configPyprojectProject);
-    assert.strictEqual(
-      successMessage,
-      'Deployment completed successfully with zip deploy'
+    await assertDeploymentSuccess(
+      configPyprojectProject,
+      ZIP_DEPLOY_SUCCESS_MESSAGE
     );
     console.log('Scenario-6: Deployment completed.');
   });
@@ -187,24 +181,15 @@ describe('Deployment workflows', () => {
     const configPyprojectProject = {
       projectId: projectId,
       serviceName: 'example-pyproject-project-file-content',
-      region: 'us-central1',
+      region: GCP_REGION,
       files: [
         { filename: 'main.py', content: mainPyContent },
         { filename: 'pyproject.toml', content: pyprojectContent },
       ],
     };
-    let successMessage = '';
-    configPyprojectProject.progressCallback = (p) => {
-      if (
-        p.data === 'Deployment completed successfully with source build deploy'
-      ) {
-        successMessage = p.data;
-      }
-    };
-    await deploy(configPyprojectProject);
-    assert.strictEqual(
-      successMessage,
-      'Deployment completed successfully with source build deploy'
+    await assertDeploymentSuccess(
+      configPyprojectProject,
+      SOURCE_BUILD_DEPLOY_SUCCESS_MESSAGE
     );
     console.log('Scenario-7: Deployment completed.');
   });
@@ -212,19 +197,12 @@ describe('Deployment workflows', () => {
     const configNodeProject = {
       projectId: projectId,
       serviceName: 'example-node-project-folder-path',
-      region: 'us-central1',
+      region: GCP_REGION,
       files: ['example-sources-to-deploy/nodejs'],
     };
-    let successMessage = '';
-    configNodeProject.progressCallback = (p) => {
-      if (p.data === 'Deployment completed successfully with zip deploy') {
-        successMessage = p.data;
-      }
-    };
-    await deploy(configNodeProject);
-    assert.strictEqual(
-      successMessage,
-      'Deployment completed successfully with zip deploy'
+    await assertDeploymentSuccess(
+      configNodeProject,
+      ZIP_DEPLOY_SUCCESS_MESSAGE
     );
     console.log('Scenario-8: Deployment completed.');
   });
@@ -240,25 +218,16 @@ describe('Deployment workflows', () => {
     );
     const configNodeWithContent = {
       projectId: projectId,
-      serviceName: 'example-node-app-content',
-      region: 'us-central1',
+      serviceName: 'example-node-project-file-content',
+      region: GCP_REGION,
       files: [
         { filename: 'package.json', content: packageJsonContent },
         { filename: 'index.js', content: indexJsContent },
       ],
     };
-    let successMessage = '';
-    configNodeWithContent.progressCallback = (p) => {
-      if (
-        p.data === 'Deployment completed successfully with source build deploy'
-      ) {
-        successMessage = p.data;
-      }
-    };
-    await deploy(configNodeWithContent);
-    assert.strictEqual(
-      successMessage,
-      'Deployment completed successfully with source build deploy'
+    await assertDeploymentSuccess(
+      configNodeWithContent,
+      SOURCE_BUILD_DEPLOY_SUCCESS_MESSAGE
     );
     console.log('Scenario-9: Deployment completed.');
   });
