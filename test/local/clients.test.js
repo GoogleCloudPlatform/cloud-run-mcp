@@ -1,6 +1,8 @@
-import { test, describe } from 'node:test';
+import { test, describe, mock } from 'node:test';
 import assert from 'node:assert';
-import { getClient } from '../../lib/clients.js';
+import { google } from 'googleapis';
+import { getClient, getRunV1Client } from '../../lib/clients.js';
+import { GCLOUD_AUTH } from '../../constants.js';
 
 describe('getClient Helper', () => {
   class MockClient {
@@ -172,5 +174,93 @@ describe('getClient Helper', () => {
     );
 
     assert.strictEqual(client.options.extraOpt, extraOpt);
+  });
+});
+
+describe('getRunV1Client', () => {
+  test('creates new client instance with Application Default Credentials for GCLOUD_AUTH', async () => {
+    // Mock the GoogleAuth class to avoid looking up ADC
+    const originalGoogleAuth = google.auth.GoogleAuth;
+    const authInstances = [];
+    google.auth.GoogleAuth = class MockGoogleAuth {
+      constructor(options) {
+        this.options = options;
+        authInstances.push(this);
+      }
+    };
+
+    const runMock = mock.method(google, 'run', (options) => {
+      return { options };
+    });
+
+    try {
+      const projectId = 'test-project';
+      const client = await getRunV1Client(projectId, GCLOUD_AUTH);
+
+      assert.ok(client);
+      assert.strictEqual(authInstances.length, 1);
+      assert.deepEqual(authInstances[0].options.scopes, [
+        'https://www.googleapis.com/auth/cloud-platform',
+      ]);
+      assert.strictEqual(runMock.mock.calls.length, 1);
+      assert.strictEqual(
+        runMock.mock.calls[0].arguments[0].auth,
+        authInstances[0]
+      );
+    } finally {
+      google.auth.GoogleAuth = originalGoogleAuth;
+      runMock.mock.restore();
+    }
+  });
+
+  test('creates new client instance with OAuth client when access token provided', async () => {
+    const runMock = mock.method(google, 'run', (options) => ({ options }));
+    try {
+      const projectId = 'test-project-oauth';
+      const accessToken = 'fake-access-token';
+      const client = await getRunV1Client(projectId, accessToken);
+
+      assert.ok(client);
+      assert.strictEqual(runMock.mock.calls.length, 1);
+      const lastCall = runMock.mock.calls[0];
+      assert.ok(lastCall.arguments[0].auth);
+      assert.strictEqual(
+        lastCall.arguments[0].auth.credentials.access_token,
+        accessToken
+      );
+    } finally {
+      runMock.mock.restore();
+    }
+  });
+
+  test('sets rootUrl if region is provided', async () => {
+    const runMock = mock.method(google, 'run', (options) => ({ options }));
+    try {
+      const projectId = 'test-project-region';
+      const region = 'us-central1';
+      await getRunV1Client(projectId, GCLOUD_AUTH, region);
+
+      const lastCall = runMock.mock.calls[0];
+      assert.strictEqual(
+        lastCall.arguments[0].rootUrl,
+        'https://us-central1-run.googleapis.com/'
+      );
+    } finally {
+      runMock.mock.restore();
+    }
+  });
+
+  test('caches client instances by key', async () => {
+    const runMock = mock.method(google, 'run', (options) => ({ options }));
+    try {
+      const projectId = 'test-project-cache';
+      const client1 = await getRunV1Client(projectId, GCLOUD_AUTH);
+      const client2 = await getRunV1Client(projectId, GCLOUD_AUTH);
+
+      assert.strictEqual(client1, client2);
+      assert.strictEqual(runMock.mock.calls.length, 1);
+    } finally {
+      runMock.mock.restore();
+    }
   });
 });
