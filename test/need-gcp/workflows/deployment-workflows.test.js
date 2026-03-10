@@ -208,6 +208,60 @@ describe('Deployment workflows', () => {
     );
     console.log('Scenario-7: Deployment completed.');
   });
+  test('Scenario-8: Starting deployment of Node.js app with folder path... uses zip deploy', async () => {
+    const configNodeProject = {
+      projectId: projectId,
+      serviceName: 'example-node-project-folder-path',
+      region: 'us-central1',
+      files: ['example-sources-to-deploy/nodejs'],
+    };
+    let successMessage = '';
+    configNodeProject.progressCallback = (p) => {
+      if (p.data === 'Deployment completed successfully with zip deploy') {
+        successMessage = p.data;
+      }
+    };
+    await deploy(configNodeProject);
+    assert.strictEqual(
+      successMessage,
+      'Deployment completed successfully with zip deploy'
+    );
+    console.log('Scenario-8: Deployment completed.');
+  });
+
+  test('Scenario-9: Starting deployment of Node.js app with file content... uses build deploy', async () => {
+    const packageJsonContent = await fs.readFile(
+      path.resolve('example-sources-to-deploy/nodejs/package.json'),
+      'utf-8'
+    );
+    const indexJsContent = await fs.readFile(
+      path.resolve('example-sources-to-deploy/nodejs/index.js'),
+      'utf-8'
+    );
+    const configNodeWithContent = {
+      projectId: projectId,
+      serviceName: 'example-node-app-content',
+      region: 'us-central1',
+      files: [
+        { filename: 'package.json', content: packageJsonContent },
+        { filename: 'index.js', content: indexJsContent },
+      ],
+    };
+    let successMessage = '';
+    configNodeWithContent.progressCallback = (p) => {
+      if (
+        p.data === 'Deployment completed successfully with source build deploy'
+      ) {
+        successMessage = p.data;
+      }
+    };
+    await deploy(configNodeWithContent);
+    assert.strictEqual(
+      successMessage,
+      'Deployment completed successfully with source build deploy'
+    );
+    console.log('Scenario-9: Deployment completed.');
+  });
 
   after(async () => {
     // Clean up: delete the project created for tests
