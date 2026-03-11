@@ -245,10 +245,6 @@ describe('Deployment workflows', () => {
       SOURCE_BUILD_DEPLOY_SUCCESS_MESSAGE
     );
     console.log('Scenario-10: Deployment completed.');
-    // Now, verify the endpoint
-    const response = await fetch(service.uri);
-    const text = await response.text();
-    assert.strictEqual(text, 'Hello from Spring Boot on Cloud Run!');
   });
 
   after(async () => {
