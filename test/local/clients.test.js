@@ -1,7 +1,13 @@
-import { test, describe, mock } from 'node:test';
+import { test, describe, mock, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { google } from 'googleapis';
-import { clients, getClient, getRunV1Client } from '../../lib/clients.js';
+import {
+  clients,
+  getClient,
+  getRunV1Client,
+  getCloudRunRegions,
+  resetCachedRegions,
+} from '../../lib/clients.js';
 import { GCLOUD_AUTH } from '../../constants.js';
 
 describe('getClient Helper', () => {
@@ -247,9 +253,11 @@ describe('getRunV1Client', () => {
     const region = 'us-central1';
     const key = projectId; // If GCLOUD_AUTH, key is just projectId
 
-    // Mock getCloudRunRegions call by injecting into clients.compute
-    clients.compute.set(key, {
-      list: async () => [[{ name: 'us-central1' }]],
+    // Mock getCloudRunRegions call by injecting into clients.run
+    clients.run.set(key, {
+      async *listLocationsAsync() {
+        yield { locationId: 'us-central1' };
+      },
     });
 
     try {
@@ -263,7 +271,7 @@ describe('getRunV1Client', () => {
     } finally {
       google.auth.GoogleAuth = originalGoogleAuth;
       runMock.mock.restore();
-      clients.compute.delete(key);
+      clients.run.delete(key);
     }
   });
 
@@ -279,5 +287,76 @@ describe('getRunV1Client', () => {
     } finally {
       runMock.mock.restore();
     }
+  });
+});
+
+describe('getCloudRunRegions', () => {
+  beforeEach(() => {
+    resetCachedRegions();
+    // Clear the run map to ensure isolation between tests
+    clients.run.clear();
+  });
+
+  test('returns list of regions using a mock injected into the clients cache', async () => {
+    const projectId = 'test-project-1';
+    const accessToken = 'token-1';
+    // Match the key generation logic
+    const key = projectId + accessToken;
+
+    const mockRunClient = {
+      async *listLocationsAsync() {
+        yield { locationId: 'us-central1' };
+        yield { locationId: 'europe-west1' };
+      },
+    };
+
+    clients.run.set(key, mockRunClient);
+
+    const regions = await getCloudRunRegions(projectId, accessToken);
+    assert.deepStrictEqual(regions, ['us-central1', 'europe-west1']);
+  });
+
+  test('caches the regions after first call', async () => {
+    const projectId = 'test-project-2';
+    const accessToken = 'token-2';
+    const key = projectId + accessToken;
+
+    let callCount = 0;
+    const mockRunClient = {
+      async *listLocationsAsync() {
+        callCount++;
+        yield { locationId: 'us-central1' };
+      },
+    };
+
+    clients.run.set(key, mockRunClient);
+
+    await getCloudRunRegions(projectId, accessToken);
+    const regions = await getCloudRunRegions(projectId, accessToken);
+
+    assert.strictEqual(callCount, 1);
+    assert.deepStrictEqual(regions, ['us-central1']);
+  });
+
+  test('using different accessToken allows isolated client mocks', async () => {
+    const projectId = 'test-project-3';
+
+    clients.run.set(projectId + 'token-a', {
+      async *listLocationsAsync() {
+        yield { locationId: 'region-a' };
+      },
+    });
+    clients.run.set(projectId + 'token-b', {
+      async *listLocationsAsync() {
+        yield { locationId: 'region-b' };
+      },
+    });
+
+    const resA = await getCloudRunRegions(projectId, 'token-a');
+    resetCachedRegions();
+    const resB = await getCloudRunRegions(projectId, 'token-b');
+
+    assert.deepStrictEqual(resA, ['region-a']);
+    assert.deepStrictEqual(resB, ['region-b']);
   });
 });
