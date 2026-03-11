@@ -240,7 +240,7 @@ describe('Deployment workflows', () => {
       region: GCP_REGION,
       files: ['example-sources-to-deploy/java'],
     };
-    const service = await assertDeploymentSuccess(
+    await assertDeploymentSuccess(
       configJavaProject,
       SOURCE_BUILD_DEPLOY_SUCCESS_MESSAGE
     );
