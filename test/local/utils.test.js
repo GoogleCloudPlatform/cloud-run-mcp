@@ -19,8 +19,8 @@ import assert from 'node:assert';
 import {
   getCloudRunRegions,
   resetCachedRegions,
-} from '../../lib/util/helpers.js';
-import { clients } from '../../lib/clients.js';
+  clients,
+} from '../../lib/clients.js';
 
 describe('getCloudRunRegions', () => {
   beforeEach(() => {
