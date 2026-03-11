@@ -1,7 +1,7 @@
 import { test, describe, mock } from 'node:test';
 import assert from 'node:assert';
 import { google } from 'googleapis';
-import { getClient, getRunV1Client } from '../../lib/clients.js';
+import { clients, getClient, getRunV1Client } from '../../lib/clients.js';
 import { GCLOUD_AUTH } from '../../constants.js';
 
 describe('getClient Helper', () => {
@@ -234,10 +234,25 @@ describe('getRunV1Client', () => {
   });
 
   test('sets rootUrl if region is provided', async () => {
+    const originalGoogleAuth = google.auth.GoogleAuth;
+    google.auth.GoogleAuth = class MockGoogleAuth {
+      constructor(options) {
+        this.options = options;
+      }
+    };
+
     const runMock = mock.method(google, 'run', (options) => ({ options }));
+
+    const projectId = 'test-project-region';
+    const region = 'us-central1';
+    const key = projectId; // If GCLOUD_AUTH, key is just projectId
+
+    // Mock getCloudRunRegions call by injecting into clients.compute
+    clients.compute.set(key, {
+      list: async () => [[{ name: 'us-central1' }]],
+    });
+
     try {
-      const projectId = 'test-project-region';
-      const region = 'us-central1';
       await getRunV1Client(projectId, GCLOUD_AUTH, region);
 
       const lastCall = runMock.mock.calls[0];
@@ -246,7 +261,9 @@ describe('getRunV1Client', () => {
         'https://us-central1-run.googleapis.com/'
       );
     } finally {
+      google.auth.GoogleAuth = originalGoogleAuth;
       runMock.mock.restore();
+      clients.compute.delete(key);
     }
   });
 
