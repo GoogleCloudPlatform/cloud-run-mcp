@@ -22,15 +22,8 @@ describe('Universal Maker', () => {
   const fsMock = {
     existsSync: mock.fn(),
     mkdirSync: mock.fn(),
-    chmodSync: mock.fn(),
     readFileSync: mock.fn(),
     rmSync: mock.fn(),
-    unlinkSync: mock.fn(),
-    createWriteStream: mock.fn(),
-  };
-
-  const cryptoMock = {
-    createHash: mock.fn(),
   };
 
   const childProcessMock = {
@@ -46,34 +39,25 @@ describe('Universal Maker', () => {
     logAndProgress: mock.fn(),
   };
 
-  const clientsMock = {
-    getArtifactRegistryClient: mock.fn(),
+  const artifactsMock = {
+    ensureRepositoryDownloaded: mock.fn(),
   };
 
   test('runUniversalMaker skips download if binary exists and runs successfully', async () => {
     fsMock.existsSync.mock.resetCalls();
     fsMock.readFileSync.mock.resetCalls();
     childProcessMock.exec.mock.resetCalls();
+    artifactsMock.ensureRepositoryDownloaded.mock.resetCalls();
 
-    const localContent = 'local content';
-    const sha256 =
-      'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+    // Mock binary exists and is up to date
+    artifactsMock.ensureRepositoryDownloaded.mock.mockImplementation(() => '/home/user/.cloud-run-mcp/bin/universal_maker');
 
-    cryptoMock.createHash.mock.mockImplementation(() => ({
-      update: mock.fn(() => ({
-        digest: mock.fn(() => sha256),
-      })),
-    }));
-
-    // Mock binary exists
     fsMock.existsSync.mock.mockImplementation((p) => {
-      if (p.includes('universal_maker')) return true;
       if (p.includes('build_output.json')) return true;
       return false;
     });
 
     fsMock.readFileSync.mock.mockImplementation((p) => {
-      if (p.includes('universal_maker')) return localContent;
       if (p.includes('build_output.json')) {
         return JSON.stringify({
           command: 'node',
@@ -85,34 +69,12 @@ describe('Universal Maker', () => {
       return '';
     });
 
-    // Mock Artifact Registry client
-    const artifactRegistryClientMock = {
-      filePath: mock.fn(
-        (p, l, r, f) =>
-          `projects/${p}/locations/${l}/repositories/${r}/files/${f}`
-      ),
-      getFile: mock.fn(() => [
-        {
-          hashes: [
-            {
-              type: 'SHA256',
-              value: Buffer.from(sha256, 'hex').toString('base64'),
-            },
-          ],
-        },
-      ]),
-    };
-    clientsMock.getArtifactRegistryClient.mock.mockImplementation(
-      () => artifactRegistryClientMock
-    );
-
     const um = await esmock('../../lib/deployment/universal-maker.js', {
       fs: fsMock,
       child_process: childProcessMock,
       os: osMock,
-      crypto: cryptoMock,
       '../../lib/util/helpers.js': helpersMock,
-      '../../lib/clients.js': clientsMock,
+      '../../lib/util/artifacts.js': artifactsMock,
     });
 
     // Mock exec only for binary execution
@@ -132,92 +94,30 @@ describe('Universal Maker', () => {
     assert.deepEqual(result.args, ['index.js']);
     assert.equal(result.runtime, 'nodejs20');
 
-    // Verify bin check was performed
-    const binExistsCall = fsMock.existsSync.mock.calls.find((c) =>
-      c.arguments[0].includes('universal_maker')
-    );
-    assert.ok(binExistsCall);
+    // Verify ensureRepositoryDownloaded was called
+    assert.strictEqual(artifactsMock.ensureRepositoryDownloaded.mock.callCount(), 1);
   });
 
-  test('runUniversalMaker downloads binary if missing', async () => {
-    fsMock.existsSync.mock.resetCalls();
-    fsMock.readFileSync.mock.resetCalls();
-    childProcessMock.exec.mock.resetCalls();
-
-    let downloaded = false;
-
-    // Mock binary missing first, then exists after "download"
-    fsMock.existsSync.mock.mockImplementation((p) => {
-      if (p.includes('universal_maker')) return downloaded;
-      if (p.includes('build_output.json')) return true;
-      return true; // for dir checks
-    });
-
-    // Mock Artifact Registry client for download
-    const artifactRegistryClientMock = {
-      filePath: mock.fn(
-        (p, l, r, f) =>
-          `projects/${p}/locations/${l}/repositories/${r}/files/${f}`
-      ),
-      getFile: mock.fn(() => [{ hashes: [] }]), // trigger download
-      auth: {
-        request: mock.fn(() => {
-          downloaded = true;
-          return {
-            data: {
-              pipe: (dest) => {
-                setTimeout(() => dest.emit('finish'), 10);
-                return dest;
-              },
-            },
-          };
-        }),
-      },
-    };
-    clientsMock.getArtifactRegistryClient.mock.mockImplementation(
-      () => artifactRegistryClientMock
-    );
-
-    const writeStreamMock = {
-      on: mock.fn(function (event, cb) {
-        if (event === 'finish') this.finishCb = cb;
-        return this;
-      }),
-      emit: mock.fn(function (event) {
-        if (event === 'finish' && this.finishCb) this.finishCb();
-      }),
-      pipeFrom: mock.fn(),
-    };
-    fsMock.createWriteStream = mock.fn(() => writeStreamMock);
-
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({ command: 'npm', args: ['start'] })
-    );
+  test('runUniversalMaker behaves correctly when binary fails to download', async () => {
+    artifactsMock.ensureRepositoryDownloaded.mock.resetCalls();
+    artifactsMock.ensureRepositoryDownloaded.mock.mockImplementation(() => null);
 
     const um = await esmock('../../lib/deployment/universal-maker.js', {
       fs: fsMock,
       child_process: childProcessMock,
       os: osMock,
-      crypto: cryptoMock,
       '../../lib/util/helpers.js': helpersMock,
-      '../../lib/clients.js': clientsMock,
+      '../../lib/util/artifacts.js': artifactsMock,
     });
 
-    // Mock exec only for binary execution
-    childProcessMock.exec.mock.mockImplementation((cmd, cb) => {
-      cb(null, { stdout: '', stderr: '' });
-    });
-
-    // runUniversalMaker(appDir, accessToken, progressCallback)
     const result = await um.runUniversalMaker(
       '/app/dir',
       'fake-token',
       mock.fn()
     );
 
-    assert.ok(result);
-    assert.equal(result.command, 'npm');
-    assert.ok(downloaded);
+    assert.equal(result, null);
+    assert.strictEqual(artifactsMock.ensureRepositoryDownloaded.mock.callCount(), 1);
   });
 
   test('runUniversalMaker returns null if binary not supported on platform', async () => {
@@ -230,9 +130,8 @@ describe('Universal Maker', () => {
         fs: fsMock,
         child_process: childProcessMock,
         os: osMock,
-        crypto: cryptoMock,
         '../../lib/util/helpers.js': helpersMock,
-        '../../lib/clients.js': clientsMock,
+        '../../lib/util/artifacts.js': artifactsMock,
       });
 
       const result = await um.runUniversalMaker(
