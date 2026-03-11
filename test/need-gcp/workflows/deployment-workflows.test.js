@@ -193,6 +193,7 @@ describe('Deployment workflows', () => {
     );
     console.log('Scenario-7: Deployment completed.');
   });
+
   test('Scenario-8: Starting deployment of Node.js app with folder path... uses zip deploy', async () => {
     const configNodeProject = {
       projectId: projectId,
@@ -230,6 +231,20 @@ describe('Deployment workflows', () => {
       SOURCE_BUILD_DEPLOY_SUCCESS_MESSAGE
     );
     console.log('Scenario-9: Deployment completed.');
+  });
+
+  test('Scenario-10: Starting deployment of Java app with folder path... uses source build deploy', async () => {
+    const configJavaProject = {
+      projectId: projectId,
+      serviceName: 'example-java-project-folder-path',
+      region: GCP_REGION,
+      files: ['example-sources-to-deploy/java'],
+    };
+    await assertDeploymentSuccess(
+      configJavaProject,
+      SOURCE_BUILD_DEPLOY_SUCCESS_MESSAGE
+    );
+    console.log('Scenario-10: Deployment completed.');
   });
 
   after(async () => {
