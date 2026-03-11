@@ -50,24 +50,34 @@ describe('Artifact Utilities', () => {
     displayName: 'Test Binary',
   };
 
-  const sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+  const sha256 =
+    'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
 
   test('isBinaryUpToDate returns true if hashes match', async () => {
     fsMock.existsSync.mock.mockImplementation(() => true);
     fsMock.readFileSync.mock.mockImplementation(() => 'local-content');
     cryptoMock.createHash.mock.mockImplementation(() => ({
       update: mock.fn(() => ({
-          digest: mock.fn(() => sha256),
+        digest: mock.fn(() => sha256),
       })),
     }));
 
     const artifactRegistryClientMock = {
       filePath: mock.fn(() => 'resource-name'),
-      getFile: mock.fn(() => [{
-        hashes: [{ type: 'SHA256', value: Buffer.from(sha256, 'hex').toString('base64') }]
-      }]),
+      getFile: mock.fn(() => [
+        {
+          hashes: [
+            {
+              type: 'SHA256',
+              value: Buffer.from(sha256, 'hex').toString('base64'),
+            },
+          ],
+        },
+      ]),
     };
-    clientsMock.getArtifactRegistryClient.mock.mockImplementation(() => artifactRegistryClientMock);
+    clientsMock.getArtifactRegistryClient.mock.mockImplementation(
+      () => artifactRegistryClientMock
+    );
 
     const { isBinaryUpToDate } = await esmock('../../lib/util/artifacts.js', {
       fs: fsMock,
@@ -76,7 +86,12 @@ describe('Artifact Utilities', () => {
       '../../lib/clients.js': clientsMock,
     });
 
-    const result = await isBinaryUpToDate('/bin/path', artifactParams, 'token', mock.fn());
+    const result = await isBinaryUpToDate(
+      '/bin/path',
+      artifactParams,
+      'token',
+      mock.fn()
+    );
     assert.strictEqual(result, true);
   });
 
@@ -84,20 +99,29 @@ describe('Artifact Utilities', () => {
     fsMock.existsSync.mock.mockImplementation(() => true);
     fsMock.readFileSync.mock.mockImplementation(() => 'local-content');
     fsMock.unlinkSync.mock.resetCalls();
-    
+
     cryptoMock.createHash.mock.mockImplementation(() => ({
       update: mock.fn(() => ({
-          digest: mock.fn(() => 'different-hash'),
+        digest: mock.fn(() => 'different-hash'),
       })),
     }));
 
     const artifactRegistryClientMock = {
       filePath: mock.fn(() => 'resource-name'),
-      getFile: mock.fn(() => [{
-        hashes: [{ type: 'SHA256', value: Buffer.from(sha256, 'hex').toString('base64') }]
-      }]),
+      getFile: mock.fn(() => [
+        {
+          hashes: [
+            {
+              type: 'SHA256',
+              value: Buffer.from(sha256, 'hex').toString('base64'),
+            },
+          ],
+        },
+      ]),
     };
-    clientsMock.getArtifactRegistryClient.mock.mockImplementation(() => artifactRegistryClientMock);
+    clientsMock.getArtifactRegistryClient.mock.mockImplementation(
+      () => artifactRegistryClientMock
+    );
 
     const { isBinaryUpToDate } = await esmock('../../lib/util/artifacts.js', {
       fs: fsMock,
@@ -106,15 +130,20 @@ describe('Artifact Utilities', () => {
       '../../lib/clients.js': clientsMock,
     });
 
-    const result = await isBinaryUpToDate('/bin/path', artifactParams, 'token', mock.fn());
+    const result = await isBinaryUpToDate(
+      '/bin/path',
+      artifactParams,
+      'token',
+      mock.fn()
+    );
     assert.strictEqual(result, false);
     assert.strictEqual(fsMock.unlinkSync.mock.callCount(), 1);
   });
 
   test('ensureRepositoryDownloaded downloads binary if it does not exist', async () => {
     fsMock.existsSync.mock.mockImplementation((p) => {
-        if (p === '/bin/path') return false;
-        return true;
+      if (p === '/bin/path') return false;
+      return true;
     });
     fsMock.createWriteStream.mock.resetCalls();
 
@@ -132,7 +161,9 @@ describe('Artifact Utilities', () => {
         })),
       },
     };
-    clientsMock.getArtifactRegistryClient.mock.mockImplementation(() => artifactRegistryClientMock);
+    clientsMock.getArtifactRegistryClient.mock.mockImplementation(
+      () => artifactRegistryClientMock
+    );
 
     const writeStreamMock = {
       on: mock.fn(function (event, cb) {
@@ -145,14 +176,22 @@ describe('Artifact Utilities', () => {
     };
     fsMock.createWriteStream.mock.mockImplementation(() => writeStreamMock);
 
-    const { ensureRepositoryDownloaded } = await esmock('../../lib/util/artifacts.js', {
-      fs: fsMock,
-      crypto: cryptoMock,
-      '../../lib/util/helpers.js': helpersMock,
-      '../../lib/clients.js': clientsMock,
-    });
+    const { ensureRepositoryDownloaded } = await esmock(
+      '../../lib/util/artifacts.js',
+      {
+        fs: fsMock,
+        crypto: cryptoMock,
+        '../../lib/util/helpers.js': helpersMock,
+        '../../lib/clients.js': clientsMock,
+      }
+    );
 
-    const result = await ensureRepositoryDownloaded('/bin/path', artifactParams, 'token', mock.fn());
+    const result = await ensureRepositoryDownloaded(
+      '/bin/path',
+      artifactParams,
+      'token',
+      mock.fn()
+    );
     assert.strictEqual(result, '/bin/path');
     assert.strictEqual(fsMock.createWriteStream.mock.callCount(), 1);
   });

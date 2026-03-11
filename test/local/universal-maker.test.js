@@ -50,7 +50,9 @@ describe('Universal Maker', () => {
     artifactsMock.ensureRepositoryDownloaded.mock.resetCalls();
 
     // Mock binary exists and is up to date
-    artifactsMock.ensureRepositoryDownloaded.mock.mockImplementation(() => '/home/user/.cloud-run-mcp/bin/universal_maker');
+    artifactsMock.ensureRepositoryDownloaded.mock.mockImplementation(
+      () => '/home/user/.cloud-run-mcp/bin/universal_maker'
+    );
 
     fsMock.existsSync.mock.mockImplementation((p) => {
       if (p.includes('build_output.json')) return true;
@@ -95,12 +97,17 @@ describe('Universal Maker', () => {
     assert.equal(result.runtime, 'nodejs20');
 
     // Verify ensureRepositoryDownloaded was called
-    assert.strictEqual(artifactsMock.ensureRepositoryDownloaded.mock.callCount(), 1);
+    assert.strictEqual(
+      artifactsMock.ensureRepositoryDownloaded.mock.callCount(),
+      1
+    );
   });
 
   test('runUniversalMaker behaves correctly when binary fails to download', async () => {
     artifactsMock.ensureRepositoryDownloaded.mock.resetCalls();
-    artifactsMock.ensureRepositoryDownloaded.mock.mockImplementation(() => null);
+    artifactsMock.ensureRepositoryDownloaded.mock.mockImplementation(
+      () => null
+    );
 
     const um = await esmock('../../lib/deployment/universal-maker.js', {
       fs: fsMock,
@@ -117,7 +124,10 @@ describe('Universal Maker', () => {
     );
 
     assert.equal(result, null);
-    assert.strictEqual(artifactsMock.ensureRepositoryDownloaded.mock.callCount(), 1);
+    assert.strictEqual(
+      artifactsMock.ensureRepositoryDownloaded.mock.callCount(),
+      1
+    );
   });
 
   test('runUniversalMaker returns null if binary not supported on platform', async () => {
