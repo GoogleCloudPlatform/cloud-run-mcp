@@ -1,6 +1,14 @@
-import { test, describe } from 'node:test';
+import { test, describe, mock, beforeEach } from 'node:test';
 import assert from 'node:assert';
-import { getClient } from '../../lib/clients.js';
+import { google } from 'googleapis';
+import {
+  clients,
+  getClient,
+  getRunV1Client,
+  getCloudRunRegions,
+  resetCachedRegions,
+} from '../../lib/clients.js';
+import { GCLOUD_AUTH } from '../../constants.js';
 
 describe('getClient Helper', () => {
   class MockClient {
@@ -172,5 +180,219 @@ describe('getClient Helper', () => {
     );
 
     assert.strictEqual(client.options.extraOpt, extraOpt);
+  });
+});
+
+describe('getRunV1Client', () => {
+  test('creates new client instance with Application Default Credentials for GCLOUD_AUTH', async () => {
+    // Mock the GoogleAuth class to avoid looking up ADC
+    const originalGoogleAuth = google.auth.GoogleAuth;
+    const authInstances = [];
+    google.auth.GoogleAuth = class MockGoogleAuth {
+      constructor(options) {
+        this.options = options;
+        authInstances.push(this);
+      }
+    };
+
+    const runMock = mock.method(google, 'run', (options) => {
+      return { options };
+    });
+
+    try {
+      const projectId = 'test-project';
+      const client = await getRunV1Client(projectId, GCLOUD_AUTH);
+
+      assert.ok(client);
+      assert.strictEqual(authInstances.length, 1);
+      assert.deepEqual(authInstances[0].options.scopes, [
+        'https://www.googleapis.com/auth/cloud-platform',
+      ]);
+      assert.strictEqual(runMock.mock.calls.length, 1);
+      assert.strictEqual(
+        runMock.mock.calls[0].arguments[0].auth,
+        authInstances[0]
+      );
+    } finally {
+      google.auth.GoogleAuth = originalGoogleAuth;
+      runMock.mock.restore();
+    }
+  });
+
+  test('creates new client instance with OAuth client when access token provided', async () => {
+    const runMock = mock.method(google, 'run', (options) => ({ options }));
+    try {
+      const projectId = 'test-project-oauth';
+      const accessToken = 'fake-access-token';
+      const client = await getRunV1Client(projectId, accessToken);
+
+      assert.ok(client);
+      assert.strictEqual(runMock.mock.calls.length, 1);
+      const lastCall = runMock.mock.calls[0];
+      assert.ok(lastCall.arguments[0].auth);
+      assert.strictEqual(
+        lastCall.arguments[0].auth.credentials.access_token,
+        accessToken
+      );
+    } finally {
+      runMock.mock.restore();
+    }
+  });
+
+  test('sets rootUrl if region is provided', async () => {
+    const originalGoogleAuth = google.auth.GoogleAuth;
+    google.auth.GoogleAuth = class MockGoogleAuth {
+      constructor(options) {
+        this.options = options;
+      }
+    };
+
+    const runMock = mock.method(google, 'run', (options) => ({ options }));
+
+    const projectId = 'test-project-region';
+    const region = 'us-central1';
+    const key = projectId; // If GCLOUD_AUTH, key is just projectId
+
+    // Mock getCloudRunRegions call by injecting into clients.run
+    clients.run.set(key, {
+      async *listLocationsAsync() {
+        yield { locationId: 'us-central1' };
+      },
+    });
+
+    try {
+      await getRunV1Client(projectId, GCLOUD_AUTH, region);
+
+      const lastCall = runMock.mock.calls[0];
+      assert.strictEqual(
+        lastCall.arguments[0].rootUrl,
+        'https://us-central1-run.googleapis.com/'
+      );
+    } finally {
+      google.auth.GoogleAuth = originalGoogleAuth;
+      runMock.mock.restore();
+      clients.run.delete(key);
+    }
+  });
+
+  test('caches client instances by key', async () => {
+    const runMock = mock.method(google, 'run', (options) => ({ options }));
+    try {
+      const projectId = 'test-project-cache';
+      const client1 = await getRunV1Client(projectId, GCLOUD_AUTH);
+      const client2 = await getRunV1Client(projectId, GCLOUD_AUTH);
+
+      assert.strictEqual(client1, client2);
+      assert.strictEqual(runMock.mock.calls.length, 1);
+    } finally {
+      runMock.mock.restore();
+    }
+  });
+
+  test('caches client instances separately for different regions', async () => {
+    resetCachedRegions();
+    const runMock = mock.method(google, 'run', (options) => ({ options }));
+    try {
+      const projectId = 'test-project-region-cache';
+      const region1 = 'us-central1';
+      const region2 = 'europe-west1';
+
+      // Mock getCloudRunRegions for both regions
+      const key = projectId; // GCLOUD_AUTH key for getRunClient/getCloudRunRegions
+      clients.run.set(key, {
+        async *listLocationsAsync() {
+          yield { locationId: region1 };
+          yield { locationId: region2 };
+        },
+      });
+
+      const client1 = await getRunV1Client(projectId, GCLOUD_AUTH, region1);
+      const client2 = await getRunV1Client(projectId, GCLOUD_AUTH, region2);
+
+      assert.notStrictEqual(client1, client2);
+      assert.strictEqual(runMock.mock.calls.length, 2);
+      assert.strictEqual(
+        runMock.mock.calls[0].arguments[0].rootUrl,
+        `https://${region1}-run.googleapis.com/`
+      );
+      assert.strictEqual(
+        runMock.mock.calls[1].arguments[0].rootUrl,
+        `https://${region2}-run.googleapis.com/`
+      );
+    } finally {
+      runMock.mock.restore();
+      clients.run.clear();
+    }
+  });
+});
+
+describe('getCloudRunRegions', () => {
+  beforeEach(() => {
+    resetCachedRegions();
+    // Clear the run map to ensure isolation between tests
+    clients.run.clear();
+  });
+
+  test('returns list of regions using a mock injected into the clients cache', async () => {
+    const projectId = 'test-project-1';
+    const accessToken = 'token-1';
+    // Match the key generation logic
+    const key = projectId + accessToken;
+
+    const mockRunClient = {
+      async *listLocationsAsync() {
+        yield { locationId: 'us-central1' };
+        yield { locationId: 'europe-west1' };
+      },
+    };
+
+    clients.run.set(key, mockRunClient);
+
+    const regions = await getCloudRunRegions(projectId, accessToken);
+    assert.deepStrictEqual(regions, ['us-central1', 'europe-west1']);
+  });
+
+  test('caches the regions after first call', async () => {
+    const projectId = 'test-project-2';
+    const accessToken = 'token-2';
+    const key = projectId + accessToken;
+
+    let callCount = 0;
+    const mockRunClient = {
+      async *listLocationsAsync() {
+        callCount++;
+        yield { locationId: 'us-central1' };
+      },
+    };
+
+    clients.run.set(key, mockRunClient);
+
+    await getCloudRunRegions(projectId, accessToken);
+    const regions = await getCloudRunRegions(projectId, accessToken);
+
+    assert.strictEqual(callCount, 1);
+    assert.deepStrictEqual(regions, ['us-central1']);
+  });
+
+  test('using different accessToken allows isolated client mocks', async () => {
+    const projectId = 'test-project-3';
+
+    clients.run.set(projectId + 'token-a', {
+      async *listLocationsAsync() {
+        yield { locationId: 'region-a' };
+      },
+    });
+    clients.run.set(projectId + 'token-b', {
+      async *listLocationsAsync() {
+        yield { locationId: 'region-b' };
+      },
+    });
+
+    const resA = await getCloudRunRegions(projectId, 'token-a');
+    resetCachedRegions();
+    const resB = await getCloudRunRegions(projectId, 'token-b');
+
+    assert.deepStrictEqual(resA, ['region-a']);
+    assert.deepStrictEqual(resB, ['region-b']);
   });
 });
