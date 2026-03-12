@@ -288,6 +288,42 @@ describe('getRunV1Client', () => {
       runMock.mock.restore();
     }
   });
+
+  test('caches client instances separately for different regions', async () => {
+    resetCachedRegions();
+    const runMock = mock.method(google, 'run', (options) => ({ options }));
+    try {
+      const projectId = 'test-project-region-cache';
+      const region1 = 'us-central1';
+      const region2 = 'europe-west1';
+
+      // Mock getCloudRunRegions for both regions
+      const key = projectId; // GCLOUD_AUTH key for getRunClient/getCloudRunRegions
+      clients.run.set(key, {
+        async *listLocationsAsync() {
+          yield { locationId: region1 };
+          yield { locationId: region2 };
+        },
+      });
+
+      const client1 = await getRunV1Client(projectId, GCLOUD_AUTH, region1);
+      const client2 = await getRunV1Client(projectId, GCLOUD_AUTH, region2);
+
+      assert.notStrictEqual(client1, client2);
+      assert.strictEqual(runMock.mock.calls.length, 2);
+      assert.strictEqual(
+        runMock.mock.calls[0].arguments[0].rootUrl,
+        `https://${region1}-run.googleapis.com/`
+      );
+      assert.strictEqual(
+        runMock.mock.calls[1].arguments[0].rootUrl,
+        `https://${region2}-run.googleapis.com/`
+      );
+    } finally {
+      runMock.mock.restore();
+      clients.run.clear();
+    }
+  });
 });
 
 describe('getCloudRunRegions', () => {
