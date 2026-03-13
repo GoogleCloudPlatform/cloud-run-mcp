@@ -114,7 +114,7 @@ describe('triggerCloudBuild', () => {
       'gcr.io/mock-project/mock-image',
       true,
       'mock-token',
-      () => { },
+      () => {},
       undefined
     );
 
@@ -146,7 +146,7 @@ describe('triggerCloudBuild', () => {
       'gcr.io/mock-project/mock-image',
       true,
       'mock-token',
-      () => { },
+      () => {},
       undefined
     );
 
@@ -170,7 +170,7 @@ describe('triggerCloudBuild', () => {
       'gcr.io/mock-project/mock-image',
       false,
       'mock-token',
-      () => { },
+      () => {},
       undefined
     );
 
@@ -192,7 +192,7 @@ describe('triggerCloudBuild', () => {
       'gcr.io/mock-project/mock-image',
       true, // hasDockerfile = true
       'mock-token',
-      () => { },
+      () => {},
       undefined
     );
 
@@ -224,7 +224,7 @@ describe('triggerCloudBuild', () => {
       'gcr.io/mock-project/mock-image',
       true,
       'mock-token',
-      () => { },
+      () => {},
       undefined
     );
 
@@ -252,7 +252,7 @@ describe('triggerCloudBuild', () => {
           'gcr.io/mock-project/mock-image',
           true,
           'mock-token',
-          () => { },
+          () => {},
           undefined
         ),
       (err) => {
@@ -292,7 +292,7 @@ describe('triggerCloudBuild', () => {
           'gcr.io/mock-project/mock-image',
           true,
           'mock-token',
-          () => { },
+          () => {},
           undefined
         ),
       /Dry-run deployment failed: Dry run fail/
@@ -318,7 +318,7 @@ describe('triggerCloudBuild', () => {
           'gcr.io/mock-project/mock-image',
           true,
           'mock-token',
-          () => { },
+          () => {},
           undefined
         ),
       /Dry-run deployment failed: Dry run fail/
@@ -342,7 +342,7 @@ describe('triggerCloudBuild', () => {
           'gcr.io/mock-project/mock-image',
           true,
           'mock-token',
-          () => { },
+          () => {},
           undefined
         ),
       /Permission denied/
@@ -364,7 +364,7 @@ describe('triggerCloudBuild', () => {
           'gcr.io/mock-project/mock-image',
           true,
           'mock-token',
-          () => { },
+          () => {},
           undefined
         ),
       /Submit failed/
@@ -389,7 +389,7 @@ describe('triggerCloudBuild', () => {
           'gcr.io/mock-project/mock-image',
           true,
           'mock-token',
-          () => { },
+          () => {},
           undefined
         ),
       (err) => {
@@ -424,7 +424,7 @@ describe('triggerCloudBuild', () => {
           'gcr.io/mock-project/mock-image',
           true,
           'mock-token',
-          () => { },
+          () => {},
           undefined
         ),
       (err) => {
@@ -453,7 +453,7 @@ describe('triggerCloudBuild', () => {
       'gcr.io/mock-project/mock-image',
       true,
       'mock-token',
-      () => { },
+      () => {},
       'INGRESS_TRAFFIC_INTERNAL_ONLY'
     );
 
