@@ -31,6 +31,7 @@ import { ensureGCPCredentials } from './lib/cloud-api/auth.js';
 import { extractAccessToken } from './lib/util/helpers.js';
 import { oauthMiddleware } from './lib/middleware/oauth.js';
 import { config } from '@dotenvx/dotenvx';
+import { logAndProgress } from './lib/util/helpers.js';
 import {
   SCOPES,
   GCLOUD_AUTH,
@@ -75,6 +76,12 @@ const enableHostValidation = process.env.ENABLE_HOST_VALIDATION === 'true';
 const allowedHosts = process.env.ALLOWED_HOSTS
   ? process.env.ALLOWED_HOSTS.split(',')
   : undefined;
+
+await logAndProgress(`Project: ${envProjectId}`);
+await logAndProgress(`Region: ${envRegion}`);
+await logAndProgress(`Service Name: ${defaultServiceName}`);
+await logAndProgress(`Skip IAM Check: ${skipIamCheck}`);
+await logAndProgress(`Ingress: ${ingress}`);
 
 async function getServer(accessToken = GCLOUD_AUTH) {
   // Create an MCP server with implementation details
