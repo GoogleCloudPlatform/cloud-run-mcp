@@ -27,6 +27,7 @@ import {
 } from '../test-helpers.js';
 
 const GCP_REGION = 'us-central1';
+const RUN_INGRESS_POLICY = process.env.RUN_INGRESS_POLICY || undefined;
 const ZIP_DEPLOY_SUCCESS_MESSAGE =
   'Deployment completed successfully with zip deploy';
 const SOURCE_BUILD_DEPLOY_SUCCESS_MESSAGE =
@@ -39,6 +40,9 @@ async function assertDeploymentSuccess(config, expectedMessage) {
       successMessage = p.data;
     }
   };
+  if (RUN_INGRESS_POLICY) {
+    config.ingress = RUN_INGRESS_POLICY;
+  }
   await deploy(config);
   assert.strictEqual(successMessage, expectedMessage);
 }
@@ -63,6 +67,9 @@ describe('Deployment workflows', () => {
       region: GCP_REGION,
       imageUrl: 'gcr.io/cloudrun/hello',
     };
+    if (RUN_INGRESS_POLICY) {
+      configImageDeploy.ingress = RUN_INGRESS_POLICY;
+    }
     await deployImage(configImageDeploy);
 
     console.log('Scenario-1: Deployment completed.');
@@ -81,6 +88,9 @@ describe('Deployment workflows', () => {
         },
       ],
     };
+    if (RUN_INGRESS_POLICY) {
+      configFailingBuild.ingress = RUN_INGRESS_POLICY;
+    }
     await assert.rejects(
       deploy(configFailingBuild),
       { message: /ERROR: failed to detect: no buildpacks participating/ },
