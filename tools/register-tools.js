@@ -405,6 +405,7 @@ function registerDeployLocalFolderTool(server, options) {
             files: [folderPath],
             skipIamCheck: options.skipIamCheck, // Pass the new flag
             accessToken: options.accessToken,
+            ingress: options.ingress,
             progressCallback,
           });
           return {
@@ -507,6 +508,7 @@ function registerDeployFileContentsTool(server, options) {
             files: files,
             skipIamCheck: options.skipIamCheck, // Pass the new flag
             accessToken: options.accessToken,
+            ingress: options.ingress,
             progressCallback,
           });
           return {
@@ -588,6 +590,7 @@ function registerDeployContainerImageTool(server, options) {
             imageUrl: imageUrl,
             skipIamCheck: options.skipIamCheck,
             accessToken: options.accessToken,
+            ingress: options.ingress,
             progressCallback,
           });
           return {
