@@ -324,6 +324,46 @@ describe('registerTools', () => {
         ],
       });
     });
+
+    it('should deploy local folder with ingress', async () => {
+      const server = {
+        registerTool: mock.fn(),
+      };
+      const deployMock = mock.fn(() => Promise.resolve({ uri: 'my-uri' }));
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/deployment/deployer.js': {
+            deploy: deployMock,
+          },
+        }
+      );
+
+      registerTools(server, {
+        gcpCredentialsAvailable: true,
+        ingress: 'INGRESS_TRAFFIC_INTERNAL_ONLY',
+      });
+
+      const handler = server.registerTool.mock.calls.find(
+        (call) => call.arguments[0] === 'deploy_local_folder'
+      ).arguments[2];
+      await handler(
+        {
+          project: 'my-project',
+          region: 'my-region',
+          service: 'my-service',
+          folderPath: '/my/folder',
+        },
+        { sendNotification: mock.fn() }
+      );
+
+      assert.strictEqual(
+        deployMock.mock.calls[0].arguments[0].ingress,
+        'INGRESS_TRAFFIC_INTERNAL_ONLY'
+      );
+    });
   });
 
   describe('deploy_file_contents', () => {

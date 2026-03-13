@@ -113,7 +113,9 @@ describe('triggerCloudBuild', () => {
       'mock-repo',
       'gcr.io/mock-project/mock-image',
       true,
-      () => {}
+      'mock-token',
+      () => { },
+      undefined
     );
 
     assert.deepStrictEqual(result, mockSuccessResult);
@@ -143,7 +145,9 @@ describe('triggerCloudBuild', () => {
       'mock-repo',
       'gcr.io/mock-project/mock-image',
       true,
-      () => {}
+      'mock-token',
+      () => { },
+      undefined
     );
 
     assert.strictEqual(checkServiceMock.mock.callCount(), 1);
@@ -165,7 +169,9 @@ describe('triggerCloudBuild', () => {
       'mock-repo',
       'gcr.io/mock-project/mock-image',
       false,
-      () => {}
+      'mock-token',
+      () => { },
+      undefined
     );
 
     assert.deepStrictEqual(result, mockSuccessResult);
@@ -185,7 +191,9 @@ describe('triggerCloudBuild', () => {
       'mock-repo',
       'gcr.io/mock-project/mock-image',
       true, // hasDockerfile = true
-      () => {}
+      'mock-token',
+      () => { },
+      undefined
     );
 
     assert.strictEqual(submitBuildMock.mock.callCount(), 1);
@@ -215,7 +223,9 @@ describe('triggerCloudBuild', () => {
       'mock-repo',
       'gcr.io/mock-project/mock-image',
       true,
-      () => {}
+      'mock-token',
+      () => { },
+      undefined
     );
 
     assert.strictEqual(getBuildMock.mock.callCount(), 2);
@@ -241,7 +251,9 @@ describe('triggerCloudBuild', () => {
           'mock-repo',
           'gcr.io/mock-project/mock-image',
           true,
-          () => {}
+          'mock-token',
+          () => { },
+          undefined
         ),
       (err) => {
         assert.match(err.message, /Build mock-build-id failed/);
@@ -279,7 +291,9 @@ describe('triggerCloudBuild', () => {
           'mock-repo',
           'gcr.io/mock-project/mock-image',
           true,
-          () => {}
+          'mock-token',
+          () => { },
+          undefined
         ),
       /Dry-run deployment failed: Dry run fail/
     );
@@ -303,7 +317,9 @@ describe('triggerCloudBuild', () => {
           'mock-repo',
           'gcr.io/mock-project/mock-image',
           true,
-          () => {}
+          'mock-token',
+          () => { },
+          undefined
         ),
       /Dry-run deployment failed: Dry run fail/
     );
@@ -325,7 +341,9 @@ describe('triggerCloudBuild', () => {
           'mock-repo',
           'gcr.io/mock-project/mock-image',
           true,
-          () => {}
+          'mock-token',
+          () => { },
+          undefined
         ),
       /Permission denied/
     );
@@ -345,7 +363,9 @@ describe('triggerCloudBuild', () => {
           'mock-repo',
           'gcr.io/mock-project/mock-image',
           true,
-          () => {}
+          'mock-token',
+          () => { },
+          undefined
         ),
       /Submit failed/
     );
@@ -368,7 +388,9 @@ describe('triggerCloudBuild', () => {
           'mock-repo',
           'gcr.io/mock-project/mock-image',
           true,
-          () => {}
+          'mock-token',
+          () => { },
+          undefined
         ),
       (err) => {
         assert.match(err.message, /Build mock-build-id failed/);
@@ -401,7 +423,9 @@ describe('triggerCloudBuild', () => {
           'mock-repo',
           'gcr.io/mock-project/mock-image',
           true,
-          () => {}
+          'mock-token',
+          () => { },
+          undefined
         ),
       (err) => {
         assert.match(err.message, /Build mock-build-id failed/);
@@ -416,5 +440,25 @@ describe('triggerCloudBuild', () => {
       logCalls[7].arguments[0],
       /Failed to fetch build logs snippet/
     );
+  });
+
+  it('should pass ingress to dry run creation', async () => {
+    const { triggerCloudBuild } = await getTriggerCloudBuild();
+    await triggerCloudBuild(
+      'mock-project',
+      'mock-location',
+      'mock-bucket',
+      'mock-blob',
+      'mock-repo',
+      'gcr.io/mock-project/mock-image',
+      true,
+      'mock-token',
+      () => { },
+      'INGRESS_TRAFFIC_INTERNAL_ONLY'
+    );
+
+    assert.strictEqual(createServiceMock.mock.callCount(), 1);
+    const service = createServiceMock.mock.calls[0].arguments[0].service;
+    assert.strictEqual(service.ingress, 'INGRESS_TRAFFIC_INTERNAL_ONLY');
   });
 });
