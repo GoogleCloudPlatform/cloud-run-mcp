@@ -43,11 +43,7 @@ describe('Compose Deployment', () => {
       '../../lib/util/artifacts.js': artifactsMock,
     });
 
-    const result = await compose.runCompose(
-      '/app/dir',
-      'fake-token',
-      mock.fn()
-    );
+    const result = await compose.runCompose('fake-token', mock.fn());
 
     assert.strictEqual(result, '/home/user/.cloud-run-mcp/bin/run-compose');
     assert.strictEqual(
@@ -57,7 +53,10 @@ describe('Compose Deployment', () => {
 
     // Verify parameters passed to ensureRepositoryDownloaded
     const call = artifactsMock.ensureRepositoryDownloaded.mock.calls[0];
-    assert.strictEqual(call.arguments[0], '/home/user/.cloud-run-mcp/bin/run-compose');
+    assert.strictEqual(
+      call.arguments[0],
+      '/home/user/.cloud-run-mcp/bin/run-compose'
+    );
     assert.strictEqual(call.arguments[1].project, 'shrutimantri-tastyburborn1');
     assert.strictEqual(call.arguments[1].location, 'us-west1');
     assert.strictEqual(call.arguments[1].repository, 'run-compose');
@@ -76,11 +75,7 @@ describe('Compose Deployment', () => {
       '../../lib/util/artifacts.js': artifactsMock,
     });
 
-    const result = await compose.runCompose(
-      '/app/dir',
-      'fake-token',
-      mock.fn()
-    );
+    const result = await compose.runCompose('fake-token', mock.fn());
 
     assert.strictEqual(result, null);
     assert.strictEqual(
@@ -92,7 +87,10 @@ describe('Compose Deployment', () => {
   test('runCompose returns null if platform not supported', async () => {
     // Save original platform
     const originalPlatform = process.platform;
-    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    Object.defineProperty(process, 'platform', {
+      value: 'win32',
+      configurable: true,
+    });
 
     try {
       const compose = await esmock('../../lib/deployment/compose.js', {
@@ -101,14 +99,13 @@ describe('Compose Deployment', () => {
         '../../lib/util/artifacts.js': artifactsMock,
       });
 
-      const result = await compose.runCompose(
-        '/app/dir',
-        'fake-token',
-        mock.fn()
-      );
+      const result = await compose.runCompose('fake-token', mock.fn());
       assert.strictEqual(result, null);
     } finally {
-      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+      Object.defineProperty(process, 'platform', {
+        value: originalPlatform,
+        configurable: true,
+      });
     }
   });
 });
