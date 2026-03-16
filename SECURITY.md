@@ -5,7 +5,7 @@
 If you discover a security vulnerability in this project, please report it
 responsibly through **GitHub Private Vulnerability Reporting (PVR)**.
 
-**To report**: Go to the [Security Advisories page](../../security/advisories/new)
+**To report**: Go to the [Security Advisories page](https://github.com/GoogleCloudPlatform/cloud-run-mcp/security/advisories/new)
 and submit a new advisory.
 
 Please **do not** open public issues for security vulnerabilities.
