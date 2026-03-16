@@ -32,7 +32,7 @@ describe('Compose Deployment', () => {
   };
 
   const childProcessMock = {
-    exec: mock.fn(),
+    execFile: mock.fn(),
   };
 
   test('runCompose successfully ensures download', async () => {
@@ -114,13 +114,15 @@ describe('Compose Deployment', () => {
   });
 
   test('resourceCompose returns stdout on success', async () => {
-    childProcessMock.exec.mock.resetCalls();
-    childProcessMock.exec.mock.mockImplementation((cmd, opts, cb) => {
-      if (typeof opts === 'function') {
-        cb = opts;
+    childProcessMock.execFile.mock.resetCalls();
+    childProcessMock.execFile.mock.mockImplementation(
+      (file, args, opts, cb) => {
+        if (typeof opts === 'function') {
+          cb = opts;
+        }
+        cb(null, { stdout: '{"resources": []}', stderr: '' });
       }
-      cb(null, { stdout: '{"resources": []}', stderr: '' });
-    });
+    );
 
     const compose = await esmock('../../lib/deployment/compose.js', {
       child_process: childProcessMock,
@@ -135,21 +137,31 @@ describe('Compose Deployment', () => {
     );
 
     assert.strictEqual(result, '{"resources": []}');
-    assert.strictEqual(childProcessMock.exec.mock.callCount(), 1);
-    const call = childProcessMock.exec.mock.calls[0];
-    assert.ok(call.arguments[0].includes('resource "/path/to/compose.yaml"'));
-    assert.strictEqual(call.arguments[1].cwd, '/path/to');
+    assert.strictEqual(childProcessMock.execFile.mock.callCount(), 1);
+    const call = childProcessMock.execFile.mock.calls[0];
+    assert.strictEqual(call.arguments[0], '/bin/run-compose');
+    assert.deepEqual(call.arguments[1], [
+      'resource',
+      '/path/to/compose.yaml',
+      '--region',
+      'us-central1',
+      '--out',
+      '.',
+    ]);
+    assert.strictEqual(call.arguments[2].cwd, '/path/to');
   });
 
   test('resourceCompose logs warning on stderr but returns stdout', async () => {
-    childProcessMock.exec.mock.resetCalls();
+    childProcessMock.execFile.mock.resetCalls();
     helpersMock.logAndProgress.mock.resetCalls();
-    childProcessMock.exec.mock.mockImplementation((cmd, opts, cb) => {
-      if (typeof opts === 'function') {
-        cb = opts;
+    childProcessMock.execFile.mock.mockImplementation(
+      (file, args, opts, cb) => {
+        if (typeof opts === 'function') {
+          cb = opts;
+        }
+        cb(null, { stdout: 'output', stderr: 'some warning' });
       }
-      cb(null, { stdout: 'output', stderr: 'some warning' });
-    });
+    );
 
     const compose = await esmock('../../lib/deployment/compose.js', {
       child_process: childProcessMock,
@@ -172,14 +184,16 @@ describe('Compose Deployment', () => {
     assert.ok(warnCall.arguments[0].includes('some warning'));
   });
 
-  test('resourceCompose throws error if exec fails', async () => {
-    childProcessMock.exec.mock.resetCalls();
-    childProcessMock.exec.mock.mockImplementation((cmd, opts, cb) => {
-      if (typeof opts === 'function') {
-        cb = opts;
+  test('resourceCompose throws error if execFile fails', async () => {
+    childProcessMock.execFile.mock.resetCalls();
+    childProcessMock.execFile.mock.mockImplementation(
+      (file, args, opts, cb) => {
+        if (typeof opts === 'function') {
+          cb = opts;
+        }
+        cb(new Error('execFile failed'), { stdout: '', stderr: '' });
       }
-      cb(new Error('exec failed'), { stdout: '', stderr: '' });
-    });
+    );
 
     const compose = await esmock('../../lib/deployment/compose.js', {
       child_process: childProcessMock,
@@ -194,7 +208,7 @@ describe('Compose Deployment', () => {
         mock.fn()
       ),
       {
-        message: /Failed to get resources for compose file: exec failed/,
+        message: /Failed to get resources for compose file: execFile failed/,
       }
     );
   });
