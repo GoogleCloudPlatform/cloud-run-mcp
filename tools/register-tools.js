@@ -248,7 +248,7 @@ function registerGetServiceTool(server, options) {
                   serviceDetails.updateTime.seconds
                     ? Number(serviceDetails.updateTime.seconds) * 1000
                     : serviceDetails.updateTime
-                ).toLocaleString()
+                ).toUTCString()
               : 'N/A';
             const consoleUrl = `https://console.cloud.google.com/run/detail/${region}/${service}?project=${project}`;
             return {

@@ -224,7 +224,7 @@ describe('registerTools', () => {
         service: 'my-service',
       });
 
-      const expectedDate = new Date('2025-01-01T12:00:00Z').toLocaleString();
+      const expectedDate = new Date('2025-01-01T12:00:00Z').toUTCString();
       assert.deepStrictEqual(result, {
         content: [
           {
