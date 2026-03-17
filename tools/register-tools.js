@@ -255,7 +255,7 @@ function registerGetServiceTool(server, options) {
               content: [
                 {
                   type: 'text',
-                  text: `Name: ${service}\nRegion: ${region}\nProject: ${project}\nURL: ${serviceDetails.uri}\nConsole: ${consoleUrl}\nLast deployed by: ${serviceDetails.lastModifier}\nLast deployed date: ${lastDeployedDate}`,
+                  text: `Name: ${service}\nRegion: ${region}\nProject: ${project}\nURL: ${serviceDetails.uri}\nConsole URL: ${consoleUrl}\nLast deployed by: ${serviceDetails.lastModifier}\nLast deployed date: ${lastDeployedDate}`,
                 },
               ],
             };

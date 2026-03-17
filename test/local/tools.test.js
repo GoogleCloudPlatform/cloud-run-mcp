@@ -229,7 +229,7 @@ describe('registerTools', () => {
         content: [
           {
             type: 'text',
-            text: `Name: my-service\nRegion: my-region\nProject: my-project\nURL: my-uri\nConsole: https://console.cloud.google.com/run/detail/my-region/my-service?project=my-project\nLast deployed by: me\nLast deployed date: ${expectedDate}`,
+            text: `Name: my-service\nRegion: my-region\nProject: my-project\nURL: my-uri\nConsole URL: https://console.cloud.google.com/run/detail/my-region/my-service?project=my-project\nLast deployed by: me\nLast deployed date: ${expectedDate}`,
           },
         ],
       });
