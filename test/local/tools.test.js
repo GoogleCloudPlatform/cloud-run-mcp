@@ -207,6 +207,7 @@ describe('registerTools', () => {
                 name: 'my-service',
                 uri: 'my-uri',
                 lastModifier: 'me',
+                updateTime: { seconds: '1735732800', nanos: 0 }, // 2025-01-01T12:00:00Z
               }),
           },
         }
@@ -223,11 +224,12 @@ describe('registerTools', () => {
         service: 'my-service',
       });
 
+      const expectedDate = new Date('2025-01-01T12:00:00Z').toLocaleString();
       assert.deepStrictEqual(result, {
         content: [
           {
             type: 'text',
-            text: 'Name: my-service\nRegion: my-region\nProject: my-project\nURL: my-uri\nLast deployed by: me',
+            text: `Name: my-service\nRegion: my-region\nProject: my-project\nURL: my-uri\nConsole: https://console.cloud.google.com/run/detail/my-region/my-service?project=my-project\nLast deployed by: me\nLast deployed date: ${expectedDate}`,
           },
         ],
       });
