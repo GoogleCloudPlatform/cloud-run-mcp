@@ -212,4 +212,101 @@ describe('Compose Deployment', () => {
       }
     );
   });
+
+  test('translateCompose returns stdout on success', async () => {
+    childProcessMock.execFile.mock.resetCalls();
+    childProcessMock.execFile.mock.mockImplementation(
+      (file, args, opts, cb) => {
+        if (typeof opts === 'function') {
+          cb = opts;
+        }
+        cb(null, { stdout: 'translated output', stderr: '' });
+      }
+    );
+
+    const compose = await esmock('../../lib/deployment/compose.js', {
+      child_process: childProcessMock,
+      '../../lib/util/helpers.js': helpersMock,
+    });
+
+    const result = await compose.translateCompose(
+      '/bin/run-compose',
+      '/path/to/compose.yaml',
+      'us-central1',
+      '123456789',
+      mock.fn()
+    );
+
+    assert.strictEqual(result, 'translated output');
+    assert.strictEqual(childProcessMock.execFile.mock.callCount(), 1);
+    const call = childProcessMock.execFile.mock.calls[0];
+    assert.strictEqual(call.arguments[0], '/bin/run-compose');
+    assert.strictEqual(call.arguments[1][0], 'translate');
+    assert.strictEqual(call.arguments[1][1], '/path/to/compose.yaml');
+    assert.strictEqual(call.arguments[1][7], '.'); // Currently it's '.'
+    assert.strictEqual(call.arguments[2].cwd, '/path/to');
+  });
+
+  test('translateCompose handles resourcesConfig', async () => {
+    childProcessMock.execFile.mock.resetCalls();
+    childProcessMock.execFile.mock.mockImplementation(
+      (file, args, opts, cb) => {
+        if (typeof opts === 'function') {
+          cb = opts;
+        }
+        cb(null, { stdout: 'translated output with config', stderr: '' });
+      }
+    );
+
+    const compose = await esmock('../../lib/deployment/compose.js', {
+      child_process: childProcessMock,
+      '../../lib/util/helpers.js': helpersMock,
+    });
+
+    const resourcesConfig = { some: 'config' };
+    const result = await compose.translateCompose(
+      '/bin/run-compose',
+      '/path/to/compose.yaml',
+      'us-central1',
+      '123456789',
+      mock.fn(),
+      resourcesConfig
+    );
+
+    assert.strictEqual(result, 'translated output with config');
+    const call = childProcessMock.execFile.mock.calls[0];
+    const args = call.arguments[1];
+    assert.ok(args.includes('--resources-config'));
+    assert.ok(args.includes(JSON.stringify(resourcesConfig)));
+  });
+
+  test('translateCompose throws error if execFile fails', async () => {
+    childProcessMock.execFile.mock.resetCalls();
+    childProcessMock.execFile.mock.mockImplementation(
+      (file, args, opts, cb) => {
+        if (typeof opts === 'function') {
+          cb = opts;
+        }
+        cb(new Error('translation failed'), { stdout: '', stderr: '' });
+      }
+    );
+
+    const compose = await esmock('../../lib/deployment/compose.js', {
+      child_process: childProcessMock,
+      '../../lib/util/helpers.js': helpersMock,
+    });
+
+    await assert.rejects(
+      compose.translateCompose(
+        '/bin/run-compose',
+        '/path/to/compose.yaml',
+        'us-central1',
+        '123456789',
+        mock.fn()
+      ),
+      {
+        message: /Failed to translate compose file: translation failed/,
+      }
+    );
+  });
 });
