@@ -241,11 +241,21 @@ function registerGetServiceTool(server, options) {
             options.accessToken
           );
           if (serviceDetails) {
+            // Format last deployment date, handling both Protobuf Timestamp (with
+            // seconds as string or number) and standard Date/ISO strings.
+            const lastDeployedDate = serviceDetails.updateTime
+              ? new Date(
+                  serviceDetails.updateTime.seconds
+                    ? Number(serviceDetails.updateTime.seconds) * 1000
+                    : serviceDetails.updateTime
+                ).toUTCString()
+              : 'N/A';
+            const consoleUrl = `https://console.cloud.google.com/run/detail/${region}/${service}?project=${project}`;
             return {
               content: [
                 {
                   type: 'text',
-                  text: `Name: ${service}\nRegion: ${region}\nProject: ${project}\nURL: ${serviceDetails.uri}\nLast deployed by: ${serviceDetails.lastModifier}`,
+                  text: `Name: ${service}\nRegion: ${region}\nProject: ${project}\nURL: ${serviceDetails.uri}\nConsole URL: ${consoleUrl}\nLast deployed by: ${serviceDetails.lastModifier}\nLast deployed date: ${lastDeployedDate}`,
                 },
               ],
             };
