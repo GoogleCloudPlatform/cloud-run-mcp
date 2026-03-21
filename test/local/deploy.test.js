@@ -73,9 +73,9 @@ describe('Deploy Compose', () => {
     }));
     const fsMock = {
       existsSync: mock.fn(() => true),
-      readFileSync: mock.fn(() => 'name: web\nmetadata:\n  name: web'),
       promises: {
         mkdtemp: mock.fn(async () => '/tmp/random-dir'),
+        readFile: mock.fn(async () => 'name: web'),
       },
     };
     const logAndProgressMock = mock.fn();

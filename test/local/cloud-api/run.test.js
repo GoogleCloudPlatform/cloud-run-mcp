@@ -26,8 +26,10 @@ describe('Cloud Run API Helpers', () => {
   const resource = `projects/${projectId}/locations/${location}/services/${serviceId}`;
 
   it('setServicePublicAccess should set IAM policy for allUsers', async () => {
+    const getIamPolicyMock = mock.fn(async () => [{ bindings: [] }]);
     const setIamPolicyMock = mock.fn(async () => ({}));
     const runClientMock = {
+      getIamPolicy: getIamPolicyMock,
       setIamPolicy: setIamPolicyMock,
       servicePath: mock.fn(() => resource),
     };
@@ -65,6 +67,7 @@ describe('Cloud Run API Helpers', () => {
       accessToken,
     ]);
 
+    assert.equal(getIamPolicyMock.mock.callCount(), 1);
     assert.equal(setIamPolicyMock.mock.callCount(), 1);
     const setIamPolicyRequest = setIamPolicyMock.mock.calls[0].arguments[0];
     assert.equal(setIamPolicyRequest.resource, resource);
@@ -84,10 +87,12 @@ describe('Cloud Run API Helpers', () => {
 
   it('setServicePublicAccess should throw if setIamPolicy fails', async () => {
     const error = new Error('IAM Update Failed');
+    const getIamPolicyMock = mock.fn(async () => [{ bindings: [] }]);
     const setIamPolicyMock = mock.fn(async () => {
       throw error;
     });
     const runClientMock = {
+      getIamPolicy: getIamPolicyMock,
       setIamPolicy: setIamPolicyMock,
       servicePath: mock.fn(() => resource),
     };
