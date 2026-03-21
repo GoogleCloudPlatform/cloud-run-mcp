@@ -31,7 +31,7 @@ describe('triggerCloudBuild', () => {
   let updateServiceMock;
   let servicePathMock;
   let locationPathMock;
-  let submitBuildMock;
+  let createBuildMock;
   let getBuildMock;
   let getEntriesMock;
   let context;
@@ -51,7 +51,18 @@ describe('triggerCloudBuild', () => {
     locationPathMock = mock.fn(
       (projectId, location) => `projects/${projectId}/locations/${location}`
     );
-    submitBuildMock = mock.fn(() => Promise.resolve(goodSubmitBuildResponse));
+    createBuildMock = mock.fn(() =>
+      Promise.resolve([
+        {
+          name: `projects/mock-project/locations/mock-location/operations/mock-op-id`,
+          metadata: {
+            build: {
+              id: mockBuildId,
+            },
+          },
+        },
+      ])
+    );
     getBuildMock = mock.fn(() => Promise.resolve([mockSuccessResult]));
     getEntriesMock = mock.fn(() =>
       Promise.resolve([[{ data: 'log line 1' }, { data: 'log line 2' }]])
@@ -67,10 +78,8 @@ describe('triggerCloudBuild', () => {
         servicePath: servicePathMock,
         locationPath: locationPathMock,
       },
-      buildsClient: {
-        submitBuild: submitBuildMock,
-      },
       cloudBuildClient: {
+        createBuild: createBuildMock,
         getBuild: getBuildMock,
       },
       loggingClient: {
@@ -96,9 +105,9 @@ describe('triggerCloudBuild', () => {
       },
       '../../../lib/clients.js': {
         getRunClient: () => Promise.resolve(context.runClient),
-        getBuildsClient: () => Promise.resolve(context.buildsClient),
         getCloudBuildClient: () => Promise.resolve(context.cloudBuildClient),
         getLoggingClient: () => Promise.resolve(context.loggingClient),
+        getBuildsClient: () => Promise.resolve({}), // No longer used
       },
     });
   }
@@ -120,7 +129,7 @@ describe('triggerCloudBuild', () => {
 
     assert.deepStrictEqual(result, mockSuccessResult);
     assert.strictEqual(checkServiceMock.mock.callCount(), 1);
-    assert.strictEqual(submitBuildMock.mock.callCount(), 1);
+    assert.strictEqual(createBuildMock.mock.callCount(), 1);
     assert.strictEqual(getBuildMock.mock.callCount(), 1);
     assert.strictEqual(createServiceMock.mock.callCount(), 1); // 1 dry run
     assert.strictEqual(updateServiceMock.mock.callCount(), 0);
@@ -129,7 +138,7 @@ describe('triggerCloudBuild', () => {
     assert.match(logCalls[0].arguments[0], /Performing dry-run creation/);
     assert.match(logCalls[1].arguments[0], /Dry-run validation successful/);
     assert.match(logCalls[2].arguments[0], /Initiating Cloud Build/);
-    assert.match(logCalls[3].arguments[0], /Cloud Build job started/);
+    assert.match(logCalls[3].arguments[0], /Cloud Build job .* started/);
     assert.match(logCalls[4].arguments[0], /completed successfully/);
     assert.match(logCalls[5].arguments[0], /Image built/);
   });
@@ -151,7 +160,7 @@ describe('triggerCloudBuild', () => {
     );
 
     assert.strictEqual(checkServiceMock.mock.callCount(), 1);
-    assert.strictEqual(submitBuildMock.mock.callCount(), 1);
+    assert.strictEqual(createBuildMock.mock.callCount(), 1);
     assert.strictEqual(getBuildMock.mock.callCount(), 1);
     assert.strictEqual(createServiceMock.mock.callCount(), 0);
     assert.strictEqual(updateServiceMock.mock.callCount(), 1); // 1 dry run
@@ -175,13 +184,17 @@ describe('triggerCloudBuild', () => {
     );
 
     assert.deepStrictEqual(result, mockSuccessResult);
-    assert.strictEqual(submitBuildMock.mock.callCount(), 1);
-    const submitBuildRequest = submitBuildMock.mock.calls[0].arguments[0];
-    assert.deepStrictEqual(submitBuildRequest.buildpackBuild, {});
-    assert.strictEqual(submitBuildRequest.dockerBuild, undefined);
+    assert.strictEqual(createBuildMock.mock.callCount(), 1);
+    const createBuildRequest = createBuildMock.mock.calls[0].arguments[0];
+    const buildSteps = createBuildRequest.build.steps;
+    assert.strictEqual(buildSteps[0].name, 'gcr.io/buildpacks/builder:v1');
+    assert.ok(
+      buildSteps[0].args.includes('gcr.io/mock-project/mock-image'),
+      'Image URL should be in build args'
+    );
   });
 
-  it('should use docker build when Dockerfile is present', async () => {
+  it('should use docker build when Dockerfile is present and enable BuildKit', async () => {
     const { triggerCloudBuild } = await getTriggerCloudBuild();
     await triggerCloudBuild(
       'mock-project',
@@ -196,10 +209,11 @@ describe('triggerCloudBuild', () => {
       undefined
     );
 
-    assert.strictEqual(submitBuildMock.mock.callCount(), 1);
-    const submitBuildRequest = submitBuildMock.mock.calls[0].arguments[0];
-    assert.deepStrictEqual(submitBuildRequest.dockerBuild, {});
-    assert.strictEqual(submitBuildRequest.buildpackBuild, undefined);
+    assert.strictEqual(createBuildMock.mock.callCount(), 1);
+    const createBuildRequest = createBuildMock.mock.calls[0].arguments[0];
+    const buildSteps = createBuildRequest.build.steps;
+    assert.strictEqual(buildSteps[0].name, 'gcr.io/cloud-builders/docker');
+    assert.deepStrictEqual(buildSteps[0].env, ['DOCKER_BUILDKIT=1']);
   });
 
   it('should poll for build status until completion', async () => {
@@ -297,7 +311,7 @@ describe('triggerCloudBuild', () => {
         ),
       /Dry-run deployment failed: Dry run fail/
     );
-    assert.strictEqual(submitBuildMock.mock.callCount(), 0);
+    assert.strictEqual(createBuildMock.mock.callCount(), 0);
   });
 
   it('should throw if dry-run update fails', async () => {
@@ -323,7 +337,7 @@ describe('triggerCloudBuild', () => {
         ),
       /Dry-run deployment failed: Dry run fail/
     );
-    assert.strictEqual(submitBuildMock.mock.callCount(), 0);
+    assert.strictEqual(createBuildMock.mock.callCount(), 0);
   });
 
   it('should throw if checkCloudRunServiceExists fails with unexpected error', async () => {
@@ -349,9 +363,9 @@ describe('triggerCloudBuild', () => {
     );
   });
 
-  it('should throw if submitBuild fails', async () => {
-    submitBuildMock = mock.fn(() => Promise.reject(new Error('Submit failed')));
-    context.buildsClient.submitBuild = submitBuildMock;
+  it('should throw if createBuild fails', async () => {
+    createBuildMock = mock.fn(() => Promise.reject(new Error('Submit failed')));
+    context.cloudBuildClient.createBuild = createBuildMock;
     const { triggerCloudBuild } = await getTriggerCloudBuild();
     await assert.rejects(
       () =>
