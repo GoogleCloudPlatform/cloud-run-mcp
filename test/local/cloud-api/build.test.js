@@ -186,11 +186,13 @@ describe('triggerCloudBuild', () => {
     assert.deepStrictEqual(result, mockSuccessResult);
     assert.strictEqual(createBuildMock.mock.callCount(), 1);
     const createBuildRequest = createBuildMock.mock.calls[0].arguments[0];
-    const buildSteps = createBuildRequest.build.steps;
-    assert.strictEqual(buildSteps[0].name, 'gcr.io/buildpacks/builder:v1');
     assert.ok(
-      buildSteps[0].args.includes('gcr.io/mock-project/mock-image'),
-      'Image URL should be in build args'
+      createBuildRequest.build.buildpackBuild,
+      'Should use buildpackBuild'
+    );
+    assert.strictEqual(
+      createBuildRequest.build.buildpackBuild.image,
+      'gcr.io/mock-project/mock-image'
     );
   });
 
