@@ -30,21 +30,31 @@ describe('Deploy Compose', () => {
     // Setup mocks
     const prepareSourceDirectoryMock = mock.fn(async () => '/tmp/temp-dir');
     const getProjectNumberMock = mock.fn(async () => '123456789');
-    const downloadRunComposeMock = mock.fn(async () => '/usr/local/bin/run-compose');
-    const resourceComposeMock = mock.fn(async () => JSON.stringify({
-      source_builds: {
-        'web': { context: 'app' }
-      }
-    }));
-    const translateComposeMock = mock.fn(async () => JSON.stringify({
-      services: {
-        'web': 'web.yaml'
-      }
-    }));
+    const downloadRunComposeMock = mock.fn(
+      async () => '/usr/local/bin/run-compose'
+    );
+    const resourceComposeMock = mock.fn(async () =>
+      JSON.stringify({
+        source_builds: {
+          web: { context: 'app' },
+        },
+      })
+    );
+    const translateComposeMock = mock.fn(async () =>
+      JSON.stringify({
+        services: {
+          web: 'web.yaml',
+        },
+      })
+    );
     const triggerCloudBuildMock = mock.fn(async () => ({
       results: {
-        images: [{ name: 'us-central1-docker.pkg.dev/test-project/mcp-cloud-run-deployments/web:latest' }]
-      }
+        images: [
+          {
+            name: 'us-central1-docker.pkg.dev/test-project/mcp-cloud-run-deployments/web:latest',
+          },
+        ],
+      },
     }));
     const ensureArtifactRegistryRepoExistsMock = mock.fn();
     const ensureStorageBucketExistsMock = mock.fn(async () => ({}));
@@ -54,17 +64,19 @@ describe('Deploy Compose', () => {
     const getRunV1ClientMock = mock.fn(async () => ({
       namespaces: {
         services: {
-          replaceService: mock.fn(async () => ({ data: { metadata: { name: 'web' } } })),
-          create: mock.fn()
-        }
-      }
+          replaceService: mock.fn(async () => ({
+            data: { metadata: { name: 'web' } },
+          })),
+          create: mock.fn(),
+        },
+      },
     }));
     const fsMock = {
       existsSync: mock.fn(() => true),
       readFileSync: mock.fn(() => 'name: web\nmetadata:\n  name: web'),
       promises: {
         mkdtemp: mock.fn(async () => '/tmp/random-dir'),
-      }
+      },
     };
     const logAndProgressMock = mock.fn();
 
@@ -72,35 +84,35 @@ describe('Deploy Compose', () => {
     const { deployCompose } = await esmock('../../lib/deployment/deployer.js', {
       '../../lib/deployment/source-processor.js': {
         prepareSourceDirectory: prepareSourceDirectoryMock,
-        cleanupTempDirectory: cleanupTempDirectoryMock
+        cleanupTempDirectory: cleanupTempDirectoryMock,
       },
       '../../lib/util/helpers.js': {
         getProjectNumber: getProjectNumberMock,
-        logAndProgress: logAndProgressMock
+        logAndProgress: logAndProgressMock,
       },
       '../../lib/deployment/compose.js': {
         runCompose: downloadRunComposeMock,
         resourceCompose: resourceComposeMock,
-        translateCompose: translateComposeMock
+        translateCompose: translateComposeMock,
       },
       '../../lib/cloud-api/build.js': {
-        triggerCloudBuild: triggerCloudBuildMock
+        triggerCloudBuild: triggerCloudBuildMock,
       },
       '../../lib/cloud-api/registry.js': {
-        ensureArtifactRegistryRepoExists: ensureArtifactRegistryRepoExistsMock
+        ensureArtifactRegistryRepoExists: ensureArtifactRegistryRepoExistsMock,
       },
       '../../lib/util/archive.js': {
-        zipFiles: zipFilesMock
+        zipFiles: zipFilesMock,
       },
       '../../lib/cloud-api/storage.js': {
         ensureStorageBucketExists: ensureStorageBucketExistsMock,
-        uploadToStorageBucket: uploadToStorageBucketMock
+        uploadToStorageBucket: uploadToStorageBucketMock,
       },
       '../../lib/clients.js': {
-        getRunV1Client: getRunV1ClientMock
+        getRunV1Client: getRunV1ClientMock,
       },
-      'fs': fsMock,
-      'path': path
+      fs: fsMock,
+      path: path,
     });
 
     const result = await deployCompose({
@@ -109,7 +121,7 @@ describe('Deploy Compose', () => {
       files,
       composeFilePath,
       accessToken,
-      progressCallback: logAndProgressMock
+      progressCallback: logAndProgressMock,
     });
 
     // Validations
@@ -123,23 +135,28 @@ describe('Deploy Compose', () => {
 
     // Verify triggerCloudBuild was called with correctly updated image tag
     const buildCall = triggerCloudBuildMock.mock.calls[0];
-    assert.equal(buildCall.arguments[5], 'us-central1-docker.pkg.dev/test-project/mcp-cloud-run-deployments/web:latest');
+    assert.equal(
+      buildCall.arguments[5],
+      'us-central1-docker.pkg.dev/test-project/mcp-cloud-run-deployments/web:latest'
+    );
   });
 
   test('failure in prepareSourceDirectory triggers cleanup and rethrows', async () => {
     const error = new Error('Preparation failed');
-    const prepareSourceDirectoryMock = mock.fn(async () => { throw error; });
+    const prepareSourceDirectoryMock = mock.fn(async () => {
+      throw error;
+    });
     const logAndProgressMock = mock.fn();
     const cleanupTempDirectoryMock = mock.fn();
 
     const { deployCompose } = await esmock('../../lib/deployment/deployer.js', {
       '../../lib/deployment/source-processor.js': {
         prepareSourceDirectory: prepareSourceDirectoryMock,
-        cleanupTempDirectory: cleanupTempDirectoryMock
+        cleanupTempDirectory: cleanupTempDirectoryMock,
       },
       '../../lib/util/helpers.js': {
-        logAndProgress: logAndProgressMock
-      }
+        logAndProgress: logAndProgressMock,
+      },
     });
 
     await assert.rejects(
@@ -149,11 +166,16 @@ describe('Deploy Compose', () => {
         files,
         composeFilePath,
         accessToken,
-        progressCallback: logAndProgressMock
+        progressCallback: logAndProgressMock,
       }),
       error
     );
 
-    assert.equal(logAndProgressMock.mock.calls.some(call => call.arguments[2] === 'error'), true);
+    assert.equal(
+      logAndProgressMock.mock.calls.some(
+        (call) => call.arguments[2] === 'error'
+      ),
+      true
+    );
   });
 });

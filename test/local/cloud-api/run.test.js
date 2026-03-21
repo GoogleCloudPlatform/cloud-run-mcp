@@ -36,17 +36,20 @@ describe('Cloud Run API Helpers', () => {
     const logAndProgressMock = mock.fn();
     const callWithRetryMock = mock.fn((fn) => fn());
 
-    const { setServicePublicAccess } = await esmock('../../../lib/cloud-api/run.js', {
-      '../../../lib/clients.js': {
-        getRunClient: getRunClientMock,
-      },
-      '../../../lib/cloud-api/helpers.js': {
-        callWithRetry: callWithRetryMock,
-      },
-      '../../../lib/util/helpers.js': {
-        logAndProgress: logAndProgressMock,
-      },
-    });
+    const { setServicePublicAccess } = await esmock(
+      '../../../lib/cloud-api/run.js',
+      {
+        '../../../lib/clients.js': {
+          getRunClient: getRunClientMock,
+        },
+        '../../../lib/cloud-api/helpers.js': {
+          callWithRetry: callWithRetryMock,
+        },
+        '../../../lib/util/helpers.js': {
+          logAndProgress: logAndProgressMock,
+        },
+      }
+    );
 
     await setServicePublicAccess(
       projectId,
@@ -57,7 +60,10 @@ describe('Cloud Run API Helpers', () => {
     );
 
     assert.equal(getRunClientMock.mock.callCount(), 1);
-    assert.deepEqual(getRunClientMock.mock.calls[0].arguments, [projectId, accessToken]);
+    assert.deepEqual(getRunClientMock.mock.calls[0].arguments, [
+      projectId,
+      accessToken,
+    ]);
 
     assert.equal(setIamPolicyMock.mock.callCount(), 1);
     const setIamPolicyRequest = setIamPolicyMock.mock.calls[0].arguments[0];
@@ -67,14 +73,20 @@ describe('Cloud Run API Helpers', () => {
       members: ['allUsers'],
     });
 
-    assert.ok(logAndProgressMock.mock.calls.some(call => 
-      call.arguments[0].includes(`Setting public access for service ${serviceId}`)
-    ));
+    assert.ok(
+      logAndProgressMock.mock.calls.some((call) =>
+        call.arguments[0].includes(
+          `Setting public access for service ${serviceId}`
+        )
+      )
+    );
   });
 
   it('setServicePublicAccess should throw if setIamPolicy fails', async () => {
     const error = new Error('IAM Update Failed');
-    const setIamPolicyMock = mock.fn(async () => { throw error; });
+    const setIamPolicyMock = mock.fn(async () => {
+      throw error;
+    });
     const runClientMock = {
       setIamPolicy: setIamPolicyMock,
       servicePath: mock.fn(() => resource),
@@ -83,17 +95,20 @@ describe('Cloud Run API Helpers', () => {
     const getRunClientMock = mock.fn(async () => runClientMock);
     const logAndProgressMock = mock.fn();
 
-    const { setServicePublicAccess } = await esmock('../../../lib/cloud-api/run.js', {
-      '../../../lib/clients.js': {
-        getRunClient: getRunClientMock,
-      },
-      '../../../lib/cloud-api/helpers.js': {
-        callWithRetry: (fn) => fn(),
-      },
-      '../../../lib/util/helpers.js': {
-        logAndProgress: logAndProgressMock,
-      },
-    });
+    const { setServicePublicAccess } = await esmock(
+      '../../../lib/cloud-api/run.js',
+      {
+        '../../../lib/clients.js': {
+          getRunClient: getRunClientMock,
+        },
+        '../../../lib/cloud-api/helpers.js': {
+          callWithRetry: (fn) => fn(),
+        },
+        '../../../lib/util/helpers.js': {
+          logAndProgress: logAndProgressMock,
+        },
+      }
+    );
 
     await assert.rejects(
       setServicePublicAccess(
