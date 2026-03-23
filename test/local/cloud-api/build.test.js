@@ -641,9 +641,9 @@ describe('composeBuild', () => {
       result.source_builds.api.image_id,
       'us-central1-docker.pkg.dev/mock-project/mock-repo/web:latest' // Mocked name is same in this simple test
     );
-    assert.strictEqual(ensureARMock.mock.callCount(), 2);
+    assert.strictEqual(ensureARMock.mock.callCount(), 1);
     assert.strictEqual(zipFilesMock.mock.callCount(), 2);
-    assert.strictEqual(ensureBucketMock.mock.callCount(), 2);
+    assert.strictEqual(ensureBucketMock.mock.callCount(), 1);
     assert.strictEqual(uploadToBucketMock.mock.callCount(), 2);
     assert.strictEqual(createBuildMock.mock.callCount(), 2);
   });
