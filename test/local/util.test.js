@@ -196,3 +196,60 @@ describe('Artifact Utilities', () => {
     assert.strictEqual(fsMock.createWriteStream.mock.callCount(), 1);
   });
 });
+
+describe('Utility Helpers', () => {
+  test('extractAccessToken correctly extracts token from Bearer header', async () => {
+    const { extractAccessToken } = await import('../../lib/util/helpers.js');
+
+    assert.equal(extractAccessToken('Bearer my-token'), 'my-token');
+    assert.equal(extractAccessToken(''), undefined);
+    assert.equal(extractAccessToken(null), undefined);
+  });
+
+  describe('getProjectNumber', () => {
+    test('extracts project number from name in projects/NNNN format', async () => {
+      const getProjectMock = mock.fn(async () => [
+        { name: 'projects/123456789' },
+      ]);
+      const getProjectsClientMock = mock.fn(async () => ({
+        getProject: getProjectMock,
+      }));
+
+      const { getProjectNumber } = await esmock('../../lib/util/helpers.js', {
+        '../../lib/clients.js': {
+          getProjectsClient: getProjectsClientMock,
+        },
+      });
+
+      const projectId = 'test-project';
+      const accessToken = 'test-token';
+      const result = await getProjectNumber(projectId, accessToken);
+
+      assert.equal(result, '123456789');
+      assert.equal(getProjectsClientMock.mock.callCount(), 1);
+      assert.equal(
+        getProjectMock.mock.calls[0].arguments[0].name,
+        'projects/test-project'
+      );
+    });
+
+    test('falls back to projectNumber property if name structure is unexpected', async () => {
+      const getProjectMock = mock.fn(async () => [
+        { name: 'unexpected', projectNumber: '987654321' },
+      ]);
+      const getProjectsClientMock = mock.fn(async () => ({
+        getProject: getProjectMock,
+      }));
+
+      const { getProjectNumber } = await esmock('../../lib/util/helpers.js', {
+        '../../lib/clients.js': {
+          getProjectsClient: getProjectsClientMock,
+        },
+      });
+
+      const result = await getProjectNumber('test-project', 'test-token');
+
+      assert.equal(result, '987654321');
+    });
+  });
+});
