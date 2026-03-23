@@ -517,7 +517,13 @@ describe('composeBuild', () => {
   let context;
   const mockBuildId = 'mock-build-id';
   const mockSuccessResult = {
-    results: { images: [{ name: 'us-central1-docker.pkg.dev/mock-project/mock-repo/web:latest' }] },
+    results: {
+      images: [
+        {
+          name: 'us-central1-docker.pkg.dev/mock-project/mock-repo/web:latest',
+        },
+      ],
+    },
     status: 'SUCCESS',
   };
 
@@ -548,9 +554,15 @@ describe('composeBuild', () => {
         getBuild: getBuildMock,
       },
       buildsClient: {
-        submitBuild: mock.fn(() => Promise.resolve([{
-          buildOperation: { name: 'projects/p/locations/l/operations/bW9jay1pZA==' }
-        }])),
+        submitBuild: mock.fn(() =>
+          Promise.resolve([
+            {
+              buildOperation: {
+                name: 'projects/p/locations/l/operations/bW9jay1pZA==',
+              },
+            },
+          ])
+        ),
       },
     };
   });
@@ -618,7 +630,7 @@ describe('composeBuild', () => {
       'mock-project',
       'us-central1',
       '/folder',
-      () => { }
+      () => {}
     );
 
     assert.strictEqual(
@@ -651,11 +663,14 @@ describe('composeBuild', () => {
       'mock-project',
       'us-central1',
       '/folder',
-      () => { }
+      () => {}
     );
 
     const createBuildArgs = createBuildMock.mock.calls[0].arguments[0];
-    assert.strictEqual(createBuildArgs.build.steps[0].name, 'gcr.io/cloud-builders/docker');
+    assert.strictEqual(
+      createBuildArgs.build.steps[0].name,
+      'gcr.io/cloud-builders/docker'
+    );
   });
 
   it('should handle service without Dockerfile (buildpacks)', async () => {
@@ -673,7 +688,7 @@ describe('composeBuild', () => {
       'mock-project',
       'us-central1',
       '/folder',
-      () => { }
+      () => {}
     );
 
     assert.strictEqual(context.buildsClient.submitBuild.mock.callCount(), 1);
