@@ -97,6 +97,27 @@ describe('Deploy Compose', () => {
       },
       '../../lib/cloud-api/build.js': {
         triggerCloudBuild: triggerCloudBuildMock,
+        composeBuild: mock.fn(
+          async (resourcesConfig, token, pId, reg, fPath, cb) => {
+            for (const serviceName in resourcesConfig.source_builds) {
+              const imageUrl = `${reg}-docker.pkg.dev/${pId}/mcp-cloud-run-deployments/${serviceName}:latest`;
+              const buildResult = await triggerCloudBuildMock(
+                pId,
+                reg,
+                'bucket',
+                'blob',
+                'repo',
+                imageUrl,
+                true,
+                token,
+                cb
+              );
+              resourcesConfig.source_builds[serviceName].image_id =
+                buildResult.results.images[0].name;
+            }
+            return resourcesConfig;
+          }
+        ),
       },
       '../../lib/cloud-api/registry.js': {
         ensureArtifactRegistryRepoExists: ensureArtifactRegistryRepoExistsMock,

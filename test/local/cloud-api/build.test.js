@@ -503,3 +503,179 @@ describe('triggerCloudBuild', () => {
     assert.strictEqual(service.ingress, 'INGRESS_TRAFFIC_INTERNAL_ONLY');
   });
 });
+
+describe('composeBuild', () => {
+  let ensureARMock;
+  let ensureBucketMock;
+  let uploadToBucketMock;
+  let zipFilesMock;
+  let fsExistsSyncMock;
+  let logAndProgressMock;
+  let checkServiceMock;
+  let createBuildMock;
+  let getBuildMock;
+  let context;
+  const mockBuildId = 'mock-build-id';
+  const mockSuccessResult = {
+    results: { images: [{ name: 'us-central1-docker.pkg.dev/mock-project/mock-repo/web:latest' }] },
+    status: 'SUCCESS',
+  };
+
+  beforeEach(() => {
+    logAndProgressMock = mock.fn();
+    ensureARMock = mock.fn(() => Promise.resolve());
+    ensureBucketMock = mock.fn(() => Promise.resolve({}));
+    uploadToBucketMock = mock.fn(() => Promise.resolve());
+    zipFilesMock = mock.fn(() => Promise.resolve(Buffer.from('mock-zip')));
+    fsExistsSyncMock = mock.fn(() => true);
+    checkServiceMock = mock.fn(() => Promise.resolve(false));
+    createBuildMock = mock.fn(() =>
+      Promise.resolve([
+        {
+          metadata: { build: { id: mockBuildId } },
+        },
+      ])
+    );
+    getBuildMock = mock.fn(() => Promise.resolve([mockSuccessResult]));
+
+    context = {
+      runClient: {
+        createService: mock.fn(() => Promise.resolve()),
+        updateService: mock.fn(() => Promise.resolve()),
+      },
+      cloudBuildClient: {
+        createBuild: createBuildMock,
+        getBuild: getBuildMock,
+      },
+      buildsClient: {
+        submitBuild: mock.fn(() => Promise.resolve([{
+          buildOperation: { name: 'projects/p/locations/l/operations/bW9jay1pZA==' }
+        }])),
+      },
+    };
+  });
+
+  async function getBuildModule() {
+    return await esmock('../../../lib/cloud-api/build.js', {
+      'node:fs': {
+        default: {
+          existsSync: fsExistsSyncMock,
+        },
+        existsSync: fsExistsSyncMock,
+      },
+      'node:path': {
+        default: {
+          join: (...args) => args.join('/'),
+        },
+        join: (...args) => args.join('/'),
+      },
+      '../../../lib/cloud-api/helpers.js': {
+        callWithRetry: (fn) => fn(),
+      },
+      '../../../lib/util/helpers.js': {
+        logAndProgress: logAndProgressMock,
+      },
+      '../../../lib/cloud-api/run.js': {
+        checkCloudRunServiceExists: checkServiceMock,
+      },
+      '../../../lib/clients.js': {
+        getRunClient: () => Promise.resolve(context.runClient),
+        getCloudBuildClient: () => Promise.resolve(context.cloudBuildClient),
+        getLoggingClient: () => Promise.resolve({}),
+        getBuildsClient: () => Promise.resolve(context.buildsClient),
+      },
+      '../../../lib/cloud-api/registry.js': {
+        ensureArtifactRegistryRepoExists: ensureARMock,
+      },
+      '../../../lib/cloud-api/storage.js': {
+        ensureStorageBucketExists: ensureBucketMock,
+        uploadToStorageBucket: uploadToBucketMock,
+      },
+      '../../../lib/util/archive.js': {
+        zipFiles: zipFilesMock,
+      },
+      '../../../lib/deployment/constants.js': {
+        DEPLOYMENT_CONFIG: {
+          REPO_NAME: 'mock-repo',
+          IMAGE_TAG: 'latest',
+        },
+      },
+    });
+  }
+
+  it('should successfully build multiple services', async () => {
+    const resourcesConfig = {
+      source_builds: {
+        web: { context: 'web_dir' },
+        api: { context: 'api_dir' },
+      },
+    };
+    const { composeBuild } = await getBuildModule();
+
+    const result = await composeBuild(
+      resourcesConfig,
+      'mock-token',
+      'mock-project',
+      'us-central1',
+      '/folder',
+      () => { }
+    );
+
+    assert.strictEqual(
+      result.source_builds.web.image_id,
+      'us-central1-docker.pkg.dev/mock-project/mock-repo/web:latest'
+    );
+    assert.strictEqual(
+      result.source_builds.api.image_id,
+      'us-central1-docker.pkg.dev/mock-project/mock-repo/web:latest' // Mocked name is same in this simple test
+    );
+    assert.strictEqual(ensureARMock.mock.callCount(), 2);
+    assert.strictEqual(zipFilesMock.mock.callCount(), 2);
+    assert.strictEqual(ensureBucketMock.mock.callCount(), 2);
+    assert.strictEqual(uploadToBucketMock.mock.callCount(), 2);
+    assert.strictEqual(createBuildMock.mock.callCount(), 2);
+  });
+
+  it('should handle service with Dockerfile', async () => {
+    fsExistsSyncMock.mock.mockImplementation((p) => p.endsWith('Dockerfile'));
+    const resourcesConfig = {
+      source_builds: {
+        web: { context: 'web_dir' },
+      },
+    };
+    const { composeBuild } = await getBuildModule();
+
+    await composeBuild(
+      resourcesConfig,
+      'mock-token',
+      'mock-project',
+      'us-central1',
+      '/folder',
+      () => { }
+    );
+
+    const createBuildArgs = createBuildMock.mock.calls[0].arguments[0];
+    assert.strictEqual(createBuildArgs.build.steps[0].name, 'gcr.io/cloud-builders/docker');
+  });
+
+  it('should handle service without Dockerfile (buildpacks)', async () => {
+    fsExistsSyncMock.mock.mockImplementation(() => false);
+    const resourcesConfig = {
+      source_builds: {
+        web: { context: 'web_dir' },
+      },
+    };
+    const { composeBuild } = await getBuildModule();
+
+    await composeBuild(
+      resourcesConfig,
+      'mock-token',
+      'mock-project',
+      'us-central1',
+      '/folder',
+      () => { }
+    );
+
+    assert.strictEqual(context.buildsClient.submitBuild.mock.callCount(), 1);
+  });
+});
