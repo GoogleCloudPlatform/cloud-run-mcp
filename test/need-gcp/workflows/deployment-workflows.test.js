@@ -54,6 +54,8 @@ describe('Deployment workflows', () => {
     try {
       projectId = await setupProject();
       await setSourceDeployProjectPermissions(projectId);
+      console.log('Waiting 2 minutes for IAM propagation...');
+      await new Promise((resolve) => setTimeout(resolve, 120000));
     } catch (err) {
       console.error('Error during project creation and setup:', err);
       throw err;
