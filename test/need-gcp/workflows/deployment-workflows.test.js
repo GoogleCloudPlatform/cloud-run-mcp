@@ -26,7 +26,7 @@ import {
   setupProject,
 } from '../test-helpers.js';
 
-const GCP_REGION = 'us-central1';
+const GCP_REGION = 'asia-southeast1';
 const RUN_INGRESS_POLICY = process.env.RUN_INGRESS_POLICY || undefined;
 const ZIP_DEPLOY_SUCCESS_MESSAGE =
   'Deployment completed successfully with zip deploy';
