@@ -320,9 +320,11 @@ describe('Compose Deployment', () => {
 
   describe('composeVolumes', () => {
     const getProjectNumberMock = mock.fn(async () => '987654321');
-    const ensureStorageBucketExistsMock = mock.fn(async () => ({ name: 'mock-bucket' }));
+    const ensureStorageBucketExistsMock = mock.fn(async () => ({
+      name: 'mock-bucket',
+    }));
     const uploadToStorageBucketMock = mock.fn(async () => ({}));
-    const uploadDirectoryMock = mock.fn(async () => { });
+    const uploadDirectoryMock = mock.fn(async () => {});
     const fsMock = {
       existsSync: mock.fn(() => true),
       statSync: mock.fn(() => ({ isDirectory: () => true })),
@@ -372,13 +374,15 @@ describe('Compose Deployment', () => {
         project: 'my-project',
         volumes: {
           bind_mount: {
-            web: [{ source: './data', target: '/app/data' }]
-          }
-        }
+            web: [{ source: './data', target: '/app/data' }],
+          },
+        },
       };
 
       fsMock.existsSync.mock.mockImplementation(() => true);
-      fsMock.statSync.mock.mockImplementation(() => ({ isDirectory: () => true }));
+      fsMock.statSync.mock.mockImplementation(() => ({
+        isDirectory: () => true,
+      }));
 
       const result = await compose.composeVolumes(
         resourcesConfig,
@@ -390,21 +394,26 @@ describe('Compose Deployment', () => {
       );
 
       assert.ok(result.volumes.bucket_name);
-      assert.ok(result.volumes.bind_mount.web[0].mount_source.includes('bind_mounts/web/data'));
+      assert.ok(
+        result.volumes.bind_mount.web[0].mount_source.includes(
+          'bind_mounts/web/data'
+        )
+      );
       assert.strictEqual(uploadDirectoryMock.mock.callCount(), 1);
       assert.strictEqual(ensureStorageBucketExistsMock.mock.callCount(), 1);
     });
 
     test('should handle long project names with hashing', async () => {
       const compose = await setupCompose();
-      const longProjectName = 'very-long-project-name-that-exceeds-the-maximum-limit-for-bucket-names';
+      const longProjectName =
+        'very-long-project-name-that-exceeds-the-maximum-limit-for-bucket-names';
       const resourcesConfig = {
         project: longProjectName,
         volumes: {
           bind_mount: {
-            web: [{ source: './data' }]
-          }
-        }
+            web: [{ source: './data' }],
+          },
+        },
       };
 
       const result = await compose.composeVolumes(
@@ -430,9 +439,9 @@ describe('Compose Deployment', () => {
         project: 'my-project',
         volumes: {
           named_volume: {
-            'my-vol': { gcs: { bucket: 'custom-bucket' } }
-          }
-        }
+            'my-vol': { gcs: { bucket: 'custom-bucket' } },
+          },
+        },
       };
 
       await compose.composeVolumes(
@@ -446,7 +455,7 @@ describe('Compose Deployment', () => {
 
       // Should call ensureStorageBucketExists for named volume's bucket
       const calls = ensureStorageBucketExistsMock.mock.calls;
-      assert.ok(calls.some(c => c.arguments[1] === 'custom-bucket'));
+      assert.ok(calls.some((c) => c.arguments[1] === 'custom-bucket'));
     });
   });
 });
