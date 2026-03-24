@@ -26,7 +26,7 @@ import {
   setupProject,
 } from '../test-helpers.js';
 
-const GCP_REGION = 'us-central1';
+const GCP_REGION = 'asia-southeast1';
 const RUN_INGRESS_POLICY = process.env.RUN_INGRESS_POLICY || undefined;
 const ZIP_DEPLOY_SUCCESS_MESSAGE =
   'Deployment completed successfully with zip deploy';
@@ -54,6 +54,8 @@ describe('Deployment workflows', () => {
     try {
       projectId = await setupProject();
       await setSourceDeployProjectPermissions(projectId);
+      console.log('Waiting 2 minutes for IAM propagation...');
+      await new Promise((resolve) => setTimeout(resolve, 120000));
     } catch (err) {
       console.error('Error during project creation and setup:', err);
       throw err;
