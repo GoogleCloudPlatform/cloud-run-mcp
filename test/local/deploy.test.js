@@ -94,6 +94,7 @@ describe('Deploy Compose', () => {
         runCompose: downloadRunComposeMock,
         resourceCompose: resourceComposeMock,
         translateCompose: translateComposeMock,
+        composeVolumes: mock.fn(async (resourcesConfig) => resourcesConfig),
       },
       '../../lib/cloud-api/build.js': {
         triggerCloudBuild: triggerCloudBuildMock,

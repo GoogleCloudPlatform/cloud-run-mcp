@@ -24,6 +24,7 @@ describe('Deployment Helpers', () => {
     statSync: mock.fn(),
     existsSync: mock.fn(),
     readFileSync: mock.fn(),
+    readdirSync: mock.fn(),
   };
 
   test('makeFileDeploymentMetadata correctly identifies Dockerfile in folder', async () => {
@@ -175,5 +176,54 @@ describe('Deployment Helpers', () => {
         { name: 'NODE_ENV', value: 'production' },
       ],
     });
+  });
+
+  test('uploadDirectory recursively uploads files', async () => {
+    const uploadToStorageBucketMock = mock.fn(async () => ({}));
+    const readFileSyncMock = mock.fn(() => Buffer.from('content'));
+
+    // Create a setup for each call to differentiate directory depth
+    fsMock.readdirSync.mock.resetCalls();
+    fsMock.readdirSync.mock.mockImplementation((p) => {
+      if (p.endsWith('subdir')) {
+        return [{ name: 'file2.txt', isDirectory: () => false }];
+      }
+      return [
+        { name: 'file1.txt', isDirectory: () => false },
+        { name: 'subdir', isDirectory: () => true },
+      ];
+    });
+
+    const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
+      fs: {
+        ...fsMock,
+        readFileSync: readFileSyncMock,
+      },
+      '../../lib/cloud-api/storage.js': {
+        uploadToStorageBucket: uploadToStorageBucketMock,
+      },
+    });
+
+    const bucket = { name: 'test-bucket' };
+    const localPath = '/local/path';
+    const gcsPrefix = 'prefix';
+    const progressCallback = mock.fn();
+
+    await deploymentHelpers.uploadDirectory(
+      bucket,
+      localPath,
+      gcsPrefix,
+      progressCallback
+    );
+
+    assert.strictEqual(uploadToStorageBucketMock.mock.callCount(), 2);
+
+    // Verify first upload (root level)
+    const call1 = uploadToStorageBucketMock.mock.calls[0];
+    assert.ok(call1.arguments[2].endsWith('prefix/file1.txt'));
+
+    // Verify second upload (subdir level)
+    const call2 = uploadToStorageBucketMock.mock.calls[1];
+    assert.ok(call2.arguments[2].endsWith('prefix/subdir/file2.txt'));
   });
 });
