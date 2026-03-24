@@ -325,10 +325,11 @@ describe('Compose Deployment', () => {
     }));
     const uploadToStorageBucketMock = mock.fn(async () => ({}));
     const uploadDirectoryMock = mock.fn(async () => {});
-    const fsMock = {
-      existsSync: mock.fn(() => true),
-      statSync: mock.fn(() => ({ isDirectory: () => true })),
-      readFileSync: mock.fn(() => Buffer.from('file-content')),
+    const fsMock = {};
+    const fsPromisesMock = {
+      access: mock.fn(async () => {}),
+      stat: mock.fn(async () => ({ isDirectory: () => true })),
+      readFile: mock.fn(async () => Buffer.from('file-content')),
     };
 
     const setupCompose = async () => {
@@ -344,7 +345,14 @@ describe('Compose Deployment', () => {
         '../../lib/deployment/helpers.js': {
           uploadDirectory: uploadDirectoryMock,
         },
-        fs: fsMock,
+        fs: {
+          ...fsMock,
+          promises: fsPromisesMock,
+          default: {
+            ...fsMock,
+            promises: fsPromisesMock,
+          },
+        },
         path: {
           ...path,
           resolve: (...args) => path.resolve(...args),
@@ -379,8 +387,8 @@ describe('Compose Deployment', () => {
         },
       };
 
-      fsMock.existsSync.mock.mockImplementation(() => true);
-      fsMock.statSync.mock.mockImplementation(() => ({
+      fsPromisesMock.access.mock.mockImplementation(async () => {});
+      fsPromisesMock.stat.mock.mockImplementation(async () => ({
         isDirectory: () => true,
       }));
 

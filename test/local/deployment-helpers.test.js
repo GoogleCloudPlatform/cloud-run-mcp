@@ -23,8 +23,10 @@ describe('Deployment Helpers', () => {
   const fsMock = {
     statSync: mock.fn(),
     existsSync: mock.fn(),
-    readFileSync: mock.fn(),
-    readdirSync: mock.fn(),
+    promises: {
+      readdir: mock.fn(),
+      readFile: mock.fn(),
+    },
   };
 
   test('makeFileDeploymentMetadata correctly identifies Dockerfile in folder', async () => {
@@ -180,11 +182,11 @@ describe('Deployment Helpers', () => {
 
   test('uploadDirectory recursively uploads files', async () => {
     const uploadToStorageBucketMock = mock.fn(async () => ({}));
-    const readFileSyncMock = mock.fn(() => Buffer.from('content'));
+    const readFileMock = mock.fn(async () => Buffer.from('content'));
 
     // Create a setup for each call to differentiate directory depth
-    fsMock.readdirSync.mock.resetCalls();
-    fsMock.readdirSync.mock.mockImplementation((p) => {
+    fsMock.promises.readdir.mock.resetCalls();
+    fsMock.promises.readdir.mock.mockImplementation(async (p) => {
       if (p.endsWith('subdir')) {
         return [{ name: 'file2.txt', isDirectory: () => false }];
       }
@@ -197,7 +199,17 @@ describe('Deployment Helpers', () => {
     const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
       fs: {
         ...fsMock,
-        readFileSync: readFileSyncMock,
+        promises: {
+          ...fsMock.promises,
+          readFile: readFileMock,
+        },
+        default: {
+          ...fsMock,
+          promises: {
+            ...fsMock.promises,
+            readFile: readFileMock,
+          },
+        },
       },
       '../../lib/cloud-api/storage.js': {
         uploadToStorageBucket: uploadToStorageBucketMock,
