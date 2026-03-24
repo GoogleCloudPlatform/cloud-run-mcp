@@ -17,6 +17,7 @@ limitations under the License.
 import { test, describe, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import esmock from 'esmock';
+import path from 'path';
 
 describe('Compose Deployment', () => {
   const osMock = {
@@ -47,24 +48,31 @@ describe('Compose Deployment', () => {
       '../../lib/util/artifacts.js': artifactsMock,
     });
 
-    const result = await compose.runCompose('fake-token', mock.fn());
+    const originalProject = process.env.GOOGLE_CLOUD_PROJECT;
+    process.env.GOOGLE_CLOUD_PROJECT = 'test-project-123456';
 
-    assert.strictEqual(result, '/home/user/.cloud-run-mcp/bin/run-compose');
-    assert.strictEqual(
-      artifactsMock.ensureRepositoryDownloaded.mock.callCount(),
-      1
-    );
+    try {
+      const result = await compose.runCompose('fake-token', mock.fn());
 
-    // Verify parameters passed to ensureRepositoryDownloaded
-    const call = artifactsMock.ensureRepositoryDownloaded.mock.calls[0];
-    assert.strictEqual(
-      call.arguments[0],
-      '/home/user/.cloud-run-mcp/bin/run-compose'
-    );
-    assert.strictEqual(call.arguments[1].project, 'test-project-123456');
-    assert.strictEqual(call.arguments[1].location, 'us-west1');
-    assert.strictEqual(call.arguments[1].repository, 'run-compose');
-    assert.strictEqual(call.arguments[2], 'fake-token');
+      assert.strictEqual(result, '/home/user/.cloud-run-mcp/bin/run-compose');
+      assert.strictEqual(
+        artifactsMock.ensureRepositoryDownloaded.mock.callCount(),
+        1
+      );
+
+      // Verify parameters passed to ensureRepositoryDownloaded
+      const call = artifactsMock.ensureRepositoryDownloaded.mock.calls[0];
+      assert.strictEqual(
+        call.arguments[0],
+        '/home/user/.cloud-run-mcp/bin/run-compose'
+      );
+      assert.strictEqual(call.arguments[1].project, 'test-project-123456');
+      assert.strictEqual(call.arguments[1].location, 'us-west1');
+      assert.strictEqual(call.arguments[1].repository, 'run-compose');
+      assert.strictEqual(call.arguments[2], 'fake-token');
+    } finally {
+      process.env.GOOGLE_CLOUD_PROJECT = originalProject;
+    }
   });
 
   test('runCompose returns null if download fails', async () => {
@@ -308,5 +316,154 @@ describe('Compose Deployment', () => {
         message: /Failed to translate compose file: translation failed/,
       }
     );
+  });
+
+  describe('composeVolumes', () => {
+    const getProjectNumberMock = mock.fn(async () => '987654321');
+    const ensureStorageBucketExistsMock = mock.fn(async () => ({
+      name: 'mock-bucket',
+    }));
+    const uploadToStorageBucketMock = mock.fn(async () => ({}));
+    const uploadDirectoryMock = mock.fn(async () => {});
+    const fsMock = {};
+    const fsPromisesMock = {
+      access: mock.fn(async () => {}),
+      stat: mock.fn(async () => ({ isDirectory: () => true })),
+      readFile: mock.fn(async () => Buffer.from('file-content')),
+    };
+
+    const setupCompose = async () => {
+      return await esmock('../../lib/deployment/compose.js', {
+        '../../lib/util/helpers.js': {
+          ...helpersMock,
+          getProjectNumber: getProjectNumberMock,
+        },
+        '../../lib/cloud-api/storage.js': {
+          ensureStorageBucketExists: ensureStorageBucketExistsMock,
+          uploadToStorageBucket: uploadToStorageBucketMock,
+        },
+        '../../lib/deployment/helpers.js': {
+          uploadDirectory: uploadDirectoryMock,
+        },
+        fs: {
+          ...fsMock,
+          promises: fsPromisesMock,
+          default: {
+            ...fsMock,
+            promises: fsPromisesMock,
+          },
+        },
+        path: {
+          ...path,
+          resolve: (...args) => path.resolve(...args),
+          relative: (from, to) => path.relative(from, to),
+          basename: (p) => path.basename(p),
+        },
+      });
+    };
+
+    test('should return resourcesConfig unchanged if no volumes present', async () => {
+      const compose = await setupCompose();
+      const resourcesConfig = { project: 'test-project' };
+      const result = await compose.composeVolumes(
+        resourcesConfig,
+        'token',
+        'project-id',
+        'us-central1',
+        '/f-path',
+        mock.fn()
+      );
+      assert.deepEqual(result, resourcesConfig);
+    });
+
+    test('should handle bind mounts (directories)', async () => {
+      const compose = await setupCompose();
+      const resourcesConfig = {
+        project: 'my-project',
+        volumes: {
+          bind_mount: {
+            web: [{ source: './data', target: '/app/data' }],
+          },
+        },
+      };
+
+      fsPromisesMock.access.mock.mockImplementation(async () => {});
+      fsPromisesMock.stat.mock.mockImplementation(async () => ({
+        isDirectory: () => true,
+      }));
+
+      const result = await compose.composeVolumes(
+        resourcesConfig,
+        'token',
+        'project-id',
+        'us-central1',
+        '/app-dir',
+        mock.fn()
+      );
+
+      assert.ok(result.volumes.bucket_name);
+      assert.ok(
+        result.volumes.bind_mount.web[0].mount_source.includes(
+          'bind_mounts/web/data'
+        )
+      );
+      assert.strictEqual(uploadDirectoryMock.mock.callCount(), 1);
+      assert.strictEqual(ensureStorageBucketExistsMock.mock.callCount(), 1);
+    });
+
+    test('should handle long project names with hashing', async () => {
+      const compose = await setupCompose();
+      const longProjectName =
+        'very-long-project-name-that-exceeds-the-maximum-limit-for-bucket-names';
+      const resourcesConfig = {
+        project: longProjectName,
+        volumes: {
+          bind_mount: {
+            web: [{ source: './data' }],
+          },
+        },
+      };
+
+      const result = await compose.composeVolumes(
+        resourcesConfig,
+        'token',
+        'project-id',
+        'us-central1',
+        '/app-dir',
+        mock.fn()
+      );
+
+      const bucketName = result.volumes.bucket_name;
+      assert.ok(bucketName.length <= 63);
+      // Verify hashing (the first digits are project number, then hash)
+      assert.ok(bucketName.startsWith('987654321-'));
+      assert.ok(bucketName.endsWith('-us-central1-compose'));
+    });
+
+    test('should handle named volumes', async () => {
+      const compose = await setupCompose();
+      ensureStorageBucketExistsMock.mock.resetCalls();
+      const resourcesConfig = {
+        project: 'my-project',
+        volumes: {
+          named_volume: {
+            'my-vol': { gcs: { bucket: 'custom-bucket' } },
+          },
+        },
+      };
+
+      await compose.composeVolumes(
+        resourcesConfig,
+        'token',
+        'project-id',
+        'us-central1',
+        '/app-dir',
+        mock.fn()
+      );
+
+      // Should call ensureStorageBucketExists for named volume's bucket
+      const calls = ensureStorageBucketExistsMock.mock.calls;
+      assert.ok(calls.some((c) => c.arguments[1] === 'custom-bucket'));
+    });
   });
 });
