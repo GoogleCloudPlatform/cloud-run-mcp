@@ -540,7 +540,6 @@ describe('Compose Deployment', () => {
         resourcesConfig,
         'token',
         'project-id',
-        'us-central1',
         '/app-dir',
         mock.fn()
       );
@@ -573,7 +572,6 @@ describe('Compose Deployment', () => {
         resourcesConfig,
         'token',
         'project-id',
-        'us-central1',
         '/app-dir',
         mock.fn()
       );
