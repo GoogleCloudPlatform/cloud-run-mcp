@@ -200,4 +200,56 @@ describe('Deploy Compose', () => {
       true
     );
   });
+
+  test('calls composeSecrets during deployment', async () => {
+    const composeSecretsMock = mock.fn(
+      async (resourcesConfig) => resourcesConfig
+    );
+    const prepareSourceDirectoryMock = mock.fn(async () => '/tmp/temp-dir');
+    const downloadRunComposeMock = mock.fn(async () => '/bin/run-compose');
+    const resourceComposeMock = mock.fn(async () => JSON.stringify({}));
+    const translateComposeMock = mock.fn(async () =>
+      JSON.stringify({ services: {} })
+    );
+    const getProjectNumberMock = mock.fn(async () => '123456');
+    const cleanupTempDirectoryMock = mock.fn();
+
+    const { deployCompose } = await esmock('../../lib/deployment/deployer.js', {
+      '../../lib/deployment/source-processor.js': {
+        prepareSourceDirectory: prepareSourceDirectoryMock,
+        cleanupTempDirectory: cleanupTempDirectoryMock,
+      },
+      '../../lib/util/helpers.js': {
+        getProjectNumber: getProjectNumberMock,
+        logAndProgress: mock.fn(),
+      },
+      '../../lib/deployment/compose.js': {
+        runCompose: downloadRunComposeMock,
+        resourceCompose: resourceComposeMock,
+        translateCompose: translateComposeMock,
+        composeVolumes: mock.fn(async (resourcesConfig) => resourcesConfig),
+        composeSecrets: composeSecretsMock,
+      },
+      '../../lib/clients.js': {
+        getRunV1Client: mock.fn(async () => ({ namespaces: { services: {} } })),
+      },
+      fs: {
+        promises: {
+          readFile: mock.fn(async () => 'name: web'),
+        },
+      },
+      path: path,
+    });
+
+    await deployCompose({
+      projectId,
+      region,
+      files,
+      composeFilePath,
+      accessToken,
+      progressCallback: mock.fn(),
+    });
+
+    assert.strictEqual(composeSecretsMock.mock.callCount(), 1);
+  });
 });

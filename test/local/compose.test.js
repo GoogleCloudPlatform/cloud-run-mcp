@@ -48,9 +48,6 @@ describe('Compose Deployment', () => {
       '../../lib/util/artifacts.js': artifactsMock,
     });
 
-    const originalProject = process.env.GOOGLE_CLOUD_PROJECT;
-    process.env.GOOGLE_CLOUD_PROJECT = 'test-project-123456';
-
     try {
       const result = await compose.runCompose('fake-token', mock.fn());
 
@@ -71,7 +68,7 @@ describe('Compose Deployment', () => {
       assert.strictEqual(call.arguments[1].repository, 'run-compose');
       assert.strictEqual(call.arguments[2], 'fake-token');
     } finally {
-      process.env.GOOGLE_CLOUD_PROJECT = originalProject;
+      // No need to restore env since we didn't use it
     }
   });
 
@@ -464,6 +461,126 @@ describe('Compose Deployment', () => {
       // Should call ensureStorageBucketExists for named volume's bucket
       const calls = ensureStorageBucketExistsMock.mock.calls;
       assert.ok(calls.some((c) => c.arguments[1] === 'custom-bucket'));
+    });
+  });
+
+  describe('composeSecrets', () => {
+    const getProjectNumberMock = mock.fn(async () => '123456789');
+    const ensureApisEnabledMock = mock.fn(async () => {});
+    const getSecretMock = mock.fn();
+    const createSecretMock = mock.fn();
+    const addSecretAccessorBindingMock = mock.fn();
+    const addSecretVersionMock = mock.fn();
+    const fsPromisesMock = {
+      access: mock.fn(async () => {}),
+      readFile: mock.fn(async () => Buffer.from('secret-data')),
+    };
+
+    const setupCompose = async () => {
+      return await esmock('../../lib/deployment/compose.js', {
+        '../../lib/util/helpers.js': {
+          ...helpersMock,
+          getProjectNumber: getProjectNumberMock,
+        },
+        '../../lib/cloud-api/helpers.js': {
+          ensureApisEnabled: ensureApisEnabledMock,
+        },
+        '../../lib/cloud-api/secrets.js': {
+          getSecret: getSecretMock,
+          createSecret: createSecretMock,
+          addSecretVersion: addSecretVersionMock,
+          addSecretAccessorBinding: addSecretAccessorBindingMock,
+        },
+        fs: {
+          promises: fsPromisesMock,
+          default: {
+            promises: fsPromisesMock,
+          },
+        },
+      });
+    };
+
+    test('should return resourcesConfig unchanged if no secrets present', async () => {
+      const compose = await setupCompose();
+      const resourcesConfig = { project: 'test-project' };
+      const result = await compose.composeSecrets(
+        resourcesConfig,
+        'token',
+        'project-id',
+        'us-central1',
+        '/f-path',
+        mock.fn()
+      );
+      assert.deepEqual(result, resourcesConfig);
+    });
+
+    test('should provision secrets and update resourcesConfig', async () => {
+      const compose = await setupCompose();
+      const resourcesConfig = {
+        project: 'my-project',
+        secrets: {
+          'my-secret': {
+            name: 'target-secret-name',
+            file: './my_secret.txt',
+            mount: 'my-secret',
+          },
+        },
+      };
+
+      getSecretMock.mock.mockImplementation(async () => null); // Secret doesn't exist
+      createSecretMock.mock.mockImplementation(async () => ({
+        name: 'target-secret-name',
+      }));
+      addSecretVersionMock.mock.mockImplementation(async () => ({
+        name: 'projects/p/secrets/s/versions/1',
+      }));
+      addSecretAccessorBindingMock.mock.mockImplementation(async () => ({}));
+
+      const result = await compose.composeSecrets(
+        resourcesConfig,
+        'token',
+        'project-id',
+        '/app-dir',
+        mock.fn()
+      );
+
+      assert.strictEqual(
+        result.secrets['my-secret'].secret_version,
+        'projects/p/secrets/s/versions/1'
+      );
+      assert.strictEqual(ensureApisEnabledMock.mock.callCount(), 1);
+      assert.strictEqual(createSecretMock.mock.callCount(), 1);
+      assert.strictEqual(addSecretVersionMock.mock.callCount(), 1);
+      assert.strictEqual(addSecretAccessorBindingMock.mock.callCount(), 1);
+    });
+
+    test('should skip provisioning if secret config is incomplete', async () => {
+      const compose = await setupCompose();
+      const resourcesConfig = {
+        project: 'my-project',
+        secrets: {
+          'bad-secret': {
+            name: 'only-name',
+            // missing file and mount
+          },
+        },
+      };
+
+      ensureApisEnabledMock.mock.resetCalls();
+
+      const result = await compose.composeSecrets(
+        resourcesConfig,
+        'token',
+        'project-id',
+        '/app-dir',
+        mock.fn()
+      );
+
+      assert.strictEqual(
+        result.secrets['bad-secret'].secret_version,
+        undefined
+      );
+      assert.strictEqual(ensureApisEnabledMock.mock.callCount(), 1);
     });
   });
 });
