@@ -63,10 +63,7 @@ describe('Compose Deployment', () => {
         call.arguments[0],
         '/home/user/.cloud-run-mcp/bin/run-compose'
       );
-      assert.strictEqual(
-        call.arguments[1].project,
-        'test-project-123456'
-      );
+      assert.strictEqual(call.arguments[1].project, 'test-project-123456');
       assert.strictEqual(call.arguments[1].location, 'us-west1');
       assert.strictEqual(call.arguments[1].repository, 'run-compose');
       assert.strictEqual(call.arguments[2], 'fake-token');
@@ -469,13 +466,13 @@ describe('Compose Deployment', () => {
 
   describe('composeSecrets', () => {
     const getProjectNumberMock = mock.fn(async () => '123456789');
-    const ensureApisEnabledMock = mock.fn(async () => { });
+    const ensureApisEnabledMock = mock.fn(async () => {});
     const getSecretMock = mock.fn();
     const createSecretMock = mock.fn();
     const addSecretAccessorBindingMock = mock.fn();
     const addSecretVersionMock = mock.fn();
     const fsPromisesMock = {
-      access: mock.fn(async () => { }),
+      access: mock.fn(async () => {}),
       readFile: mock.fn(async () => Buffer.from('secret-data')),
     };
 
