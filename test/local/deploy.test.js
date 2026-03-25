@@ -202,7 +202,9 @@ describe('Deploy Compose', () => {
   });
 
   test('calls composeSecrets during deployment', async () => {
-    const composeSecretsMock = mock.fn(async (resourcesConfig) => resourcesConfig);
+    const composeSecretsMock = mock.fn(
+      async (resourcesConfig) => resourcesConfig
+    );
     const prepareSourceDirectoryMock = mock.fn(async () => '/tmp/temp-dir');
     const downloadRunComposeMock = mock.fn(async () => '/bin/run-compose');
     const resourceComposeMock = mock.fn(async () => JSON.stringify({}));

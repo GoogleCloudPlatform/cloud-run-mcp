@@ -74,10 +74,16 @@ describe('secrets.js', () => {
 
   describe('getSecret', () => {
     it('should return secret metadata if it exists', async () => {
-      const mockSecret = { name: `projects/${projectId}/secrets/${secretName}` };
+      const mockSecret = {
+        name: `projects/${projectId}/secrets/${secretName}`,
+      };
       getSecretImpl = () => Promise.resolve([mockSecret]);
 
-      const result = await secrets.getSecret(projectId, secretName, accessToken);
+      const result = await secrets.getSecret(
+        projectId,
+        secretName,
+        accessToken
+      );
 
       assert.deepEqual(result, mockSecret);
       assert.equal(getSecretMock.mock.callCount(), 1);
@@ -89,7 +95,11 @@ describe('secrets.js', () => {
     it('should return null if secret does not exist (error code 5)', async () => {
       getSecretImpl = () => Promise.reject({ code: 5 });
 
-      const result = await secrets.getSecret(projectId, secretName, accessToken);
+      const result = await secrets.getSecret(
+        projectId,
+        secretName,
+        accessToken
+      );
 
       assert.strictEqual(result, null);
     });
@@ -106,14 +116,16 @@ describe('secrets.js', () => {
 
   describe('createSecret', () => {
     it('should create a secret successfully', async () => {
-      const mockSecret = { name: `projects/${projectId}/secrets/${secretName}` };
+      const mockSecret = {
+        name: `projects/${projectId}/secrets/${secretName}`,
+      };
       createSecretImpl = () => Promise.resolve([mockSecret]);
 
       const result = await secrets.createSecret(
         projectId,
         secretName,
         accessToken,
-        () => { }
+        () => {}
       );
 
       assert.deepEqual(result, mockSecret);
@@ -143,7 +155,7 @@ describe('secrets.js', () => {
         secretName,
         content,
         accessToken,
-        () => { }
+        () => {}
       );
 
       assert.deepEqual(result, mockVersion);
@@ -183,7 +195,7 @@ describe('secrets.js', () => {
         secretName,
         mockPolicy,
         accessToken,
-        () => { }
+        () => {}
       );
 
       assert.deepEqual(result, mockPolicy);
@@ -211,7 +223,7 @@ describe('secrets.js', () => {
         secretName,
         'serviceAccount:test-sa',
         accessToken,
-        () => { }
+        () => {}
       );
 
       assert.deepEqual(result, updatedPolicy);
@@ -239,7 +251,7 @@ describe('secrets.js', () => {
         secretName,
         'serviceAccount:test-sa',
         accessToken,
-        () => { }
+        () => {}
       );
 
       assert.deepEqual(result, existingPolicy);
