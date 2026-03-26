@@ -252,4 +252,76 @@ describe('Deploy Compose', () => {
 
     assert.strictEqual(composeSecretsMock.mock.callCount(), 1);
   });
+
+  test('successfully deploys models and services in correct order', async () => {
+    const prepareSourceDirectoryMock = mock.fn(async () => '/tmp/temp-dir');
+    const getProjectNumberMock = mock.fn(async () => '123456');
+    const downloadRunComposeMock = mock.fn(async () => '/bin/run-compose');
+    const resourceComposeMock = mock.fn(async () => JSON.stringify({}));
+    const translateComposeMock = mock.fn(async () =>
+      JSON.stringify({
+        models: { 'my-model': 'model.yaml' },
+        services: { 'my-app': 'app.yaml' },
+      })
+    );
+
+    const deployedServices = [];
+    const replaceServiceMock = mock.fn(async (params) => {
+      // Extract service name from namespaces/{p}/services/{s}
+      const serviceName = params.name.split('/').pop();
+      deployedServices.push(serviceName);
+      return { data: { status: { url: `https://${serviceName}.a.run.app` } } };
+    });
+
+    const getRunV1ClientMock = mock.fn(async () => ({
+      namespaces: {
+        services: {
+          replaceService: replaceServiceMock,
+        },
+      },
+    }));
+
+    const { deployCompose } = await esmock('../../lib/deployment/deployer.js', {
+      '../../lib/deployment/source-processor.js': {
+        prepareSourceDirectory: prepareSourceDirectoryMock,
+        cleanupTempDirectory: mock.fn(),
+      },
+      '../../lib/util/helpers.js': {
+        getProjectNumber: getProjectNumberMock,
+        logAndProgress: mock.fn(),
+      },
+      '../../lib/deployment/compose.js': {
+        runCompose: downloadRunComposeMock,
+        resourceCompose: resourceComposeMock,
+        translateCompose: translateComposeMock,
+        composeVolumes: mock.fn(async (resourcesConfig) => resourcesConfig),
+        composeSecrets: mock.fn(async (resourcesConfig) => resourcesConfig),
+      },
+      '../../lib/clients.js': {
+        getRunV1Client: getRunV1ClientMock,
+      },
+      fs: {
+        promises: {
+          readFile: mock.fn(async () => 'name: dummy'),
+        },
+      },
+      path: path,
+    });
+
+    const result = await deployCompose({
+      projectId,
+      region,
+      files,
+      composeFilePath,
+      accessToken,
+      progressCallback: mock.fn(),
+    });
+
+    assert.ok(result);
+    assert.strictEqual(result.message, '2 services deployed from compose file');
+    assert.strictEqual(deployedServices.length, 2);
+    // Verify order: models first
+    assert.strictEqual(deployedServices[0], 'my-model');
+    assert.strictEqual(deployedServices[1], 'my-app');
+  });
 });

@@ -507,7 +507,6 @@ describe('Compose Deployment', () => {
         resourcesConfig,
         'token',
         'project-id',
-        'us-central1',
         '/f-path',
         mock.fn()
       );
