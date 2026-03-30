@@ -104,6 +104,11 @@ describe('triggerCloudBuild', () => {
       },
       '../../../lib/util/helpers.js': {
         logAndProgress: logAndProgressMock,
+        sanitizeCloudRunServiceName: (name) =>
+          name
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '-')
+            .replace(/^-+|-+$/g, ''),
       },
       '../../../lib/cloud-api/run.js': {
         checkCloudRunServiceExists: checkServiceMock,
@@ -137,7 +142,13 @@ describe('triggerCloudBuild', () => {
     assert.strictEqual(createBuildMock.mock.callCount(), 1);
     assert.strictEqual(getBuildMock.mock.callCount(), 1);
     assert.strictEqual(createServiceMock.mock.callCount(), 1); // 1 dry run
-    assert.strictEqual(updateServiceMock.mock.callCount(), 0);
+
+    // Verify sanitized service name was used in dry run
+    const dryRunCall = createServiceMock.mock.calls[0].arguments[0];
+    assert.strictEqual(
+      dryRunCall.serviceId,
+      'mock-image' // sanitized from gcr.io/.../mock-image
+    );
 
     const { calls: logCalls } = logAndProgressMock.mock;
     assert.match(logCalls[0].arguments[0], /Performing dry-run creation/);
@@ -520,7 +531,7 @@ describe('composeBuild', () => {
     results: {
       images: [
         {
-          name: 'us-central1-docker.pkg.dev/mock-project/mock-repo/web:latest',
+          name: 'us-central1-docker.pkg.dev/mock-project/mock-repo/default_web:latest',
         },
       ],
     },
@@ -586,6 +597,7 @@ describe('composeBuild', () => {
       },
       '../../../lib/util/helpers.js': {
         logAndProgress: logAndProgressMock,
+        calculateSourceFingerprint: () => Promise.resolve('mock-fingerprint'),
       },
       '../../../lib/cloud-api/run.js': {
         checkCloudRunServiceExists: checkServiceMock,
@@ -635,16 +647,24 @@ describe('composeBuild', () => {
 
     assert.strictEqual(
       result.source_builds.web.image_id,
-      'us-central1-docker.pkg.dev/mock-project/mock-repo/web:latest'
+      'us-central1-docker.pkg.dev/mock-project/mock-repo/default_web:latest'
     );
     assert.strictEqual(
       result.source_builds.api.image_id,
-      'us-central1-docker.pkg.dev/mock-project/mock-repo/web:latest' // Mocked name is same in this simple test
+      'us-central1-docker.pkg.dev/mock-project/mock-repo/default_web:latest'
     );
     assert.strictEqual(ensureARMock.mock.callCount(), 1);
     assert.strictEqual(zipFilesMock.mock.callCount(), 2);
+    assert.strictEqual(zipFilesMock.mock.calls[0].arguments[1], true); // useTarGz
     assert.strictEqual(ensureBucketMock.mock.callCount(), 1);
     assert.strictEqual(uploadToBucketMock.mock.callCount(), 2);
+
+    // Verify archive name pattern source/{epoch}.{fingerprint}.tgz
+    assert.match(
+      uploadToBucketMock.mock.calls[0].arguments[2],
+      /^source\/\d+\.mock-fingerprint\.tgz$/
+    );
+
     assert.strictEqual(createBuildMock.mock.callCount(), 2);
   });
 
