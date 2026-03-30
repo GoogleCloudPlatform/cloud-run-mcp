@@ -288,7 +288,9 @@ describe('Utility Helpers', () => {
             }
             return [];
           }),
-          readFile: mock.fn(async (file) => `content of ${path.basename(file)}`),
+          readFile: mock.fn(
+            async (file) => `content of ${path.basename(file)}`
+          ),
         },
       };
 
@@ -311,9 +313,8 @@ describe('Utility Helpers', () => {
 
   describe('sanitizeCloudRunServiceName', () => {
     test('sanitizes various inputs correctly', async () => {
-      const { sanitizeCloudRunServiceName } = await import(
-        '../../lib/util/helpers.js'
-      );
+      const { sanitizeCloudRunServiceName } =
+        await import('../../lib/util/helpers.js');
 
       assert.equal(
         sanitizeCloudRunServiceName('My-Service_Name'),
@@ -321,7 +322,10 @@ describe('Utility Helpers', () => {
       );
       assert.equal(sanitizeCloudRunServiceName('123service'), 's-123service');
       assert.equal(sanitizeCloudRunServiceName('-start-end-'), 'start-end');
-      assert.equal(sanitizeCloudRunServiceName('a'.repeat(100)), 'a'.repeat(49));
+      assert.equal(
+        sanitizeCloudRunServiceName('a'.repeat(100)),
+        'a'.repeat(49)
+      );
       assert.equal(
         sanitizeCloudRunServiceName('Special!@#$%Chars'),
         'special-chars'
