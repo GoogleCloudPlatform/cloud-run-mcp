@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { test, describe, mock } from 'node:test';
+import { test, describe, mock, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import esmock from 'esmock';
 import path from 'path';
@@ -322,12 +322,21 @@ describe('Compose Deployment', () => {
     }));
     const uploadToStorageBucketMock = mock.fn(async () => ({}));
     const uploadDirectoryMock = mock.fn(async () => {});
+    const grantBucketAccessMock = mock.fn(async () => { });
     const fsMock = {};
     const fsPromisesMock = {
       access: mock.fn(async () => {}),
       stat: mock.fn(async () => ({ isDirectory: () => true })),
       readFile: mock.fn(async () => Buffer.from('file-content')),
     };
+
+    beforeEach(() => {
+      getProjectNumberMock.mock.resetCalls();
+      ensureStorageBucketExistsMock.mock.resetCalls();
+      uploadToStorageBucketMock.mock.resetCalls();
+      uploadDirectoryMock.mock.resetCalls();
+      grantBucketAccessMock.mock.resetCalls();
+    });
 
     const setupCompose = async () => {
       return await esmock('../../lib/deployment/compose.js', {
@@ -338,6 +347,7 @@ describe('Compose Deployment', () => {
         '../../lib/cloud-api/storage.js': {
           ensureStorageBucketExists: ensureStorageBucketExistsMock,
           uploadToStorageBucket: uploadToStorageBucketMock,
+          grantBucketAccess: grantBucketAccessMock,
         },
         '../../lib/deployment/helpers.js': {
           uploadDirectory: uploadDirectoryMock,
@@ -405,7 +415,11 @@ describe('Compose Deployment', () => {
         )
       );
       assert.strictEqual(uploadDirectoryMock.mock.callCount(), 1);
+      // Called once in handleBindMounts
       assert.strictEqual(ensureStorageBucketExistsMock.mock.callCount(), 1);
+      assert.strictEqual(grantBucketAccessMock.mock.callCount(), 1);
+      // Called once in composeVolumes (for naming) and once in handleBindMounts (for IAM)
+      assert.strictEqual(getProjectNumberMock.mock.callCount(), 2);
     });
 
     test('should handle long project names with hashing', async () => {
@@ -444,7 +458,7 @@ describe('Compose Deployment', () => {
         project: 'my-project',
         volumes: {
           named_volume: {
-            'my-vol': { gcs: { bucket: 'custom-bucket' } },
+            'my-vol': { name: 'my-vol' },
           },
         },
       };
@@ -458,9 +472,12 @@ describe('Compose Deployment', () => {
         mock.fn()
       );
 
-      // Should call ensureStorageBucketExists for named volume's bucket
+      // Should call ensureStorageBucketExists for the default bucketName
       const calls = ensureStorageBucketExistsMock.mock.calls;
-      assert.ok(calls.some((c) => c.arguments[1] === 'custom-bucket'));
+      assert.strictEqual(calls.length, 1);
+      // Bucket name is constructed from project number, sanitized name, region, and suffix
+      const bucketName = calls[0].arguments[1];
+      assert.ok(bucketName.startsWith('987654321-my-project-us-central1-compose'));
     });
   });
 
