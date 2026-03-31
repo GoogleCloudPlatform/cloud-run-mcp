@@ -324,4 +324,83 @@ describe('Deploy Compose', () => {
     assert.strictEqual(deployedServices[0], 'my-model');
     assert.strictEqual(deployedServices[1], 'my-app');
   });
+
+  test('sanitizes service names with underscores', async () => {
+    const rawServiceName = 'ai-model-test_web';
+    const sanitizedName = 'ai-model-test-web';
+
+    const prepareSourceDirectoryMock = mock.fn(async () => '/tmp/temp-dir');
+    const getProjectNumberMock = mock.fn(async () => '123456');
+    const downloadRunComposeMock = mock.fn(async () => '/bin/run-compose');
+    const translateComposeMock = mock.fn(async () =>
+      JSON.stringify({
+        services: { [rawServiceName]: 'web.yaml' },
+      })
+    );
+
+    const replaceServiceMock = mock.fn(async (params) => {
+      return { data: { metadata: { name: params.name.split('/').pop() } } };
+    });
+
+    const { deployCompose } = await esmock('../../lib/deployment/deployer.js', {
+      '../../lib/deployment/source-processor.js': {
+        prepareSourceDirectory: prepareSourceDirectoryMock,
+        cleanupTempDirectory: mock.fn(),
+      },
+      '../../lib/util/helpers.js': {
+        getProjectNumber: getProjectNumberMock,
+        logAndProgress: mock.fn(),
+        sanitizeCloudRunServiceName: (name) =>
+          name
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '-')
+            .replace(/^-+|-+$/g, ''),
+      },
+      '../../lib/deployment/compose.js': {
+        runCompose: downloadRunComposeMock,
+        resourceCompose: mock.fn(async () => JSON.stringify({})),
+        translateCompose: translateComposeMock,
+        composeVolumes: mock.fn(async (resourcesConfig) => resourcesConfig),
+        composeSecrets: mock.fn(async (resourcesConfig) => resourcesConfig),
+      },
+      '../../lib/cloud-api/build.js': {
+        composeBuild: mock.fn(async (rc) => rc),
+      },
+      '../../lib/clients.js': {
+        getRunV1Client: mock.fn(async () => ({
+          namespaces: { services: { replaceService: replaceServiceMock } },
+        })),
+      },
+      fs: {
+        promises: {
+          readFile: mock.fn(async () => 'metadata:\n  name: ai-model-test_web'),
+        },
+      },
+      path: path,
+    });
+
+    await deployCompose({
+      projectId,
+      region,
+      files,
+      composeFilePath,
+      accessToken,
+      progressCallback: mock.fn(),
+    });
+
+    assert.strictEqual(replaceServiceMock.mock.callCount(), 1);
+    const call = replaceServiceMock.mock.calls[0];
+
+    // Verify name in URL was sanitized
+    assert.strictEqual(
+      call.arguments[0].name,
+      `namespaces/${projectId}/services/${sanitizedName}`
+    );
+
+    // Verify name in requestBody metadata was sanitized
+    assert.strictEqual(
+      call.arguments[0].requestBody.metadata.name,
+      sanitizedName
+    );
+  });
 });

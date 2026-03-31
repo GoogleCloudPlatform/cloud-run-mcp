@@ -252,4 +252,84 @@ describe('Utility Helpers', () => {
       assert.equal(result, '987654321');
     });
   });
+
+  describe('calculateSourceFingerprint', () => {
+    test('calculates SHA256 of directory content deterministically', async () => {
+      const fsMock = {
+        promises: {
+          readdir: mock.fn(async (dir) => {
+            if (dir === '/src') {
+              return [
+                {
+                  name: 'b.txt',
+                  isFile: () => true,
+                  isDirectory: () => false,
+                },
+                {
+                  name: 'a.txt',
+                  isFile: () => true,
+                  isDirectory: () => false,
+                },
+                {
+                  name: 'subdir',
+                  isFile: () => false,
+                  isDirectory: () => true,
+                },
+              ];
+            }
+            if (dir === '/src/subdir') {
+              return [
+                {
+                  name: 'c.txt',
+                  isFile: () => true,
+                  isDirectory: () => false,
+                },
+              ];
+            }
+            return [];
+          }),
+          readFile: mock.fn(
+            async (file) => `content of ${path.basename(file)}`
+          ),
+        },
+      };
+
+      const { calculateSourceFingerprint } = await esmock(
+        '../../lib/util/helpers.js',
+        {
+          'node:fs': { promises: fsMock.promises },
+        }
+      );
+
+      const result = await calculateSourceFingerprint('/src');
+      assert.ok(result);
+      assert.equal(typeof result, 'string');
+      assert.equal(result.length, 64); // SHA256 hex length
+
+      // Verify readdir calls (recursive)
+      assert.equal(fsMock.promises.readdir.mock.callCount(), 2);
+    });
+  });
+
+  describe('sanitizeCloudRunServiceName', () => {
+    test('sanitizes various inputs correctly', async () => {
+      const { sanitizeCloudRunServiceName } =
+        await import('../../lib/util/helpers.js');
+
+      assert.equal(
+        sanitizeCloudRunServiceName('My-Service_Name'),
+        'my-service-name'
+      );
+      assert.equal(sanitizeCloudRunServiceName('123service'), 's-123service');
+      assert.equal(sanitizeCloudRunServiceName('-start-end-'), 'start-end');
+      assert.equal(
+        sanitizeCloudRunServiceName('a'.repeat(100)),
+        'a'.repeat(49)
+      );
+      assert.equal(
+        sanitizeCloudRunServiceName('Special!@#$%Chars'),
+        'special-chars'
+      );
+    });
+  });
 });
