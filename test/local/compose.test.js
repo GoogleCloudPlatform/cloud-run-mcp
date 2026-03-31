@@ -418,8 +418,8 @@ describe('Compose Deployment', () => {
       // Called once in handleBindMounts
       assert.strictEqual(ensureStorageBucketExistsMock.mock.callCount(), 1);
       assert.strictEqual(grantBucketAccessMock.mock.callCount(), 1);
-      // Called once in composeVolumes (for naming) and once in handleBindMounts (for IAM)
-      assert.strictEqual(getProjectNumberMock.mock.callCount(), 2);
+      // Called once in composeVolumes (reused in handleBindMounts)
+      assert.strictEqual(getProjectNumberMock.mock.callCount(), 1);
     });
 
     test('should handle long project names with hashing', async () => {
