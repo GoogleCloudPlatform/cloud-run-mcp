@@ -107,7 +107,7 @@ describe('triggerCloudBuild', () => {
         sanitizeCloudRunServiceName: (name) =>
           name
             .toLowerCase()
-            .replace(/[^a-z0-9]/g, '-')
+            .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-+|-+$/g, ''),
       },
       '../../../lib/cloud-api/run.js': {
