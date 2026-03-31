@@ -322,7 +322,7 @@ describe('Compose Deployment', () => {
     }));
     const uploadToStorageBucketMock = mock.fn(async () => ({}));
     const uploadDirectoryMock = mock.fn(async () => {});
-    const grantBucketAccessMock = mock.fn(async () => { });
+    const grantBucketAccessMock = mock.fn(async () => {});
     const fsMock = {};
     const fsPromisesMock = {
       access: mock.fn(async () => {}),
@@ -477,7 +477,9 @@ describe('Compose Deployment', () => {
       assert.strictEqual(calls.length, 1);
       // Bucket name is constructed from project number, sanitized name, region, and suffix
       const bucketName = calls[0].arguments[1];
-      assert.ok(bucketName.startsWith('987654321-my-project-us-central1-compose'));
+      assert.ok(
+        bucketName.startsWith('987654321-my-project-us-central1-compose')
+      );
     });
   });
 

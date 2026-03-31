@@ -13,16 +13,16 @@ describe('grantBucketAccess', () => {
     // storage.js is in lib/cloud-api/
     // util/helpers.js is in lib/util/
     // cloud-api/helpers.js is in lib/cloud-api/
-    
+
     callWithRetryMock = mock.fn((fn) => fn());
 
     storageApi = await esmock('../../../lib/cloud-api/storage.js', {
       '../../../lib/util/helpers.js': {
-        logAndProgress: logAndProgressMock
+        logAndProgress: logAndProgressMock,
       },
       '../../../lib/cloud-api/helpers.js': {
-        callWithRetry: callWithRetryMock
-      }
+        callWithRetry: callWithRetryMock,
+      },
     });
   });
 
@@ -35,8 +35,8 @@ describe('grantBucketAccess', () => {
       name: 'test-bucket',
       iam: {
         getPolicy: mock.fn(() => Promise.resolve([{ bindings: [] }])),
-        setPolicy: mock.fn(() => Promise.resolve())
-      }
+        setPolicy: mock.fn(() => Promise.resolve()),
+      },
     };
 
     await storageApi.grantBucketAccess(
@@ -49,12 +49,15 @@ describe('grantBucketAccess', () => {
     assert.strictEqual(mockBucket.iam.getPolicy.mock.callCount(), 1);
     // Should call setPolicy once
     assert.strictEqual(mockBucket.iam.setPolicy.mock.callCount(), 1);
-    
+
     // Verify the binding was added
     const setPolicyCall = mockBucket.iam.setPolicy.mock.calls[0];
     const updatedPolicy = setPolicyCall.arguments[0];
     assert.deepStrictEqual(updatedPolicy.bindings, [
-      { role: 'roles/storage.objectAdmin', members: ['serviceAccount:test@example.com'] }
+      {
+        role: 'roles/storage.objectAdmin',
+        members: ['serviceAccount:test@example.com'],
+      },
     ]);
   });
 
@@ -62,13 +65,20 @@ describe('grantBucketAccess', () => {
     const mockBucket = {
       name: 'test-bucket',
       iam: {
-        getPolicy: mock.fn(() => Promise.resolve([{
-          bindings: [
-            { role: 'roles/storage.objectAdmin', members: ['serviceAccount:existing@example.com'] }
-          ]
-        }])),
-        setPolicy: mock.fn(() => Promise.resolve())
-      }
+        getPolicy: mock.fn(() =>
+          Promise.resolve([
+            {
+              bindings: [
+                {
+                  role: 'roles/storage.objectAdmin',
+                  members: ['serviceAccount:existing@example.com'],
+                },
+              ],
+            },
+          ])
+        ),
+        setPolicy: mock.fn(() => Promise.resolve()),
+      },
     };
 
     await storageApi.grantBucketAccess(
@@ -79,7 +89,9 @@ describe('grantBucketAccess', () => {
 
     assert.strictEqual(mockBucket.iam.setPolicy.mock.callCount(), 1);
     const updatedPolicy = mockBucket.iam.setPolicy.mock.calls[0].arguments[0];
-    const binding = updatedPolicy.bindings.find(b => b.role === 'roles/storage.objectAdmin');
+    const binding = updatedPolicy.bindings.find(
+      (b) => b.role === 'roles/storage.objectAdmin'
+    );
     assert.ok(binding.members.includes('serviceAccount:test@example.com'));
     assert.ok(binding.members.includes('serviceAccount:existing@example.com'));
   });
@@ -88,13 +100,20 @@ describe('grantBucketAccess', () => {
     const mockBucket = {
       name: 'test-bucket',
       iam: {
-        getPolicy: mock.fn(() => Promise.resolve([{
-          bindings: [
-            { role: 'roles/storage.objectAdmin', members: ['serviceAccount:test@example.com'] }
-          ]
-        }])),
-        setPolicy: mock.fn(() => Promise.resolve())
-      }
+        getPolicy: mock.fn(() =>
+          Promise.resolve([
+            {
+              bindings: [
+                {
+                  role: 'roles/storage.objectAdmin',
+                  members: ['serviceAccount:test@example.com'],
+                },
+              ],
+            },
+          ])
+        ),
+        setPolicy: mock.fn(() => Promise.resolve()),
+      },
     };
 
     await storageApi.grantBucketAccess(
@@ -111,9 +130,11 @@ describe('grantBucketAccess', () => {
     const mockBucket = {
       name: 'test-bucket',
       iam: {
-        getPolicy: mock.fn(() => Promise.reject(new Error('IAM Permission Denied'))),
-        setPolicy: mock.fn()
-      }
+        getPolicy: mock.fn(() =>
+          Promise.reject(new Error('IAM Permission Denied'))
+        ),
+        setPolicy: mock.fn(),
+      },
     };
 
     // This should not throw
@@ -124,7 +145,9 @@ describe('grantBucketAccess', () => {
     );
 
     // Verify warning was logged
-    const errorLogs = logAndProgressMock.mock.calls.filter(c => c.arguments[2] === 'warn');
+    const errorLogs = logAndProgressMock.mock.calls.filter(
+      (c) => c.arguments[2] === 'warn'
+    );
     assert.ok(errorLogs.length > 0);
     assert.ok(errorLogs[0].arguments[0].includes('IAM Permission Denied'));
   });
