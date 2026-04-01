@@ -415,7 +415,7 @@ describe('Compose Deployment', () => {
         )
       );
       assert.strictEqual(uploadDirectoryMock.mock.callCount(), 1);
-      // Called once in handleBindMounts
+      // Called once in composeVolumes
       assert.strictEqual(ensureStorageBucketExistsMock.mock.callCount(), 1);
       assert.strictEqual(grantBucketAccessMock.mock.callCount(), 1);
       // Called once in composeVolumes (reused in handleBindMounts)
