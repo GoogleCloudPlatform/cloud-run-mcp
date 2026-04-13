@@ -288,7 +288,7 @@ In order to use Cloud Run skills:
 3. Enable the skills on your agentic AI tool. For example, you can enable the skills for Gemini CLI using the following command on your terminal:
 
 ```bash
-gemini skills install https://github.com/GoogleCloudPlatform/cloud-run-mcp.git –-path skills/cloud-run
+gemini skills install https://github.com/GoogleCloudPlatform/cloud-run-mcp.git --path skills/cloud-run
 ```
 
 4. Once the skills are enabled, you can use them to perform actions on Cloud Run. Here are some of the prompts for you to get started:
