@@ -33,10 +33,14 @@ gcloud run <resource> <method> [flags]
 - `describe` — Obtain details about a given service, such as its URL and configuration.
 - `update` — Update Cloud Run environment variables, concurrency settings, and other configuration.
 - `delete` — Delete a service and its associated revisions.
-- `add-iam-policy-binding` — Add IAM policy binding to a Cloud Run service (e.g., to make it public).
 - `update-traffic` — Adjust the traffic assignments for a Cloud Run service.
 - `proxy` — Proxy a service to localhost authenticating as the active account.
 - `logs read` — Read logs for a Cloud Run service.
+- `replace` - Create or replace a service from a YAML service specification.
+- `add-iam-policy-binding` — Add IAM policy binding to a Cloud Run service (e.g., to make it public).
+- `remove-iam-policy-binding` - Remove IAM policy binding of a Cloud Run service.
+- `get-iam-policy` - Get the IAM policy for a Cloud Run service.
+- `set-iam-policy` - Set the IAM policy for a Cloud Run service.
 
 ### jobs
 
@@ -44,10 +48,16 @@ gcloud run <resource> <method> [flags]
 - `execute` — Start an execution of a Cloud Run job.
 - `list` — List available jobs.
 - `describe` — Obtain details about a given job.
+- `deploy` - Create or update a Cloud Run job
 - `update` — Update a Cloud Run job configuration.
-- `delete` — Delete a job.
+- `delete` — Delete a Cloud Run job.
+- `replace` - Create or replace a Cloud Run job from a YAML job specification.
 - `executions list` — List executions of a Cloud Run job.
 - `logs read` — Read logs for a Cloud Run job.
+- `add-iam-policy-binding` — Add IAM policy binding to a Cloud Run job.
+- `remove-iam-policy-binding` - Remove IAM policy binding of a Cloud Run job.
+- `get-iam-policy` - Get the IAM policy for a Cloud Run job.
+- `set-iam-policy` - Set the IAM policy for a Cloud Run job.
 
 ### domain-mappings
 
@@ -62,6 +72,7 @@ gcloud run <resource> <method> [flags]
 - `describe` — Obtain details about a multi-region service.
 - `update` — Update settings for multi-region services.
 - `delete` — Delete a multi-region service.
+- `replace` - Create or Update multi-region service from YAML specification.
 
 ### revisions
 
