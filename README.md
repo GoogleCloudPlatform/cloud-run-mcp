@@ -274,3 +274,27 @@ Post the configuration changes as shown above, start the Gemini CLI. You should 
 This will take you to the authentication page on your browser, wherein you need to sign in using the appropriate gmail id, and accept the terms and conditions. Once the authentication is succcessful, you can come back to the Gemini CLI, and the Cloud Run MCP server will be ready to use.
 
 The Google Cloud Platform Terms of Service (available at https://cloud.google.com/terms/) and the Data Processing and Security Terms (available at https://cloud.google.com/terms/data-processing-terms) do not apply to any component of the Cloud Run MCP Server software.
+
+# Cloud Run Skills
+
+We introduce Cloud Run skills to enable AI agents to perform actions on Cloud Run. You can use these skills with Gemini CLI and other agentic AI tools. The skills are available at [Cloud Run Skills](https://github.com/google/cloud-run-mcp/blob/main/skills/cloud-run/SKILL.md).
+
+The Cloud Run skills are based on top of gcloud cli for Cloud Run empowering agents to perform all the actions on the Cloud Run using gcloud, as can be performed by the GCP user using gcloud cli.
+
+In order to use Cloud Run skills:
+
+1. Ensure you have the `gcloud` CLI installed and authenticated with `gcloud auth login` and `gcloud auth application-default login`.
+2. Set your project with `gcloud config set project [PROJECT_ID]`.
+3. Enable the skills on your agentic AI tool. For example, you can enable the skills for Gemini CLI using the following command on your terminal:
+
+```bash
+gemini skills install https://github.com/GoogleCloudPlatform/cloud-run-mcp.git --path skills/cloud-run
+```
+
+4. Once the skills are enabled, you can use them to perform actions on Cloud Run. Here are some of the prompts for you to get started:
+
+- List the Cloud Run services in the project test-gcp-project in the region us-west1.
+
+- Deploy the folder /home/username/workspace/hello-world as Cloud Run service hello-world to the project test-gcp-project in the region us-west1.
+
+- Describe the Cloud Run job hello-job in the project test-gcp-project in the region europe-west1.
