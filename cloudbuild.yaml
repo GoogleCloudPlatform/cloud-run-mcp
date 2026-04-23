@@ -16,16 +16,16 @@
 # This file is used by the Cloud Build trigger that builds this image.
 
 steps:
-  - name: "gcr.io/cloud-builders/docker"
+  - name: 'gcr.io/cloud-builders/docker'
     args:
       [
-        "build",
-        "-t",
-        "container/$PROJECT_ID/mcp:latest",
-        "-t",
-        "container/$PROJECT_ID/mcp:public-image-${COMMIT_SHA}",
-        ".",
+        'build',
+        '-t',
+        'container/$PROJECT_ID/mcp:latest',
+        '-t',
+        'container/$PROJECT_ID/mcp:public-image-${COMMIT_SHA}',
+        '.',
       ]
 images:
-  - "container/$PROJECT_ID/mcp:latest"
-  - "container/$PROJECT_ID/mcp:public-image-${COMMIT_SHA}"
+  - 'container/$PROJECT_ID/mcp:latest'
+  - 'container/$PROJECT_ID/mcp:public-image-${COMMIT_SHA}'
