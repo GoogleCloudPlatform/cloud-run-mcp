@@ -376,7 +376,9 @@ function registerDeployLocalFolderTool(server, options) {
           .string()
           .optional()
           .default(options.defaultServiceName)
-          .describe('Name of the Cloud Run service to deploy to. If not provided, it will be inferred.'),
+          .describe(
+            'Name of the Cloud Run service to deploy to. If not provided, it will be inferred.'
+          ),
         folderPath: z
           .string()
           .describe(
