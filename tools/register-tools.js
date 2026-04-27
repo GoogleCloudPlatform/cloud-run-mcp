@@ -376,7 +376,9 @@ function registerDeployLocalFolderTool(server, options) {
           .string()
           .optional()
           .default(options.defaultServiceName)
-          .describe('Name of the Cloud Run service to deploy to'),
+          .describe(
+            'Name of the Cloud Run service to deploy to. If not provided, it will be inferred.'
+          ),
         folderPath: z
           .string()
           .describe(
@@ -418,11 +420,12 @@ function registerDeployLocalFolderTool(server, options) {
             ingress: options.ingress,
             progressCallback,
           });
+          const serviceName = service || response.service;
           return {
             content: [
               {
                 type: 'text',
-                text: `Cloud Run service ${service} deployed from folder ${folderPath} in project ${project}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${service}?project=${project}\nService URL: ${response.uri}`,
+                text: `Cloud Run service ${serviceName} deployed from folder ${folderPath} in project ${project}\nCloud Console: https://console.cloud.google.com/run/detail/${region}/${serviceName}?project=${project}\nService URL: ${response.uri}`,
               },
             ],
           };

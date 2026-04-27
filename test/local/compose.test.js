@@ -63,8 +63,8 @@ describe('Compose Deployment', () => {
         call.arguments[0],
         '/home/user/.cloud-run-mcp/bin/run-compose'
       );
-      assert.strictEqual(call.arguments[1].project, 'test-project-123456');
-      assert.strictEqual(call.arguments[1].location, 'us-west1');
+      assert.strictEqual(call.arguments[1].project, 'serverless-runtimes-qa');
+      assert.strictEqual(call.arguments[1].location, 'us-central1');
       assert.strictEqual(call.arguments[1].repository, 'run-compose');
       assert.strictEqual(call.arguments[2], 'fake-token');
     } finally {

@@ -148,7 +148,8 @@ describe('Deploy Compose', () => {
 
     // Validations
     assert.ok(result);
-    assert.equal(result.message, '1 services deployed from compose file');
+    assert.equal(result.service, 'web');
+    assert.equal(result.uri, undefined); // In the mock, status.url is not provided
     assert.equal(prepareSourceDirectoryMock.mock.callCount(), 1);
     assert.equal(resourceComposeMock.mock.callCount(), 1);
     assert.equal(translateComposeMock.mock.callCount(), 1);
@@ -318,7 +319,8 @@ describe('Deploy Compose', () => {
     });
 
     assert.ok(result);
-    assert.strictEqual(result.message, '2 services deployed from compose file');
+    assert.strictEqual(result.service, 'my-app');
+    assert.strictEqual(result.uri, 'https://my-app.a.run.app');
     assert.strictEqual(deployedServices.length, 2);
     // Verify order: models first
     assert.strictEqual(deployedServices[0], 'my-model');

@@ -238,4 +238,41 @@ describe('Deployment Helpers', () => {
     const call2 = uploadToStorageBucketMock.mock.calls[1];
     assert.ok(call2.arguments[2].endsWith('prefix/subdir/file2.txt'));
   });
+
+  test('makeFileDeploymentMetadata correctly identifies compose file in folder', async () => {
+    const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
+      fs: fsMock,
+    });
+
+    const folderPath = '/absolute/path/to/folder';
+
+    fsMock.statSync.mock.mockImplementation(() => ({
+      isDirectory: () => true,
+    }));
+
+    fsMock.existsSync.mock.mockImplementation((filePath) => {
+      if (filePath.endsWith('compose.yaml')) return true;
+      return false;
+    });
+
+    const result = deploymentHelpers.makeFileDeploymentMetadata([folderPath]);
+
+    assert.ok(result.composeFilePath.endsWith('compose.yaml'));
+  });
+
+  test('makeFileDeploymentMetadata returns null for composeFilePath if no compose file exists', async () => {
+    const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
+      fs: fsMock,
+    });
+
+    const files = ['Dockerfile', 'index.js'];
+
+    fsMock.statSync.mock.mockImplementation(() => ({
+      isDirectory: () => false,
+    }));
+
+    const result = deploymentHelpers.makeFileDeploymentMetadata(files);
+
+    assert.strictEqual(result.composeFilePath, null);
+  });
 });
