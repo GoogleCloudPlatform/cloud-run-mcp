@@ -21,11 +21,11 @@ steps:
       [
         'build',
         '-t',
-        'container/$PROJECT_ID/mcp:latest',
+        'us-docker.pkg.dev/$PROJECT_ID/container/mcp:latest',
         '-t',
-        'container/$PROJECT_ID/mcp:public-image-${COMMIT_SHA}',
+        'us-docker.pkg.dev/$PROJECT_ID/container/mcp:public-image-${COMMIT_SHA}',
         '.',
       ]
 images:
-  - 'container/$PROJECT_ID/mcp:latest'
-  - 'container/$PROJECT_ID/mcp:public-image-${COMMIT_SHA}'
+  - 'us-docker.pkg.dev/$PROJECT_ID/container/mcp:latest'
+  - 'us-docker.pkg.dev/$PROJECT_ID/container/mcp:public-image-${COMMIT_SHA}'
