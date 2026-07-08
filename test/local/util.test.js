@@ -332,4 +332,18 @@ describe('Utility Helpers', () => {
       );
     });
   });
+
+  describe('sanitizeLabelValue', () => {
+    test('sanitizes various inputs correctly', async () => {
+      const { sanitizeLabelValue } = await import('../../lib/util/helpers.js');
+
+      assert.equal(sanitizeLabelValue(''), '');
+      assert.equal(sanitizeLabelValue('valid-label'), 'valid-label');
+      assert.equal(sanitizeLabelValue('Upper-Case'), 'upper-case');
+      assert.equal(sanitizeLabelValue('invalid@char'), 'invalid-char');
+      assert.equal(sanitizeLabelValue('1starts-with-number'), 'p-1starts-with-number');
+      assert.equal(sanitizeLabelValue('-starts-with-dash'), 'p--starts-with-dash');
+      assert.equal(sanitizeLabelValue('a'.repeat(70)), 'a'.repeat(63));
+    });
+  });
 });
