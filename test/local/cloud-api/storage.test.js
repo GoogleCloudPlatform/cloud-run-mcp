@@ -108,7 +108,9 @@ describe('Storage API', () => {
         (b) => b.role === 'roles/storage.objectAdmin'
       );
       assert.ok(binding.members.includes('serviceAccount:test@example.com'));
-      assert.ok(binding.members.includes('serviceAccount:existing@example.com'));
+      assert.ok(
+        binding.members.includes('serviceAccount:existing@example.com')
+      );
     });
 
     it('should not call setPolicy if member already has role', async () => {
