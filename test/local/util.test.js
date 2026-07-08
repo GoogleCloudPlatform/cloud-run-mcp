@@ -338,6 +338,8 @@ describe('Utility Helpers', () => {
       const { sanitizeLabelValue } = await import('../../lib/util/helpers.js');
 
       assert.equal(sanitizeLabelValue(''), '');
+      assert.equal(sanitizeLabelValue(null), '');
+      assert.equal(sanitizeLabelValue(undefined), '');
       assert.equal(sanitizeLabelValue('valid-label'), 'valid-label');
       assert.equal(sanitizeLabelValue('Upper-Case'), 'upper-case');
       assert.equal(sanitizeLabelValue('invalid@char'), 'invalid-char');
@@ -350,6 +352,10 @@ describe('Utility Helpers', () => {
         '-starts-with-dash'
       );
       assert.equal(sanitizeLabelValue('a'.repeat(70)), 'a'.repeat(63));
+      assert.equal(sanitizeLabelValue(12345), '12345');
+      assert.equal(sanitizeLabelValue(0), '0');
+      assert.equal(sanitizeLabelValue(true), 'true');
+      assert.equal(sanitizeLabelValue(false), 'false');
     });
   });
 });
