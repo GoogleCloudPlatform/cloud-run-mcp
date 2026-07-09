@@ -125,6 +125,7 @@ describe('secrets.js', () => {
         projectId,
         secretName,
         accessToken,
+        undefined,
         () => {}
       );
 
@@ -152,8 +153,8 @@ describe('secrets.js', () => {
         projectId,
         secretName,
         accessToken,
-        () => {},
-        labels
+        labels,
+        () => {}
       );
 
       assert.deepEqual(result, mockSecret);

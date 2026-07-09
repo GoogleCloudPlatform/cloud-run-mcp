@@ -215,8 +215,8 @@ describe('Storage API', () => {
         'test-bucket',
         'us-central1',
         'token',
-        undefined,
-        labels
+        labels,
+        undefined
       );
 
       assert.strictEqual(result, mockBucket);
