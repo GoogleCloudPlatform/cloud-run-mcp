@@ -417,6 +417,11 @@ describe('Compose Deployment', () => {
       assert.strictEqual(uploadDirectoryMock.mock.callCount(), 1);
       // Called once in composeVolumes
       assert.strictEqual(ensureStorageBucketExistsMock.mock.callCount(), 1);
+      const call = ensureStorageBucketExistsMock.mock.calls[0];
+      assert.deepStrictEqual(call.arguments[4], {
+        'managed-by': 'runcompose',
+        'run-compose-project': 'my-project',
+      });
       assert.strictEqual(grantBucketAccessMock.mock.callCount(), 1);
       // Called once in composeVolumes (reused in handleBindMounts)
       assert.strictEqual(getProjectNumberMock.mock.callCount(), 1);
@@ -480,6 +485,10 @@ describe('Compose Deployment', () => {
       assert.ok(
         bucketName.startsWith('987654321-my-project-us-central1-compose')
       );
+      assert.deepStrictEqual(calls[0].arguments[4], {
+        'managed-by': 'runcompose',
+        'run-compose-project': 'my-project',
+      });
     });
   });
 
@@ -568,6 +577,11 @@ describe('Compose Deployment', () => {
       );
       assert.strictEqual(ensureApisEnabledMock.mock.callCount(), 1);
       assert.strictEqual(createSecretMock.mock.callCount(), 1);
+      const call = createSecretMock.mock.calls[0];
+      assert.deepStrictEqual(call.arguments[3], {
+        'managed-by': 'runcompose',
+        'run-compose-project': 'my-project',
+      });
       assert.strictEqual(addSecretVersionMock.mock.callCount(), 1);
       assert.strictEqual(addSecretAccessorBindingMock.mock.callCount(), 1);
     });
