@@ -238,8 +238,8 @@ describe('Storage API', () => {
             'test-bucket',
             'us-central1',
             'token',
+            true,
             undefined,
-            true
           );
         },
         /Security Error: Fallback bucket test-bucket belongs to project number 999999/
