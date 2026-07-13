@@ -180,6 +180,40 @@ describe('Deployment Helpers', () => {
     });
   });
 
+  test('createDirectSourceDeploymentContainer creates correct object with generation', async () => {
+    const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
+      fs: fsMock,
+    });
+
+    const input = {
+      bucketName: 'test-bucket',
+      fileName: 'source.tar.gz',
+      generation: '1234567890123456',
+      deploymentAttrs: {
+        cmd: ['node'],
+        args: ['server.js'],
+        baseImage: 'gcr.io/google-appengine/nodejs',
+      },
+    };
+
+    const result =
+      deploymentHelpers.createDirectSourceDeploymentContainer(input);
+
+    assert.deepEqual(result, {
+      image: DEPLOYMENT_CONFIG.NO_BUILD_IMAGE_TYPE,
+      baseImageUri: 'gcr.io/google-appengine/nodejs',
+      sourceCode: {
+        cloudStorageSource: {
+          bucket: 'test-bucket',
+          object: 'source.tar.gz',
+          generation: '1234567890123456',
+        },
+      },
+      command: ['node'],
+      args: ['server.js'],
+    });
+  });
+
   test('uploadDirectory recursively uploads files', async () => {
     const uploadToStorageBucketMock = mock.fn(async () => ({}));
     const readFileMock = mock.fn(async () => Buffer.from('content'));
