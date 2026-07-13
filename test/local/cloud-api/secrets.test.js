@@ -125,6 +125,7 @@ describe('secrets.js', () => {
         projectId,
         secretName,
         accessToken,
+        undefined,
         () => {}
       );
 
@@ -137,6 +138,35 @@ describe('secrets.js', () => {
           replication: {
             automatic: {},
           },
+        },
+      });
+    });
+
+    it('should create a secret with labels successfully', async () => {
+      const mockSecret = {
+        name: `projects/${projectId}/secrets/${secretName}`,
+      };
+      createSecretImpl = () => Promise.resolve([mockSecret]);
+      const labels = { key: 'value' };
+
+      const result = await secrets.createSecret(
+        projectId,
+        secretName,
+        accessToken,
+        labels,
+        () => {}
+      );
+
+      assert.deepEqual(result, mockSecret);
+      assert.equal(createSecretMock.mock.callCount(), 1);
+      assert.deepEqual(createSecretMock.mock.calls[0].arguments[0], {
+        parent: `projects/${projectId}`,
+        secretId: secretName,
+        secret: {
+          replication: {
+            automatic: {},
+          },
+          labels: labels,
         },
       });
     });

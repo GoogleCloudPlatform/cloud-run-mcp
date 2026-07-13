@@ -15,6 +15,9 @@
 # Default cloudbuild.yaml for Cloud Shell custom images.
 # This file is used by the Cloud Build trigger that builds this image.
 
+substitutions:
+  _IMAGE_TAG: '${COMMIT_SHA}'
+
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
@@ -23,9 +26,12 @@ steps:
         '-t',
         'us-docker.pkg.dev/${PROJECT_ID}/container/mcp:latest',
         '-t',
-        'us-docker.pkg.dev/${PROJECT_ID}/container/mcp:public-image-${COMMIT_SHA}',
+        'us-docker.pkg.dev/${PROJECT_ID}/container/mcp:public-image-${_IMAGE_TAG}',
         '.',
       ]
 images:
   - 'us-docker.pkg.dev/${PROJECT_ID}/container/mcp:latest'
-  - 'us-docker.pkg.dev/${PROJECT_ID}/container/mcp:public-image-${COMMIT_SHA}'
+  - 'us-docker.pkg.dev/${PROJECT_ID}/container/mcp:public-image-${_IMAGE_TAG}'
+
+options:
+  dynamicSubstitutions: true

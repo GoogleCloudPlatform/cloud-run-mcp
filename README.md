@@ -277,7 +277,7 @@ The Google Cloud Platform Terms of Service (available at https://cloud.google.co
 
 # Cloud Run Skills
 
-We introduce Cloud Run skills to enable AI agents to perform actions on Cloud Run. You can use these skills with Gemini CLI and other agentic AI tools. The skills are available at [Cloud Run Skills](https://github.com/google/cloud-run-mcp/blob/main/skills/cloud-run/SKILL.md).
+We introduce Cloud Run skills to enable AI agents to perform actions on Cloud Run. You can use these skills with Gemini CLI and other agentic AI tools. The skills are available at [Cloud Run Skills](https://github.com/GoogleCloudPlatform/cloud-run-mcp/blob/main/skills/cloud-run/SKILL.md).
 
 The Cloud Run skills are based on top of gcloud cli for Cloud Run empowering agents to perform all the actions on the Cloud Run using gcloud, as can be performed by the GCP user using gcloud cli.
 
