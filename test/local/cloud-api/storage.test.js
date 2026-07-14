@@ -19,11 +19,15 @@ describe('Storage API', () => {
     mockBucket = {
       name: 'test-bucket',
       exists: mock.fn(() => Promise.resolve([false])),
-      getMetadata: mock.fn(() => Promise.resolve([{ projectNumber: '123456' }])),
+      getMetadata: mock.fn(() =>
+        Promise.resolve([{ projectNumber: '123456' }])
+      ),
       file: mock.fn((blobName) => ({
         name: blobName,
         save: mock.fn(() => Promise.resolve()),
-        getMetadata: mock.fn(() => Promise.resolve([{ generation: '999888777' }])),
+        getMetadata: mock.fn(() =>
+          Promise.resolve([{ generation: '999888777' }])
+        ),
       })),
       iam: {
         getPolicy: mock.fn(() => Promise.resolve([{ bindings: [] }])),
@@ -272,19 +276,16 @@ describe('Storage API', () => {
         Promise.resolve([{ projectNumber: '999999' }])
       );
 
-      await assert.rejects(
-        async () => {
-          await storageApi.ensureStorageBucketExists(
-            'test-project',
-            'test-bucket',
-            'us-central1',
-            'token',
-            undefined,
-            true
-          );
-        },
-        /Security Error: Fallback bucket test-bucket belongs to project number 999999/
-      );
+      await assert.rejects(async () => {
+        await storageApi.ensureStorageBucketExists(
+          'test-project',
+          'test-bucket',
+          'us-central1',
+          'token',
+          undefined,
+          true
+        );
+      }, /Security Error: Fallback bucket test-bucket belongs to project number 999999/);
     });
   });
 
