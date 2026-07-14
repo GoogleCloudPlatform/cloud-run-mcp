@@ -298,7 +298,8 @@ describe('Storage API', () => {
       );
 
       assert.strictEqual(result.name, 'source.tar.gz');
-      assert.strictEqual(mockBucket.file.mock.callCount(), 2);
+      assert.strictEqual(mockBucket.file.mock.callCount(), 1);
+      assert.deepStrictEqual(result.metadata, { generation: '999888777' });
     });
   });
 });
