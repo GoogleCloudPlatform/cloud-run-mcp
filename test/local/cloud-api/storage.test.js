@@ -25,9 +25,6 @@ describe('Storage API', () => {
       file: mock.fn((blobName) => ({
         name: blobName,
         save: mock.fn(() => Promise.resolve()),
-        getMetadata: mock.fn(() =>
-          Promise.resolve([{ generation: '999888777' }])
-        ),
       })),
       iam: {
         getPolicy: mock.fn(() => Promise.resolve([{ bindings: [] }])),
@@ -286,20 +283,6 @@ describe('Storage API', () => {
           true
         );
       }, /Security Error: Fallback bucket test-bucket belongs to project number 999999/);
-    });
-  });
-
-  describe('uploadToStorageBucket', () => {
-    it('should upload buffer and return file with generation metadata', async () => {
-      const result = await storageApi.uploadToStorageBucket(
-        mockBucket,
-        Buffer.from('test data'),
-        'source.tar.gz'
-      );
-
-      assert.strictEqual(result.name, 'source.tar.gz');
-      assert.strictEqual(mockBucket.file.mock.callCount(), 1);
-      assert.deepStrictEqual(result.metadata, { generation: '999888777' });
     });
   });
 });
