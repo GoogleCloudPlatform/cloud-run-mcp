@@ -7,25 +7,34 @@ describe('Storage API', () => {
   let logAndProgressMock;
   let callWithRetryMock;
   let getStorageClientMock;
+  let getProjectNumberMock;
   let mockStorage;
   let mockBucket;
 
   beforeEach(async () => {
     logAndProgressMock = mock.fn();
     callWithRetryMock = mock.fn((fn) => fn());
+    getProjectNumberMock = mock.fn(() => Promise.resolve('123456'));
 
     mockBucket = {
       name: 'test-bucket',
-      exists: mock.fn(),
+      exists: mock.fn(() => Promise.resolve([false])),
+      getMetadata: mock.fn(() =>
+        Promise.resolve([{ projectNumber: '123456' }])
+      ),
+      file: mock.fn((blobName) => ({
+        name: blobName,
+        save: mock.fn(() => Promise.resolve()),
+      })),
       iam: {
-        getPolicy: mock.fn(),
-        setPolicy: mock.fn(),
+        getPolicy: mock.fn(() => Promise.resolve([{ bindings: [] }])),
+        setPolicy: mock.fn(() => Promise.resolve()),
       },
     };
 
     mockStorage = {
       bucket: mock.fn(() => mockBucket),
-      createBucket: mock.fn(),
+      createBucket: mock.fn(() => Promise.resolve([mockBucket])),
     };
 
     getStorageClientMock = mock.fn(() => Promise.resolve(mockStorage));
@@ -33,6 +42,7 @@ describe('Storage API', () => {
     storageApi = await esmock('../../../lib/cloud-api/storage.js', {
       '../../../lib/util/helpers.js': {
         logAndProgress: logAndProgressMock,
+        getProjectNumber: getProjectNumberMock,
       },
       '../../../lib/cloud-api/helpers.js': {
         callWithRetry: callWithRetryMock,
@@ -56,7 +66,6 @@ describe('Storage API', () => {
           setPolicy: mock.fn(() => Promise.resolve()),
         },
       };
-
       await storageApi.grantBucketAccess(
         testBucket,
         'roles/storage.objectAdmin',
@@ -169,8 +178,11 @@ describe('Storage API', () => {
   });
 
   describe('ensureStorageBucketExists', () => {
-    it('should return bucket if it already exists', async () => {
+    it('should return bucket if it exists and ownership matches', async () => {
       mockBucket.exists.mock.mockImplementation(() => Promise.resolve([true]));
+      mockBucket.getMetadata.mock.mockImplementation(() =>
+        Promise.resolve([{ projectNumber: '123456' }])
+      );
 
       const result = await storageApi.ensureStorageBucketExists(
         'test-project',
@@ -216,7 +228,7 @@ describe('Storage API', () => {
         'us-central1',
         'token',
         labels,
-        undefined
+        false
       );
 
       assert.strictEqual(result, mockBucket);
@@ -227,6 +239,167 @@ describe('Storage API', () => {
         location: 'us-central1',
         metadata: { labels: labels },
       });
+    });
+
+    it('should fall back to randomized bucket if primary bucket belongs to a different project', async () => {
+      let callCount = 0;
+      mockBucket.exists.mock.mockImplementation(() => {
+        callCount++;
+        return Promise.resolve([callCount === 1]);
+      });
+      mockBucket.getMetadata.mock.mockImplementation(() =>
+        Promise.resolve([{ projectNumber: '999999' }])
+      );
+
+      mockStorage.createBucket.mock.mockImplementation((name) =>
+        Promise.resolve([{ name }])
+      );
+
+      const result = await storageApi.ensureStorageBucketExists(
+        'test-project',
+        'test-bucket',
+        'us-central1',
+        'token'
+      );
+
+      assert.ok(result.name.startsWith('test-bucket-'));
+      assert.notStrictEqual(result.name, 'test-bucket');
+      assert.strictEqual(mockStorage.createBucket.mock.callCount(), 1);
+    });
+
+    it('should fall back to randomized bucket and preserve labels if exists check throws 403 (bucket squatting)', async () => {
+      let callCount = 0;
+      mockBucket.exists.mock.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.reject({ code: 403 });
+        }
+        return Promise.resolve([false]);
+      });
+      mockBucket.getMetadata.mock.mockImplementation(() =>
+        Promise.reject({ code: 403 })
+      );
+
+      mockStorage.createBucket.mock.mockImplementation((name, options) =>
+        Promise.resolve([{ name, options }])
+      );
+
+      const labels = { app: 'my-app' };
+      const result = await storageApi.ensureStorageBucketExists(
+        'test-project',
+        'test-bucket',
+        'us-central1',
+        'token',
+        labels
+      );
+
+      assert.ok(result.name.startsWith('test-bucket-'));
+      assert.notStrictEqual(result.name, 'test-bucket');
+      assert.strictEqual(mockStorage.createBucket.mock.callCount(), 1);
+      const call = mockStorage.createBucket.mock.calls[0];
+      assert.deepStrictEqual(call.arguments[1], {
+        location: 'us-central1',
+        metadata: { labels: labels },
+      });
+    });
+
+    it('should preserve labels when falling back to randomized bucket due to ownership mismatch', async () => {
+      let callCount = 0;
+      mockBucket.exists.mock.mockImplementation(() => {
+        callCount++;
+        return Promise.resolve([callCount === 1]);
+      });
+      mockBucket.getMetadata.mock.mockImplementation(() =>
+        Promise.resolve([{ projectNumber: '999999' }])
+      );
+
+      mockStorage.createBucket.mock.mockImplementation((name, options) =>
+        Promise.resolve([{ name, options }])
+      );
+
+      const labels = { app: 'my-app' };
+      const result = await storageApi.ensureStorageBucketExists(
+        'test-project',
+        'test-bucket',
+        'us-central1',
+        'token',
+        labels
+      );
+
+      assert.ok(result.name.startsWith('test-bucket-'));
+      assert.notStrictEqual(result.name, 'test-bucket');
+      assert.strictEqual(mockStorage.createBucket.mock.callCount(), 1);
+      const call = mockStorage.createBucket.mock.calls[0];
+      assert.deepStrictEqual(call.arguments[1], {
+        location: 'us-central1',
+        metadata: { labels: labels },
+      });
+    });
+
+    it('should preserve labels when falling back to randomized bucket due to createBucket already exists error', async () => {
+      mockBucket.exists.mock.mockImplementation(() => Promise.resolve([false]));
+
+      let createCallCount = 0;
+      mockStorage.createBucket.mock.mockImplementation((name, options) => {
+        createCallCount++;
+        if (createCallCount === 1) {
+          return Promise.reject(
+            new Error('The requested bucket name already exists')
+          );
+        }
+        return Promise.resolve([{ name, options }]);
+      });
+
+      const labels = { tier: 'frontend' };
+      const result = await storageApi.ensureStorageBucketExists(
+        'test-project',
+        'test-bucket',
+        'us-central1',
+        'token',
+        labels
+      );
+
+      assert.ok(result.name.startsWith('test-bucket-'));
+      assert.notStrictEqual(result.name, 'test-bucket');
+      assert.strictEqual(mockStorage.createBucket.mock.callCount(), 2);
+      const secondCall = mockStorage.createBucket.mock.calls[1];
+      assert.deepStrictEqual(secondCall.arguments[1], {
+        location: 'us-central1',
+        metadata: { labels: labels },
+      });
+    });
+
+    it('should rethrow error if exists check throws non-403 error', async () => {
+      mockBucket.exists.mock.mockImplementation(() =>
+        Promise.reject(new Error('Network failure'))
+      );
+
+      await assert.rejects(async () => {
+        await storageApi.ensureStorageBucketExists(
+          'test-project',
+          'test-bucket',
+          'us-central1',
+          'token'
+        );
+      }, /Network failure/);
+    });
+
+    it('should throw security error if fallback bucket also fails project ownership check', async () => {
+      mockBucket.exists.mock.mockImplementation(() => Promise.resolve([true]));
+      mockBucket.getMetadata.mock.mockImplementation(() =>
+        Promise.resolve([{ projectNumber: '999999' }])
+      );
+
+      await assert.rejects(async () => {
+        await storageApi.ensureStorageBucketExists(
+          'test-project',
+          'test-bucket',
+          'us-central1',
+          'token',
+          undefined,
+          true
+        );
+      }, /Security Error: Fallback bucket test-bucket belongs to project number 999999/);
     });
   });
 });

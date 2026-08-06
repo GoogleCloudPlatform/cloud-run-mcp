@@ -655,8 +655,17 @@ describe('composeBuild', () => {
     );
     assert.strictEqual(ensureARMock.mock.callCount(), 1);
     assert.strictEqual(zipFilesMock.mock.callCount(), 2);
-    assert.strictEqual(zipFilesMock.mock.calls[0].arguments[1], true); // useTarGz
     assert.strictEqual(ensureBucketMock.mock.callCount(), 1);
+    const ensureBucketCall = ensureBucketMock.mock.calls[0];
+    assert.strictEqual(ensureBucketCall.arguments[0], 'mock-project');
+    assert.strictEqual(
+      ensureBucketCall.arguments[1],
+      'mock-project_cloudbuild'
+    );
+    assert.strictEqual(ensureBucketCall.arguments[2], 'us-central1');
+    assert.strictEqual(ensureBucketCall.arguments[3], 'mock-token');
+    assert.strictEqual(ensureBucketCall.arguments[4], undefined);
+    assert.strictEqual(ensureBucketCall.arguments[5], false);
     assert.strictEqual(uploadToBucketMock.mock.callCount(), 2);
 
     // Verify archive name pattern source/{epoch}.{fingerprint}.tgz
