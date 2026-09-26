@@ -145,6 +145,29 @@ Then configure the MCP server using either Node.js or Docker:
       }
    ```
 
+3. [Optional] Increase the MCP timeout
+
+   Cloud Run deployments trigger a Cloud Build, which can take several minutes to
+   complete. If your MCP client disconnects with a timeout error before the build
+   finishes, increase the client timeout. The build continues running on GCP even
+   after a client disconnect.
+
+   For **Gemini CLI**, set `timeout` (in milliseconds) in `~/.gemini/settings.json`:
+
+   ```json
+   {
+     "mcpServers": {
+       "cloud-run": {
+         "command": "npx",
+         "args": ["-y", "@google-cloud/cloud-run-mcp"],
+         "timeout": 300000
+       }
+     }
+   }
+   ```
+
+   Refer to your MCP client's documentation for the equivalent timeout setting.
+
 #### Using Docker
 
 See Docker's [MCP catalog](https://hub.docker.com/mcp/server/cloud-run-mcp/overview), or use these manual instructions:
