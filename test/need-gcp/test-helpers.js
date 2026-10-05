@@ -166,7 +166,7 @@ export async function setSourceDeployProjectPermissions(projectId) {
   await ensureApisEnabled(projectId, [
     'run.googleapis.com',
     'cloudbuild.googleapis.com',
-    'compute.googleapis.com'
+    'compute.googleapis.com',
   ]);
   console.log('Adding editor role to Compute SA...');
   const projectNumber = await getProjectNumber(projectId);
