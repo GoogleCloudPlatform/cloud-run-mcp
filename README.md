@@ -95,6 +95,7 @@ The configuration file syntax can be different across clients. Please refer to t
 - [**VSCode**](https://code.visualstudio.com/docs/copilot/chat/mcp-servers)
 - [**Claude Desktop**](https://modelcontextprotocol.io/quickstart/user)
 - [**Cursor**](https://docs.cursor.com/context/model-context-protocol)
+- [**Kiro**](https://kiro.dev/docs/mcp/)
 
 Once you have identified how to configure your MCP client, select one of these two options to set up the MCP server.
 We recommend setting up as a local MCP server using Node.js.
@@ -143,6 +144,23 @@ Then configure the MCP server using either Node.js or Docker:
                "DEFAULT_SERVICE_NAME": "SERVICE_NAME"
          }
       }
+   ```
+
+#### Using Kiro
+
+[![Add to Kiro](https://kiro.dev/images/add-to-kiro.svg)](https://kiro.dev/launch/mcp/add?name=cloud-run&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40google-cloud%2Fcloud-run-mcp%22%5D%7D)
+
+Or add the following to your Kiro MCP config file (`~/.kiro/settings/mcp.json` for global, or `.kiro/settings/mcp.json` for project-scoped). See the [Kiro MCP documentation](https://kiro.dev/docs/mcp/) for more details.
+
+   ```json
+   {
+     "mcpServers": {
+       "cloud-run": {
+         "command": "npx",
+         "args": ["-y", "@google-cloud/cloud-run-mcp"]
+       }
+     }
+   }
    ```
 
 #### Using Docker
