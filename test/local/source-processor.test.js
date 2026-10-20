@@ -23,11 +23,8 @@ describe('Source Processor', () => {
     mkdir: mock.fn(),
     stat: mock.fn(),
     copyFile: mock.fn(),
+    cp: mock.fn(),
     rm: mock.fn(),
-  };
-
-  const childProcessMock = {
-    exec: mock.fn(),
   };
 
   test('prepareSourceDirectory creates temp dir and copies files', async () => {
@@ -35,7 +32,6 @@ describe('Source Processor', () => {
       '../../lib/deployment/source-processor.js',
       {
         'node:fs/promises': fspMock,
-        'node:child_process': childProcessMock,
       }
     );
 
@@ -44,12 +40,6 @@ describe('Source Processor', () => {
     fspMock.stat.mock.mockImplementation(async (filePath) => {
       if (filePath.endsWith('dir1')) return { isDirectory: () => true };
       return { isDirectory: () => false };
-    });
-
-    // Mock exec for directory copy (cp -R)
-    childProcessMock.exec.mock.mockImplementation((cmd, callback) => {
-      // Handle sync callback for util.promisify
-      if (callback) callback(null, 'ok', '');
     });
 
     const progressCallback = mock.fn();
@@ -67,12 +57,19 @@ describe('Source Processor', () => {
     assert.equal(fspMock.mkdir.mock.callCount(), 1);
     assert.equal(fspMock.copyFile.mock.callCount(), 1); // for file1.js
 
-    // Check if cp -R was called for dir1
-    const execCalls = childProcessMock.exec.mock.calls;
-    const cpCall = execCalls.find((call) =>
-      call.arguments[0].startsWith('cp -R')
+    // Directory (dir1) should be copied in-process with fsp.cp (no shell),
+    // which avoids OS command injection via source paths.
+    assert.equal(
+      fspMock.cp.mock.callCount(),
+      1,
+      'Should call fsp.cp for directories'
     );
-    assert.ok(cpCall, 'Should call cp -R for directories');
+    const cpArgs = fspMock.cp.mock.calls[0].arguments;
+    assert.ok(
+      cpArgs[0].endsWith('dir1'),
+      'fsp.cp source should be the directory'
+    );
+    assert.deepEqual(cpArgs[2], { recursive: true, dereference: true });
   });
 
   test('cleanupTempDirectory removes directory', async () => {
