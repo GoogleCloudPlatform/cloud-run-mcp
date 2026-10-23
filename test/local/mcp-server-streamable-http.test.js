@@ -86,6 +86,7 @@ describe('OAuth Endpoints', () => {
         OAUTH_AUTHORIZATION_SERVER: oauthAuthorizationServer,
         OAUTH_AUTHORIZATION_ENDPOINT: oauthAuthorizationEndpoint,
         OAUTH_TOKEN_ENDPOINT: oauthTokenEndpoint,
+        OAUTH_ENABLED: 'true',
       },
     });
     stdout = await waitForString(serverProcess.stdout, httpMsg);
@@ -126,5 +127,38 @@ describe('OAuth Endpoints', () => {
       scopes_supported: [SCOPES.OPENID, SCOPES.EMAIL, SCOPES.CLOUD_PLATFORM],
       response_types_supported: [...RESPONSE_TYPES_SUPPORTED],
     });
+  });
+
+  test('should reject unauthenticated POST /mcp with JSON array body with 401', async () => {
+    const response = await fetch('http://localhost:3001/mcp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([
+        { jsonrpc: '2.0', method: 'tools/call', params: {}, id: 1 },
+      ]),
+    });
+    assert.equal(response.status, 401);
+  });
+
+  test('should reject unauthenticated GET /sse with 401', async () => {
+    const response = await fetch('http://localhost:3001/sse');
+    assert.equal(response.status, 401);
+  });
+
+  test('should reject unauthenticated POST /messages with 401', async () => {
+    const response = await fetch(
+      'http://localhost:3001/messages?sessionId=test',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'tools/call',
+          params: {},
+          id: 1,
+        }),
+      }
+    );
+    assert.equal(response.status, 401);
   });
 });

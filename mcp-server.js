@@ -76,7 +76,15 @@ const allowedHosts = process.env.ALLOWED_HOSTS
   ? process.env.ALLOWED_HOSTS.split(',')
   : undefined;
 
-async function getServer(accessToken = GCLOUD_AUTH) {
+async function getServer(
+  accessToken = process.env.OAUTH_ENABLED === 'true' ? undefined : GCLOUD_AUTH
+) {
+  if (
+    process.env.OAUTH_ENABLED === 'true' &&
+    (!accessToken || accessToken === GCLOUD_AUTH)
+  ) {
+    throw new Error('Access token is required when OAuth is enabled.');
+  }
   // Create an MCP server with implementation details
   const server = new McpServer(
     {
@@ -189,9 +197,9 @@ if (shouldStartStdio()) {
 
   app.post('/mcp', oauthMiddleware, async (req, res) => {
     console.log('/mcp Received:', req.body);
-    const accessToken = extractAccessToken(req.headers.authorization);
-    const server = await getServer(accessToken);
     try {
+      const accessToken = extractAccessToken(req.headers.authorization);
+      const server = await getServer(accessToken);
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,
       });
@@ -249,23 +257,37 @@ if (shouldStartStdio()) {
   const sseTransports = {};
 
   // Legacy SSE endpoint for older clients
-  app.get('/sse', async (req, res) => {
+  app.get('/sse', oauthMiddleware, async (req, res) => {
     console.log('/sse Received:', req.body);
-    const accessToken = extractAccessToken(req.headers.authorization);
-    const server = await getServer(accessToken);
-    // Create SSE transport for legacy clients
-    const transport = new SSEServerTransport('/messages', res);
-    sseTransports[transport.sessionId] = transport;
+    try {
+      const accessToken = extractAccessToken(req.headers.authorization);
+      const server = await getServer(accessToken);
+      // Create SSE transport for legacy clients
+      const transport = new SSEServerTransport('/messages', res);
+      sseTransports[transport.sessionId] = transport;
 
-    res.on('close', () => {
-      delete sseTransports[transport.sessionId];
-    });
+      res.on('close', () => {
+        delete sseTransports[transport.sessionId];
+      });
 
-    await server.connect(transport);
+      await server.connect(transport);
+    } catch (error) {
+      console.error('Error handling SSE request:', error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32603,
+            message: 'Internal server error',
+          },
+          id: null,
+        });
+      }
+    }
   });
 
   // Legacy message endpoint for older clients
-  app.post('/messages', async (req, res) => {
+  app.post('/messages', oauthMiddleware, async (req, res) => {
     console.log('/messages Received:', req.body);
     const sessionId = req.query.sessionId;
     const transport = sseTransports[sessionId];

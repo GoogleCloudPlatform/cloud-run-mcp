@@ -41,12 +41,10 @@ describe('oauthMiddleware', () => {
     assert.strictEqual(res.status.mock.callCount(), 0);
   });
 
-  it('should call next() if method is not tools/call', async () => {
+  it('should return 401 if Authorization header is missing even when method is not tools/call', async () => {
     process.env.OAUTH_ENABLED = 'true';
     req.body.method = 'other/method';
 
-    // We don't verify token if it's not a tool call (based on current implementation)
-    // So we don't need to mock successful verification here
     const { oauthMiddleware } = await esmock(
       '../../../lib/middleware/oauth.js',
       {}
@@ -54,7 +52,61 @@ describe('oauthMiddleware', () => {
 
     await oauthMiddleware(req, res, next);
 
-    assert.strictEqual(next.mock.callCount(), 1);
+    assert.strictEqual(next.mock.callCount(), 0);
+    assert.strictEqual(res.status.mock.callCount(), 1);
+    assert.deepStrictEqual(res.status.mock.calls[0].arguments, [401]);
+    assert.strictEqual(res.json.mock.callCount(), 1);
+  });
+
+  it('should return 401 if Authorization header is missing when req.body is a JSON array', async () => {
+    process.env.OAUTH_ENABLED = 'true';
+    req.body = [{ jsonrpc: '2.0', method: 'tools/call', id: 1 }];
+
+    const { oauthMiddleware } = await esmock(
+      '../../../lib/middleware/oauth.js',
+      {}
+    );
+
+    await oauthMiddleware(req, res, next);
+
+    assert.strictEqual(next.mock.callCount(), 0);
+    assert.strictEqual(res.status.mock.callCount(), 1);
+    assert.deepStrictEqual(res.status.mock.calls[0].arguments, [401]);
+    assert.strictEqual(res.json.mock.callCount(), 1);
+  });
+
+  it('should return 401 if Authorization header is missing when req.body is undefined (e.g. GET /sse)', async () => {
+    process.env.OAUTH_ENABLED = 'true';
+    req.body = undefined;
+
+    const { oauthMiddleware } = await esmock(
+      '../../../lib/middleware/oauth.js',
+      {}
+    );
+
+    await oauthMiddleware(req, res, next);
+
+    assert.strictEqual(next.mock.callCount(), 0);
+    assert.strictEqual(res.status.mock.callCount(), 1);
+    assert.deepStrictEqual(res.status.mock.calls[0].arguments, [401]);
+    assert.strictEqual(res.json.mock.callCount(), 1);
+  });
+
+  it('should return 401 if Authorization header has no token value', async () => {
+    process.env.OAUTH_ENABLED = 'true';
+    req.headers.authorization = 'Bearer';
+
+    const { oauthMiddleware } = await esmock(
+      '../../../lib/middleware/oauth.js',
+      {}
+    );
+
+    await oauthMiddleware(req, res, next);
+
+    assert.strictEqual(next.mock.callCount(), 0);
+    assert.strictEqual(res.status.mock.callCount(), 1);
+    assert.deepStrictEqual(res.status.mock.calls[0].arguments, [401]);
+    assert.strictEqual(res.json.mock.callCount(), 1);
   });
 
   it('should return 401 if Authorization header is missing for tool call', async () => {
