@@ -126,8 +126,27 @@ describe('oauthMiddleware', () => {
     assert.strictEqual(res.json.mock.callCount(), 1);
   });
 
+  it('should return 401 if GOOGLE_OAUTH_AUDIENCE is missing when OAUTH_ENABLED is "true"', async () => {
+    process.env.OAUTH_ENABLED = 'true';
+    delete process.env.GOOGLE_OAUTH_AUDIENCE;
+    req.body.method = 'tools/call';
+    req.headers.authorization = 'Bearer valid-token';
+
+    const { oauthMiddleware } = await esmock(
+      '../../../lib/middleware/oauth.js',
+      {}
+    );
+
+    await oauthMiddleware(req, res, next);
+
+    assert.strictEqual(next.mock.callCount(), 0);
+    assert.strictEqual(res.status.mock.callCount(), 1);
+    assert.deepStrictEqual(res.status.mock.calls[0].arguments, [401]);
+  });
+
   it('should verify token and call next() for valid tool call', async () => {
     process.env.OAUTH_ENABLED = 'true';
+    process.env.GOOGLE_OAUTH_AUDIENCE = 'valid-audience';
     req.body.method = 'tools/call';
     req.headers.authorization = 'Bearer valid-token';
 
@@ -154,6 +173,7 @@ describe('oauthMiddleware', () => {
 
   it('should return 401 if token verification fails', async () => {
     process.env.OAUTH_ENABLED = 'true';
+    process.env.GOOGLE_OAUTH_AUDIENCE = 'valid-audience';
     req.body.method = 'tools/call';
     req.headers.authorization = 'Bearer invalid-token';
 

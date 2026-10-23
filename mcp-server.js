@@ -264,6 +264,7 @@ if (shouldStartStdio()) {
       const server = await getServer(accessToken);
       // Create SSE transport for legacy clients
       const transport = new SSEServerTransport('/messages', res);
+      transport.accessToken = accessToken;
       sseTransports[transport.sessionId] = transport;
 
       res.on('close', () => {
@@ -292,6 +293,20 @@ if (shouldStartStdio()) {
     const sessionId = req.query.sessionId;
     const transport = sseTransports[sessionId];
     if (transport) {
+      const accessToken = extractAccessToken(req.headers.authorization);
+      if (
+        process.env.OAUTH_ENABLED === 'true' &&
+        transport.accessToken !== accessToken
+      ) {
+        return res.status(403).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32001,
+            message: 'Forbidden: Session belongs to a different access token',
+          },
+          id: null,
+        });
+      }
       await transport.handlePostMessage(req, res, req.body);
     } else {
       res.status(400).send('No transport found for sessionId');
