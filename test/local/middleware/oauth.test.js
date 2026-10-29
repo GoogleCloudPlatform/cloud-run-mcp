@@ -199,12 +199,13 @@ describe('oauthMiddleware', () => {
     assert.deepStrictEqual(res.status.mock.calls[0].arguments, [401]);
   });
 
-  it('should return 401 if audience does not match', async () => {
+  it('should return 401 if audience does not match and remove token from oauth cache', async () => {
     process.env.OAUTH_ENABLED = 'true';
     process.env.GOOGLE_OAUTH_AUDIENCE = 'expected-audience';
     req.body.method = 'tools/call';
     req.headers.authorization = 'Bearer valid-token-wrong-audience';
 
+    const mockOAuthMap = new Map([['valid-token-wrong-audience', {}]]);
     const mockGetTokenInfo = mock.fn(async () => ({ aud: 'wrong-audience' }));
     const mockGetOAuthClient = mock.fn(async () => ({
       getTokenInfo: mockGetTokenInfo,
@@ -214,6 +215,7 @@ describe('oauthMiddleware', () => {
       '../../../lib/middleware/oauth.js',
       {
         '../../../lib/clients.js': {
+          clients: { oauth: mockOAuthMap },
           getOAuthClient: mockGetOAuthClient,
         },
       }
@@ -224,5 +226,10 @@ describe('oauthMiddleware', () => {
     assert.strictEqual(next.mock.callCount(), 0);
     assert.strictEqual(res.status.mock.callCount(), 1);
     assert.deepStrictEqual(res.status.mock.calls[0].arguments, [401]);
+    assert.strictEqual(mockOAuthMap.has('valid-token-wrong-audience'), false);
+    assert.strictEqual(
+      res.json.mock.calls[0].arguments[0].error.data,
+      'Invalid token audience'
+    );
   });
 });

@@ -3,6 +3,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'child_process';
+import { pathToFileURL } from 'node:url';
 import { waitForString } from './test-utils.js';
 import {
   SCOPES,
@@ -76,19 +77,33 @@ describe('OAuth Endpoints', () => {
 
   before(async () => {
     stdout = '';
-    serverProcess = spawn('node', ['mcp-server.js'], {
-      cwd: process.cwd(),
-      env: {
-        ...process.env,
-        GCP_STDIO: 'false',
-        PORT: '3001',
-        OAUTH_PROTECTED_RESOURCE: oauthProtectedResource,
-        OAUTH_AUTHORIZATION_SERVER: oauthAuthorizationServer,
-        OAUTH_AUTHORIZATION_ENDPOINT: oauthAuthorizationEndpoint,
-        OAUTH_TOKEN_ENDPOINT: oauthTokenEndpoint,
-        OAUTH_ENABLED: 'true',
-      },
-    });
+    const clientsUrl = pathToFileURL(`${process.cwd()}/lib/clients.js`).href;
+    const preloadScript = `import { clients } from '${clientsUrl}';
+      const mockClient = { getTokenInfo: async () => ({ aud: 'test-audience' }) };
+      clients.oauth.set('token-user-a', mockClient);
+      clients.oauth.set('token-user-b', mockClient);`;
+    serverProcess = spawn(
+      'node',
+      [
+        '--import',
+        `data:text/javascript,${encodeURIComponent(preloadScript)}`,
+        'mcp-server.js',
+      ],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          GCP_STDIO: 'false',
+          PORT: '3001',
+          OAUTH_PROTECTED_RESOURCE: oauthProtectedResource,
+          OAUTH_AUTHORIZATION_SERVER: oauthAuthorizationServer,
+          OAUTH_AUTHORIZATION_ENDPOINT: oauthAuthorizationEndpoint,
+          OAUTH_TOKEN_ENDPOINT: oauthTokenEndpoint,
+          OAUTH_ENABLED: 'true',
+          GOOGLE_OAUTH_AUDIENCE: 'test-audience',
+        },
+      }
+    );
     stdout = await waitForString(serverProcess.stdout, httpMsg);
   });
 
@@ -160,5 +175,46 @@ describe('OAuth Endpoints', () => {
       }
     );
     assert.equal(response.status, 401);
+  });
+
+  test('should reject POST /messages with 403 when accessToken does not match SSE session token', async () => {
+    const sseController = new AbortController();
+    const sseResponse = await fetch('http://localhost:3001/sse', {
+      headers: { Authorization: 'Bearer token-user-a' },
+      signal: sseController.signal,
+    });
+    assert.equal(sseResponse.status, 200);
+
+    const reader = sseResponse.body.getReader();
+    const { value } = await reader.read();
+    const sseText = new TextDecoder().decode(value);
+    const match = sseText.match(/sessionId=([^\s]+)/);
+    assert.ok(
+      match,
+      `Expected sessionId in SSE endpoint event, got: ${sseText}`
+    );
+    const sessionId = match[1];
+
+    try {
+      const msgResponse = await fetch(
+        `http://localhost:3001/messages?sessionId=${sessionId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer token-user-b',
+          },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'tools/list',
+            params: {},
+            id: 1,
+          }),
+        }
+      );
+      assert.equal(msgResponse.status, 403);
+    } finally {
+      sseController.abort();
+    }
   });
 });

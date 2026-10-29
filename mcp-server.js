@@ -29,11 +29,11 @@ import { registerPrompts } from './prompts.js';
 import { checkGCP } from './lib/cloud-api/metadata.js';
 import { ensureGCPCredentials } from './lib/cloud-api/auth.js';
 import { extractAccessToken } from './lib/util/helpers.js';
+import { getDefaultAccessToken, validateAccessToken } from './lib/clients.js';
 import { oauthMiddleware } from './lib/middleware/oauth.js';
 import { config } from '@dotenvx/dotenvx';
 import {
   SCOPES,
-  GCLOUD_AUTH,
   BEARER_METHODS_SUPPORTED,
   RESPONSE_TYPES_SUPPORTED,
 } from './constants.js';
@@ -54,7 +54,11 @@ function makeLoggingCompatibleWithStdio() {
 }
 
 function shouldStartStdio() {
-  if (process.env.GCP_STDIO === 'false' || (gcpInfo && gcpInfo.project)) {
+  if (
+    process.env.GCP_STDIO === 'false' ||
+    process.env.OAUTH_ENABLED === 'true' ||
+    (gcpInfo && gcpInfo.project)
+  ) {
     return false;
   }
   return true;
@@ -76,15 +80,8 @@ const allowedHosts = process.env.ALLOWED_HOSTS
   ? process.env.ALLOWED_HOSTS.split(',')
   : undefined;
 
-async function getServer(
-  accessToken = process.env.OAUTH_ENABLED === 'true' ? undefined : GCLOUD_AUTH
-) {
-  if (
-    process.env.OAUTH_ENABLED === 'true' &&
-    (!accessToken || accessToken === GCLOUD_AUTH)
-  ) {
-    throw new Error('Access token is required when OAuth is enabled.');
-  }
+async function getServer(accessToken = getDefaultAccessToken()) {
+  validateAccessToken(accessToken);
   // Create an MCP server with implementation details
   const server = new McpServer(
     {
@@ -307,7 +304,21 @@ if (shouldStartStdio()) {
           id: null,
         });
       }
-      await transport.handlePostMessage(req, res, req.body);
+      try {
+        await transport.handlePostMessage(req, res, req.body);
+      } catch (error) {
+        console.error('Error handling message request:', error);
+        if (!res.headersSent) {
+          res.status(500).json({
+            jsonrpc: '2.0',
+            error: {
+              code: -32603,
+              message: 'Internal server error',
+            },
+            id: null,
+          });
+        }
+      }
     } else {
       res.status(400).send('No transport found for sessionId');
     }
