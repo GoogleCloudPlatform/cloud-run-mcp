@@ -83,7 +83,14 @@ async function getServer(accessToken = GCLOUD_AUTH) {
       name: 'cloud-run',
       version: '1.0.0',
     },
-    { capabilities: { logging: {} } }
+    {
+      capabilities: { logging: {} },
+      instructions:
+        'Use this server to deploy and manage applications on Google Cloud Run. ' +
+        'Available tools: deploy source code or file contents to Cloud Run, list services, ' +
+        'get service details, and retrieve service logs. ' +
+        'Note: deployments trigger a Cloud Build and can take several minutes to complete.',
+    }
   );
 
   // this is no-op handler is required for mcp-inspector to function due to a mismatch between the SDK mcp-inspector
