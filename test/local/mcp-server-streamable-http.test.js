@@ -78,6 +78,8 @@ describe('OAuth Endpoints', () => {
   before(async () => {
     stdout = '';
     const clientsUrl = pathToFileURL(`${process.cwd()}/lib/clients.js`).href;
+    // Note: verifyAccessToken evicts clients.oauth entries on any verification failure,
+    // so only use these pre-seeded tokens in test cases where token verification succeeds.
     const preloadScript = `import { clients } from '${clientsUrl}';
       const mockClient = { getTokenInfo: async () => ({ aud: 'test-audience' }) };
       clients.oauth.set('token-user-a', mockClient);
@@ -155,9 +157,13 @@ describe('OAuth Endpoints', () => {
     assert.equal(response.status, 401);
   });
 
-  test('should reject unauthenticated GET /sse with 401', async () => {
+  test('should reject unauthenticated GET /sse with 401 and WWW-Authenticate header', async () => {
     const response = await fetch('http://localhost:3001/sse');
     assert.equal(response.status, 401);
+    assert.equal(
+      response.headers.get('www-authenticate'),
+      'Bearer resource_metadata="https://example.com/.well-known/oauth-protected-resource"'
+    );
   });
 
   test('should reject unauthenticated POST /messages with 401', async () => {
@@ -213,8 +219,32 @@ describe('OAuth Endpoints', () => {
         }
       );
       assert.equal(msgResponse.status, 403);
+      const body = await msgResponse.json();
+      assert.equal(
+        body.error.message,
+        'Forbidden: session is bound to a different access token; reconnect to /sse'
+      );
     } finally {
       sseController.abort();
     }
+  });
+
+  test('should exit at startup with non-zero code when OAUTH_ENABLED=true and GOOGLE_OAUTH_AUDIENCE is missing', async () => {
+    const envWithoutAudience = {
+      ...process.env,
+      GCP_STDIO: 'false',
+      PORT: '3002',
+      OAUTH_ENABLED: 'true',
+    };
+    delete envWithoutAudience.GOOGLE_OAUTH_AUDIENCE;
+
+    const exitCode = await new Promise((resolve) => {
+      const child = spawn('node', ['mcp-server.js'], {
+        cwd: process.cwd(),
+        env: envWithoutAudience,
+      });
+      child.on('exit', (code) => resolve(code));
+    });
+    assert.equal(exitCode, 1);
   });
 });

@@ -41,6 +41,16 @@ import {
 //Suppress the warning related to missing .env file in case of non-OAuth mode
 config({ quiet: true, ignore: ['MISSING_ENV_FILE'] });
 
+if (
+  process.env.OAUTH_ENABLED === 'true' &&
+  !process.env.GOOGLE_OAUTH_AUDIENCE
+) {
+  console.error(
+    'GOOGLE_OAUTH_AUDIENCE environment variable is required when OAuth is enabled.'
+  );
+  process.exit(1);
+}
+
 const gcpInfo = await checkGCP();
 let gcpCredentialsAvailable = false;
 
@@ -261,8 +271,7 @@ if (shouldStartStdio()) {
       const server = await getServer(accessToken);
       // Create SSE transport for legacy clients
       const transport = new SSEServerTransport('/messages', res);
-      transport.accessToken = accessToken;
-      sseTransports[transport.sessionId] = transport;
+      sseTransports[transport.sessionId] = { transport, accessToken };
 
       res.on('close', () => {
         delete sseTransports[transport.sessionId];
@@ -288,24 +297,26 @@ if (shouldStartStdio()) {
   app.post('/messages', oauthMiddleware, async (req, res) => {
     console.log('/messages Received:', req.body);
     const sessionId = req.query.sessionId;
-    const transport = sseTransports[sessionId];
-    if (transport) {
+    const session = sseTransports[sessionId];
+    if (session) {
       const accessToken = extractAccessToken(req.headers.authorization);
+      // Session is intentionally bound to the /sse access token; clients must reconnect to /sse on token change.
       if (
         process.env.OAUTH_ENABLED === 'true' &&
-        transport.accessToken !== accessToken
+        session.accessToken !== accessToken
       ) {
         return res.status(403).json({
           jsonrpc: '2.0',
           error: {
             code: -32001,
-            message: 'Forbidden: Session belongs to a different access token',
+            message:
+              'Forbidden: session is bound to a different access token; reconnect to /sse',
           },
           id: null,
         });
       }
       try {
-        await transport.handlePostMessage(req, res, req.body);
+        await session.transport.handlePostMessage(req, res, req.body);
       } catch (error) {
         console.error('Error handling message request:', error);
         if (!res.headersSent) {

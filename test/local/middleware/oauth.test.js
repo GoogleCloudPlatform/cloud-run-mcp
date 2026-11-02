@@ -17,6 +17,7 @@ describe('oauthMiddleware', () => {
     };
     res = {
       headersSent: false,
+      set: mock.fn(),
       status: mock.fn(() => res),
       json: mock.fn(),
     };
@@ -229,7 +230,28 @@ describe('oauthMiddleware', () => {
     assert.strictEqual(mockOAuthMap.has('valid-token-wrong-audience'), false);
     assert.strictEqual(
       res.json.mock.calls[0].arguments[0].error.data,
-      'Invalid token audience'
+      'Invalid or missing access token'
     );
+  });
+
+  it('should set WWW-Authenticate header on 401 when OAUTH_PROTECTED_RESOURCE is set', async () => {
+    process.env.OAUTH_ENABLED = 'true';
+    process.env.OAUTH_PROTECTED_RESOURCE = 'https://example.com/resource';
+
+    const { oauthMiddleware } = await esmock(
+      '../../../lib/middleware/oauth.js',
+      {}
+    );
+
+    await oauthMiddleware(req, res, next);
+
+    assert.strictEqual(next.mock.callCount(), 0);
+    assert.strictEqual(res.set.mock.callCount(), 1);
+    assert.deepStrictEqual(res.set.mock.calls[0].arguments, [
+      'WWW-Authenticate',
+      'Bearer resource_metadata="https://example.com/.well-known/oauth-protected-resource"',
+    ]);
+    assert.strictEqual(res.status.mock.callCount(), 1);
+    assert.deepStrictEqual(res.status.mock.calls[0].arguments, [401]);
   });
 });
