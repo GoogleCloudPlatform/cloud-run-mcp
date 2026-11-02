@@ -4,6 +4,7 @@ import { google } from 'googleapis';
 import {
   clients,
   getClient,
+  getRunClient,
   getRunV1Client,
   getCloudRunRegions,
   resetCachedRegions,
@@ -181,6 +182,62 @@ describe('getClient Helper', () => {
 
     assert.strictEqual(client.options.extraOpt, extraOpt);
   });
+
+  test('throws error when OAUTH_ENABLED=true and accessToken is missing or GCLOUD_AUTH', async () => {
+    const originalOAuth = process.env.OAUTH_ENABLED;
+    process.env.OAUTH_ENABLED = 'true';
+    try {
+      const projectId = 'test-project-oauth-err';
+      const service = 'run';
+
+      await assert.rejects(
+        async () =>
+          getClient(
+            service,
+            projectId,
+            async () => MockClient,
+            { projectId },
+            null
+          ),
+        /Access token is required when OAuth is enabled/
+      );
+
+      await assert.rejects(
+        async () =>
+          getClient(
+            service,
+            projectId,
+            async () => MockClient,
+            { projectId },
+            undefined
+          ),
+        /Access token is required when OAuth is enabled/
+      );
+
+      await assert.rejects(
+        async () =>
+          getClient(
+            service,
+            projectId,
+            async () => MockClient,
+            { projectId },
+            GCLOUD_AUTH
+          ),
+        /Access token is required when OAuth is enabled/
+      );
+
+      await assert.rejects(
+        async () => getRunClient(projectId),
+        /Access token is required when OAuth is enabled/
+      );
+    } finally {
+      if (originalOAuth === undefined) {
+        delete process.env.OAUTH_ENABLED;
+      } else {
+        process.env.OAUTH_ENABLED = originalOAuth;
+      }
+    }
+  });
 });
 
 describe('getRunV1Client', () => {
@@ -322,6 +379,32 @@ describe('getRunV1Client', () => {
     } finally {
       runMock.mock.restore();
       clients.run.clear();
+    }
+  });
+
+  test('throws error when OAUTH_ENABLED=true and accessToken is missing or GCLOUD_AUTH', async () => {
+    const originalOAuth = process.env.OAUTH_ENABLED;
+    process.env.OAUTH_ENABLED = 'true';
+    try {
+      const projectId = 'test-project-v1-oauth-err';
+      await assert.rejects(
+        async () => getRunV1Client(projectId),
+        /Access token is required when OAuth is enabled/
+      );
+      await assert.rejects(
+        async () => getRunV1Client(projectId, undefined),
+        /Access token is required when OAuth is enabled/
+      );
+      await assert.rejects(
+        async () => getRunV1Client(projectId, GCLOUD_AUTH),
+        /Access token is required when OAuth is enabled/
+      );
+    } finally {
+      if (originalOAuth === undefined) {
+        delete process.env.OAUTH_ENABLED;
+      } else {
+        process.env.OAUTH_ENABLED = originalOAuth;
+      }
     }
   });
 });

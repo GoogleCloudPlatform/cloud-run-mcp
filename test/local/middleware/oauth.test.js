@@ -17,6 +17,7 @@ describe('oauthMiddleware', () => {
     };
     res = {
       headersSent: false,
+      set: mock.fn(),
       status: mock.fn(() => res),
       json: mock.fn(),
     };
@@ -41,12 +42,10 @@ describe('oauthMiddleware', () => {
     assert.strictEqual(res.status.mock.callCount(), 0);
   });
 
-  it('should call next() if method is not tools/call', async () => {
+  it('should return 401 if Authorization header is missing even when method is not tools/call', async () => {
     process.env.OAUTH_ENABLED = 'true';
     req.body.method = 'other/method';
 
-    // We don't verify token if it's not a tool call (based on current implementation)
-    // So we don't need to mock successful verification here
     const { oauthMiddleware } = await esmock(
       '../../../lib/middleware/oauth.js',
       {}
@@ -54,7 +53,61 @@ describe('oauthMiddleware', () => {
 
     await oauthMiddleware(req, res, next);
 
-    assert.strictEqual(next.mock.callCount(), 1);
+    assert.strictEqual(next.mock.callCount(), 0);
+    assert.strictEqual(res.status.mock.callCount(), 1);
+    assert.deepStrictEqual(res.status.mock.calls[0].arguments, [401]);
+    assert.strictEqual(res.json.mock.callCount(), 1);
+  });
+
+  it('should return 401 if Authorization header is missing when req.body is a JSON array', async () => {
+    process.env.OAUTH_ENABLED = 'true';
+    req.body = [{ jsonrpc: '2.0', method: 'tools/call', id: 1 }];
+
+    const { oauthMiddleware } = await esmock(
+      '../../../lib/middleware/oauth.js',
+      {}
+    );
+
+    await oauthMiddleware(req, res, next);
+
+    assert.strictEqual(next.mock.callCount(), 0);
+    assert.strictEqual(res.status.mock.callCount(), 1);
+    assert.deepStrictEqual(res.status.mock.calls[0].arguments, [401]);
+    assert.strictEqual(res.json.mock.callCount(), 1);
+  });
+
+  it('should return 401 if Authorization header is missing when req.body is undefined (e.g. GET /sse)', async () => {
+    process.env.OAUTH_ENABLED = 'true';
+    req.body = undefined;
+
+    const { oauthMiddleware } = await esmock(
+      '../../../lib/middleware/oauth.js',
+      {}
+    );
+
+    await oauthMiddleware(req, res, next);
+
+    assert.strictEqual(next.mock.callCount(), 0);
+    assert.strictEqual(res.status.mock.callCount(), 1);
+    assert.deepStrictEqual(res.status.mock.calls[0].arguments, [401]);
+    assert.strictEqual(res.json.mock.callCount(), 1);
+  });
+
+  it('should return 401 if Authorization header has no token value', async () => {
+    process.env.OAUTH_ENABLED = 'true';
+    req.headers.authorization = 'Bearer';
+
+    const { oauthMiddleware } = await esmock(
+      '../../../lib/middleware/oauth.js',
+      {}
+    );
+
+    await oauthMiddleware(req, res, next);
+
+    assert.strictEqual(next.mock.callCount(), 0);
+    assert.strictEqual(res.status.mock.callCount(), 1);
+    assert.deepStrictEqual(res.status.mock.calls[0].arguments, [401]);
+    assert.strictEqual(res.json.mock.callCount(), 1);
   });
 
   it('should return 401 if Authorization header is missing for tool call', async () => {
@@ -74,8 +127,27 @@ describe('oauthMiddleware', () => {
     assert.strictEqual(res.json.mock.callCount(), 1);
   });
 
+  it('should return 401 if GOOGLE_OAUTH_AUDIENCE is missing when OAUTH_ENABLED is "true"', async () => {
+    process.env.OAUTH_ENABLED = 'true';
+    delete process.env.GOOGLE_OAUTH_AUDIENCE;
+    req.body.method = 'tools/call';
+    req.headers.authorization = 'Bearer valid-token';
+
+    const { oauthMiddleware } = await esmock(
+      '../../../lib/middleware/oauth.js',
+      {}
+    );
+
+    await oauthMiddleware(req, res, next);
+
+    assert.strictEqual(next.mock.callCount(), 0);
+    assert.strictEqual(res.status.mock.callCount(), 1);
+    assert.deepStrictEqual(res.status.mock.calls[0].arguments, [401]);
+  });
+
   it('should verify token and call next() for valid tool call', async () => {
     process.env.OAUTH_ENABLED = 'true';
+    process.env.GOOGLE_OAUTH_AUDIENCE = 'valid-audience';
     req.body.method = 'tools/call';
     req.headers.authorization = 'Bearer valid-token';
 
@@ -102,6 +174,7 @@ describe('oauthMiddleware', () => {
 
   it('should return 401 if token verification fails', async () => {
     process.env.OAUTH_ENABLED = 'true';
+    process.env.GOOGLE_OAUTH_AUDIENCE = 'valid-audience';
     req.body.method = 'tools/call';
     req.headers.authorization = 'Bearer invalid-token';
 
@@ -127,12 +200,13 @@ describe('oauthMiddleware', () => {
     assert.deepStrictEqual(res.status.mock.calls[0].arguments, [401]);
   });
 
-  it('should return 401 if audience does not match', async () => {
+  it('should return 401 if audience does not match and remove token from oauth cache', async () => {
     process.env.OAUTH_ENABLED = 'true';
     process.env.GOOGLE_OAUTH_AUDIENCE = 'expected-audience';
     req.body.method = 'tools/call';
     req.headers.authorization = 'Bearer valid-token-wrong-audience';
 
+    const mockOAuthMap = new Map([['valid-token-wrong-audience', {}]]);
     const mockGetTokenInfo = mock.fn(async () => ({ aud: 'wrong-audience' }));
     const mockGetOAuthClient = mock.fn(async () => ({
       getTokenInfo: mockGetTokenInfo,
@@ -142,6 +216,7 @@ describe('oauthMiddleware', () => {
       '../../../lib/middleware/oauth.js',
       {
         '../../../lib/clients.js': {
+          clients: { oauth: mockOAuthMap },
           getOAuthClient: mockGetOAuthClient,
         },
       }
@@ -150,6 +225,32 @@ describe('oauthMiddleware', () => {
     await oauthMiddleware(req, res, next);
 
     assert.strictEqual(next.mock.callCount(), 0);
+    assert.strictEqual(res.status.mock.callCount(), 1);
+    assert.deepStrictEqual(res.status.mock.calls[0].arguments, [401]);
+    assert.strictEqual(mockOAuthMap.has('valid-token-wrong-audience'), false);
+    assert.strictEqual(
+      res.json.mock.calls[0].arguments[0].error.data,
+      'Invalid or missing access token'
+    );
+  });
+
+  it('should set WWW-Authenticate header on 401 when OAUTH_PROTECTED_RESOURCE is set', async () => {
+    process.env.OAUTH_ENABLED = 'true';
+    process.env.OAUTH_PROTECTED_RESOURCE = 'https://example.com/resource';
+
+    const { oauthMiddleware } = await esmock(
+      '../../../lib/middleware/oauth.js',
+      {}
+    );
+
+    await oauthMiddleware(req, res, next);
+
+    assert.strictEqual(next.mock.callCount(), 0);
+    assert.strictEqual(res.set.mock.callCount(), 1);
+    assert.deepStrictEqual(res.set.mock.calls[0].arguments, [
+      'WWW-Authenticate',
+      'Bearer resource_metadata="https://example.com/.well-known/oauth-protected-resource"',
+    ]);
     assert.strictEqual(res.status.mock.callCount(), 1);
     assert.deepStrictEqual(res.status.mock.calls[0].arguments, [401]);
   });

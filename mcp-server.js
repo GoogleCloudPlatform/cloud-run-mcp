@@ -29,17 +29,27 @@ import { registerPrompts } from './prompts.js';
 import { checkGCP } from './lib/cloud-api/metadata.js';
 import { ensureGCPCredentials } from './lib/cloud-api/auth.js';
 import { extractAccessToken } from './lib/util/helpers.js';
+import { getDefaultAccessToken, validateAccessToken } from './lib/clients.js';
 import { oauthMiddleware } from './lib/middleware/oauth.js';
 import { config } from '@dotenvx/dotenvx';
 import {
   SCOPES,
-  GCLOUD_AUTH,
   BEARER_METHODS_SUPPORTED,
   RESPONSE_TYPES_SUPPORTED,
 } from './constants.js';
 
 //Suppress the warning related to missing .env file in case of non-OAuth mode
 config({ quiet: true, ignore: ['MISSING_ENV_FILE'] });
+
+if (
+  process.env.OAUTH_ENABLED === 'true' &&
+  !process.env.GOOGLE_OAUTH_AUDIENCE
+) {
+  console.error(
+    'GOOGLE_OAUTH_AUDIENCE environment variable is required when OAuth is enabled.'
+  );
+  process.exit(1);
+}
 
 const gcpInfo = await checkGCP();
 let gcpCredentialsAvailable = false;
@@ -54,7 +64,11 @@ function makeLoggingCompatibleWithStdio() {
 }
 
 function shouldStartStdio() {
-  if (process.env.GCP_STDIO === 'false' || (gcpInfo && gcpInfo.project)) {
+  if (
+    process.env.GCP_STDIO === 'false' ||
+    process.env.OAUTH_ENABLED === 'true' ||
+    (gcpInfo && gcpInfo.project)
+  ) {
     return false;
   }
   return true;
@@ -76,7 +90,8 @@ const allowedHosts = process.env.ALLOWED_HOSTS
   ? process.env.ALLOWED_HOSTS.split(',')
   : undefined;
 
-async function getServer(accessToken = GCLOUD_AUTH) {
+async function getServer(accessToken = getDefaultAccessToken()) {
+  validateAccessToken(accessToken);
   // Create an MCP server with implementation details
   const server = new McpServer(
     {
@@ -189,9 +204,9 @@ if (shouldStartStdio()) {
 
   app.post('/mcp', oauthMiddleware, async (req, res) => {
     console.log('/mcp Received:', req.body);
-    const accessToken = extractAccessToken(req.headers.authorization);
-    const server = await getServer(accessToken);
     try {
+      const accessToken = extractAccessToken(req.headers.authorization);
+      const server = await getServer(accessToken);
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,
       });
@@ -249,28 +264,72 @@ if (shouldStartStdio()) {
   const sseTransports = {};
 
   // Legacy SSE endpoint for older clients
-  app.get('/sse', async (req, res) => {
+  app.get('/sse', oauthMiddleware, async (req, res) => {
     console.log('/sse Received:', req.body);
-    const accessToken = extractAccessToken(req.headers.authorization);
-    const server = await getServer(accessToken);
-    // Create SSE transport for legacy clients
-    const transport = new SSEServerTransport('/messages', res);
-    sseTransports[transport.sessionId] = transport;
+    try {
+      const accessToken = extractAccessToken(req.headers.authorization);
+      const server = await getServer(accessToken);
+      // Create SSE transport for legacy clients
+      const transport = new SSEServerTransport('/messages', res);
+      sseTransports[transport.sessionId] = { transport, accessToken };
 
-    res.on('close', () => {
-      delete sseTransports[transport.sessionId];
-    });
+      res.on('close', () => {
+        delete sseTransports[transport.sessionId];
+      });
 
-    await server.connect(transport);
+      await server.connect(transport);
+    } catch (error) {
+      console.error('Error handling SSE request:', error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32603,
+            message: 'Internal server error',
+          },
+          id: null,
+        });
+      }
+    }
   });
 
   // Legacy message endpoint for older clients
-  app.post('/messages', async (req, res) => {
+  app.post('/messages', oauthMiddleware, async (req, res) => {
     console.log('/messages Received:', req.body);
     const sessionId = req.query.sessionId;
-    const transport = sseTransports[sessionId];
-    if (transport) {
-      await transport.handlePostMessage(req, res, req.body);
+    const session = sseTransports[sessionId];
+    if (session) {
+      const accessToken = extractAccessToken(req.headers.authorization);
+      // Session is intentionally bound to the /sse access token; clients must reconnect to /sse on token change.
+      if (
+        process.env.OAUTH_ENABLED === 'true' &&
+        session.accessToken !== accessToken
+      ) {
+        return res.status(403).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32001,
+            message:
+              'Forbidden: session is bound to a different access token; reconnect to /sse',
+          },
+          id: null,
+        });
+      }
+      try {
+        await session.transport.handlePostMessage(req, res, req.body);
+      } catch (error) {
+        console.error('Error handling message request:', error);
+        if (!res.headersSent) {
+          res.status(500).json({
+            jsonrpc: '2.0',
+            error: {
+              code: -32603,
+              message: 'Internal server error',
+            },
+            id: null,
+          });
+        }
+      }
     } else {
       res.status(400).send('No transport found for sessionId');
     }
