@@ -49,6 +49,10 @@ function gcpTool(gcpCredentialsAvailable, fn) {
   return fn;
 }
 
+function withDefault(schema, defaultValue) {
+  return defaultValue !== undefined ? schema.default(defaultValue) : schema;
+}
+
 // Tool to list GCP projects
 function registerListProjectsTool(server, options) {
   server.registerTool(
@@ -147,10 +151,10 @@ function registerListServicesTool(server, options) {
     {
       description: 'Lists all Cloud Run services in a given project.',
       inputSchema: {
-        project: z
-          .string()
-          .describe('Google Cloud project ID')
-          .default(options.defaultProjectId),
+        project: withDefault(
+          z.string().describe('Google Cloud project ID'),
+          options.defaultProjectId
+        ),
       },
     },
     gcpTool(options.gcpCredentialsAvailable, async ({ project }) => {
@@ -202,18 +206,18 @@ function registerGetServiceTool(server, options) {
     {
       description: 'Gets details for a specific Cloud Run service.',
       inputSchema: {
-        project: z
-          .string()
-          .describe('Google Cloud project ID containing the service')
-          .default(options.defaultProjectId),
-        region: z
-          .string()
-          .describe('Region where the service is located')
-          .default(options.defaultRegion),
-        service: z
-          .string()
-          .describe('Name of the Cloud Run service')
-          .default(options.defaultServiceName),
+        project: withDefault(
+          z.string().describe('Google Cloud project ID containing the service'),
+          options.defaultProjectId
+        ),
+        region: withDefault(
+          z.string().describe('Region where the service is located'),
+          options.defaultRegion
+        ),
+        service: withDefault(
+          z.string().describe('Name of the Cloud Run service'),
+          options.defaultServiceName
+        ),
       },
     },
     gcpTool(
@@ -292,18 +296,18 @@ function registerGetServiceLogTool(server, options) {
       description:
         'Gets Logs and Error Messages for a specific Cloud Run service.',
       inputSchema: {
-        project: z
-          .string()
-          .describe('Google Cloud project ID containing the service')
-          .default(options.defaultProjectId),
-        region: z
-          .string()
-          .describe('Region where the service is located')
-          .default(options.defaultRegion),
-        service: z
-          .string()
-          .describe('Name of the Cloud Run service')
-          .default(options.defaultServiceName),
+        project: withDefault(
+          z.string().describe('Google Cloud project ID containing the service'),
+          options.defaultProjectId
+        ),
+        region: withDefault(
+          z.string().describe('Region where the service is located'),
+          options.defaultRegion
+        ),
+        service: withDefault(
+          z.string().describe('Name of the Cloud Run service'),
+          options.defaultServiceName
+        ),
       },
     },
     gcpTool(
@@ -361,24 +365,24 @@ function registerDeployLocalFolderTool(server, options) {
       description:
         'Deploy a local folder to Cloud Run. Takes an absolute folder path from the local filesystem that will be deployed. Use this tool if the entire folder content needs to be deployed.',
       inputSchema: {
-        project: z
-          .string()
-          .describe(
-            'Google Cloud project ID. Do not select it yourself, make sure the user provides or confirms the project ID.'
-          )
-          .default(options.defaultProjectId),
-        region: z
-          .string()
-          .optional()
-          .default(options.defaultRegion)
-          .describe('Region to deploy the service to'),
-        service: z
-          .string()
-          .optional()
-          .default(options.defaultServiceName)
-          .describe(
-            'Name of the Cloud Run service to deploy to. If not provided, it will be inferred.'
-          ),
+        project: withDefault(
+          z
+            .string()
+            .describe(
+              'Google Cloud project ID. Do not select it yourself, make sure the user provides or confirms the project ID.'
+            ),
+          options.defaultProjectId
+        ),
+        region: withDefault(
+          z.string().optional(),
+          options.defaultRegion
+        ).describe('Region to deploy the service to'),
+        service: withDefault(
+          z.string().optional(),
+          options.defaultServiceName
+        ).describe(
+          'Name of the Cloud Run service to deploy to. If not provided, it will be inferred.'
+        ),
         folderPath: z
           .string()
           .describe(
@@ -452,22 +456,22 @@ function registerDeployFileContentsTool(server, options) {
       description:
         'Deploy files to Cloud Run by providing their contents directly. Takes an array of file objects containing filename and content. Use this tool if the files only exist in the current chat context.',
       inputSchema: {
-        project: z
-          .string()
-          .describe(
-            'Google Cloud project ID. Leave unset for the app to be deployed in a new project. If provided, make sure the user confirms the project ID they want to deploy to.'
-          )
-          .default(options.defaultProjectId),
-        region: z
-          .string()
-          .optional()
-          .default(options.defaultRegion)
-          .describe('Region to deploy the service to'),
-        service: z
-          .string()
-          .optional()
-          .default(options.defaultServiceName)
-          .describe('Name of the Cloud Run service to deploy to'),
+        project: withDefault(
+          z
+            .string()
+            .describe(
+              'Google Cloud project ID. Leave unset for the app to be deployed in a new project. If provided, make sure the user confirms the project ID they want to deploy to.'
+            ),
+          options.defaultProjectId
+        ),
+        region: withDefault(
+          z.string().optional(),
+          options.defaultRegion
+        ).describe('Region to deploy the service to'),
+        service: withDefault(
+          z.string().optional(),
+          options.defaultServiceName
+        ).describe('Name of the Cloud Run service to deploy to'),
         files: z
           .array(
             z.object({
@@ -555,22 +559,22 @@ function registerDeployContainerImageTool(server, options) {
       description:
         'Deploys a container image to Cloud Run. Use this tool if the user provides a container image URL.',
       inputSchema: {
-        project: z
-          .string()
-          .describe(
-            'Google Cloud project ID. Do not select it yourself, make sure the user provides or confirms the project ID.'
-          )
-          .default(options.defaultProjectId),
-        region: z
-          .string()
-          .optional()
-          .default(options.defaultRegion)
-          .describe('Region to deploy the service to'),
-        service: z
-          .string()
-          .optional()
-          .default(options.defaultServiceName)
-          .describe('Name of the Cloud Run service to deploy to'),
+        project: withDefault(
+          z
+            .string()
+            .describe(
+              'Google Cloud project ID. Do not select it yourself, make sure the user provides or confirms the project ID.'
+            ),
+          options.defaultProjectId
+        ),
+        region: withDefault(
+          z.string().optional(),
+          options.defaultRegion
+        ).describe('Region to deploy the service to'),
+        service: withDefault(
+          z.string().optional(),
+          options.defaultServiceName
+        ).describe('Name of the Cloud Run service to deploy to'),
         imageUrl: z
           .string()
           .describe(
