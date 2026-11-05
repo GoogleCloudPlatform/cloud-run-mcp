@@ -460,7 +460,7 @@ function registerDeployFileContentsTool(server, options) {
           z
             .string()
             .describe(
-              'Google Cloud project ID. Leave unset for the app to be deployed in a new project. If provided, make sure the user confirms the project ID they want to deploy to.'
+              'Google Cloud project ID. If provided, make sure the user confirms the project ID they want to deploy to.'
             ),
           options.defaultProjectId
         ),
