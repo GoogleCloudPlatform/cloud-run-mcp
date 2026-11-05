@@ -126,4 +126,48 @@ describe('Cloud Run API Helpers', () => {
       error
     );
   });
+  it('setServicePublicAccess should handle empty policy without bindings', async () => {
+    const getIamPolicyMock = mock.fn(async () => [{}]);
+    const setIamPolicyMock = mock.fn(async () => ({}));
+    const runClientMock = {
+      getIamPolicy: getIamPolicyMock,
+      setIamPolicy: setIamPolicyMock,
+      servicePath: mock.fn(() => resource),
+    };
+
+    const getRunClientMock = mock.fn(async () => runClientMock);
+    const logAndProgressMock = mock.fn();
+    const callWithRetryMock = mock.fn((fn) => fn());
+
+    const { setServicePublicAccess } = await esmock(
+      '../../../lib/cloud-api/run.js',
+      {
+        '../../../lib/clients.js': {
+          getRunClient: getRunClientMock,
+        },
+        '../../../lib/cloud-api/helpers.js': {
+          callWithRetry: callWithRetryMock,
+        },
+        '../../../lib/util/helpers.js': {
+          logAndProgress: logAndProgressMock,
+        },
+      }
+    );
+
+    await setServicePublicAccess(
+      projectId,
+      location,
+      serviceId,
+      accessToken,
+      logAndProgressMock
+    );
+
+    assert.equal(getIamPolicyMock.mock.callCount(), 1);
+    assert.equal(setIamPolicyMock.mock.callCount(), 1);
+    const setIamPolicyRequest = setIamPolicyMock.mock.calls[0].arguments[0];
+    assert.deepEqual(setIamPolicyRequest.policy.bindings[0], {
+      role: 'roles/run.invoker',
+      members: ['allUsers'],
+    });
+  });
 });

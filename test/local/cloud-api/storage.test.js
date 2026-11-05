@@ -85,6 +85,33 @@ describe('Storage API', () => {
       ]);
     });
 
+    it('should grant access when policy has no bindings field', async () => {
+      const testBucket = {
+        name: 'test-bucket',
+        iam: {
+          getPolicy: mock.fn(() => Promise.resolve([{}])),
+          setPolicy: mock.fn(() => Promise.resolve()),
+        },
+      };
+      await storageApi.grantBucketAccess(
+        testBucket,
+        'roles/storage.objectAdmin',
+        'serviceAccount:test@example.com'
+      );
+
+      assert.strictEqual(testBucket.iam.getPolicy.mock.callCount(), 1);
+      assert.strictEqual(testBucket.iam.setPolicy.mock.callCount(), 1);
+
+      const setPolicyCall = testBucket.iam.setPolicy.mock.calls[0];
+      const updatedPolicy = setPolicyCall.arguments[0];
+      assert.deepStrictEqual(updatedPolicy.bindings, [
+        {
+          role: 'roles/storage.objectAdmin',
+          members: ['serviceAccount:test@example.com'],
+        },
+      ]);
+    });
+
     it('should add to existing role bindings if role exists but member is missing', async () => {
       const testBucket = {
         name: 'test-bucket',
