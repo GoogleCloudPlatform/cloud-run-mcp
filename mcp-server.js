@@ -116,7 +116,7 @@ async function getServer(accessToken = getDefaultAccessToken()) {
   const effectiveRegion =
     envRegion || (gcpInfo && gcpInfo.region) || 'europe-west1';
 
-  if (shouldStartStdio() || !(gcpInfo && gcpInfo.project)) {
+  if (shouldStartStdio()) {
     console.log('Using tools optimized for local or stdio mode.');
     // Pass the determined defaults to the local tool registration
     await registerTools(server, {

@@ -63,6 +63,23 @@ describe('MCP Server in Streamble HTTP mode', () => {
       await client.connectToServer('http://localhost:3000/mcp');
       assert.ok(stdout.includes(httpMsg));
     });
+
+    test('should only list remote tools in HTTP mode', async () => {
+      const response = await client.client.listTools();
+      const tools = response.tools;
+      assert(Array.isArray(tools));
+      const toolNames = tools.map((t) => t.name);
+      assert.deepStrictEqual(
+        toolNames.sort(),
+        [
+          'deploy_container_image',
+          'deploy_file_contents',
+          'get_service',
+          'get_service_log',
+          'list_services',
+        ].sort()
+      );
+    });
   });
 });
 
