@@ -65,6 +65,9 @@ describe('MCP Server in Streamble HTTP mode', () => {
     });
 
     test('should only list remote tools in HTTP mode', async () => {
+      if (!client.transport) {
+        await client.connectToServer('http://localhost:3000/mcp');
+      }
       const response = await client.client.listTools();
       const tools = response.tools;
       assert(Array.isArray(tools));
