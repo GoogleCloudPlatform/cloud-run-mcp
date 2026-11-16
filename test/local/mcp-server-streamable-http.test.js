@@ -196,7 +196,6 @@ describe('when ENABLE_HOST_VALIDATION=false', () => {
   });
 });
 
-
 describe('OAuth Endpoints', () => {
   let serverProcess;
   let stdout = '';
