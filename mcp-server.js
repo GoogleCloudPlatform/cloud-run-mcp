@@ -85,7 +85,7 @@ const defaultServiceName = process.env.DEFAULT_SERVICE_NAME;
 const skipIamCheck = process.env.SKIP_IAM_CHECK !== 'false';
 // Values for RUN_INGRESS_POLICY could be: "INGRESS_TRAFFIC_ALL", "INGRESS_TRAFFIC_INTERNAL_ONLY", "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 const ingress = process.env.RUN_INGRESS_POLICY || undefined;
-const enableHostValidation = process.env.ENABLE_HOST_VALIDATION === 'true';
+const enableHostValidation = process.env.ENABLE_HOST_VALIDATION !== 'false';
 const allowedHosts = process.env.ALLOWED_HOSTS
   ? process.env.ALLOWED_HOSTS.split(',')
   : undefined;

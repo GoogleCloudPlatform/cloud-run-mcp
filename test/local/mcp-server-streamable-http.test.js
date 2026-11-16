@@ -2,6 +2,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import http from 'node:http';
 import { spawn } from 'child_process';
 import { pathToFileURL } from 'node:url';
 import { waitForString } from './test-utils.js';
@@ -83,8 +84,118 @@ describe('MCP Server in Streamble HTTP mode', () => {
         ].sort()
       );
     });
+
+    test('should reject requests with disallowed Host header by default (DNS rebinding protection)', async () => {
+      const requestWithHost = (method, path, headers, body = null) =>
+        new Promise((resolve, reject) => {
+          const req = http.request(
+            { hostname: '127.0.0.1', port: 3000, path, method, headers },
+            (res) => {
+              res.resume();
+              resolve(res.statusCode);
+            }
+          );
+          req.on('error', reject);
+          if (body) req.write(body);
+          req.end();
+        });
+      const sseStatus = await requestWithHost('GET', '/sse', {
+        Host: 'evil.attacker.test:3000',
+      });
+      assert.equal(sseStatus, 403);
+      const payload = JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'tools/list',
+        id: 1,
+      });
+      const msgStatus = await requestWithHost(
+        'POST',
+        '/messages?sessionId=test',
+        {
+          Host: 'evil.attacker.test:3000',
+          'Content-Type': 'application/json',
+        },
+        payload
+      );
+      assert.equal(msgStatus, 403);
+      const mcpStatus = await requestWithHost(
+        'POST',
+        '/mcp',
+        {
+          Host: 'evil.attacker.test:3000',
+          'Content-Type': 'application/json',
+        },
+        payload
+      );
+      assert.equal(mcpStatus, 403);
+    });
   });
 });
+
+describe('when ENABLE_HOST_VALIDATION=false', () => {
+  let disabledServerProcess;
+  let stderr = '';
+  const disabledHttpMsg = 'Cloud Run MCP server listening on port 3003';
+  before(async () => {
+    stderr = '';
+    disabledServerProcess = spawn('node', ['mcp-server.js'], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        GCP_STDIO: 'false',
+        PORT: '3003',
+        ENABLE_HOST_VALIDATION: 'false',
+      },
+    });
+    disabledServerProcess.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+    await waitForString(disabledServerProcess.stdout, disabledHttpMsg);
+  });
+
+  after(() => {
+    if (disabledServerProcess) {
+      disabledServerProcess.kill();
+    }
+  });
+
+  test('should log warning and allow non-localhost Host header when ENABLE_HOST_VALIDATION=false', async () => {
+    assert.ok(
+      stderr.includes(
+        'Warning: Server is running without DNS rebinding protection.'
+      )
+    );
+    const status = await new Promise((resolve, reject) => {
+      const req = http.request(
+        {
+          hostname: '127.0.0.1',
+          port: 3003,
+          path: '/messages?sessionId=nonexistent',
+          method: 'POST',
+          headers: {
+            Host: 'evil.attacker.test:3003',
+            'Content-Type': 'application/json',
+          },
+        },
+        (res) => {
+          res.resume();
+          resolve(res.statusCode);
+        }
+      );
+      req.on('error', reject);
+      req.write(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'tools/list',
+          id: 1,
+        })
+      );
+      req.end();
+    });
+    assert.equal(status, 400);
+  });
+});
+
 
 describe('OAuth Endpoints', () => {
   let serverProcess;
