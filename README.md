@@ -61,7 +61,7 @@ The Cloud Run MCP server can be configured using the following environment varia
 | `ENABLE_HOST_VALIDATION` | Prevents [DNS Rebinding](https://en.wikipedia.org/wiki/DNS_rebinding) attacks by validating the Host header. Enabled by default when running locally and disabled by default when running on Cloud Run. Set to `false` to disable or `true` to enable. |
 | `ALLOWED_HOSTS`          | Comma-separated list of allowed Host headers (if host validation is enabled). The default value is `localhost,127.0.0.1,::1`.                                                                                                                          |
 | `OAUTH_ENABLED`          | Enables OAuth 2.0 Bearer token verification for incoming HTTP/SSE requests when set to `true`. Disabled by default.                                                                                                                                    |
-| `GOOGLE_OAUTH_AUDIENCE`  | Expected OAuth 2.0 token audience (typically your OAuth Client ID). Required when `OAUTH_ENABLED=true`.                                                                                                                                             |
+| `GOOGLE_OAUTH_AUDIENCE`  | Expected OAuth 2.0 token audience (typically your OAuth Client ID). Required when `OAUTH_ENABLED=true`.                                                                                                                                                |
 
 ## Use as a Gemini CLI extension
 
