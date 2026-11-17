@@ -27,7 +27,7 @@ describe('Universal Maker', () => {
   };
 
   const childProcessMock = {
-    exec: mock.fn(),
+    execFile: mock.fn(),
   };
 
   const osMock = {
@@ -46,7 +46,7 @@ describe('Universal Maker', () => {
   test('runUniversalMaker skips download if binary exists and runs successfully', async () => {
     fsMock.existsSync.mock.resetCalls();
     fsMock.readFileSync.mock.resetCalls();
-    childProcessMock.exec.mock.resetCalls();
+    childProcessMock.execFile.mock.resetCalls();
     artifactsMock.ensureRepositoryDownloaded.mock.resetCalls();
 
     // Mock binary exists and is up to date
@@ -79,9 +79,9 @@ describe('Universal Maker', () => {
       '../../lib/util/artifacts.js': artifactsMock,
     });
 
-    // Mock exec only for binary execution
-    childProcessMock.exec.mock.mockImplementation((cmd, cb) => {
-      cb(null, { stdout: '', stderr: '' });
+    // Mock execFile only for binary execution
+    childProcessMock.execFile.mock.mockImplementation((file, args, cb) => {
+      cb(null, '', '');
     });
 
     // runUniversalMaker(appDir, accessToken, progressCallback)
