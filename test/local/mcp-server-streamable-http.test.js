@@ -46,7 +46,11 @@ describe('MCP Server in Streamble HTTP mode', () => {
       // Start MCP server as a child process
       serverProcess = spawn('node', ['mcp-server.js'], {
         cwd: process.cwd(),
-        env: { ...process.env, GCP_STDIO: 'false' },
+        env: {
+          ...process.env,
+          GCP_STDIO: 'false',
+          ENABLE_HOST_VALIDATION: 'true',
+        },
       });
       stdout = await waitForString(serverProcess.stdout, httpMsg);
 
