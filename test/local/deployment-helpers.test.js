@@ -181,7 +181,7 @@ describe('Deployment Helpers', () => {
     });
   });
 
-  test('createDirectSourceDeploymentContainer pins generation when provided', async () => {
+  test('createDirectSourceDeploymentContainer pins generation as string when provided', async () => {
     const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
       fs: fsMock,
     });
@@ -189,7 +189,7 @@ describe('Deployment Helpers', () => {
     const input = {
       bucketName: 'test-bucket',
       fileName: 'source/1700000000-deadbeef-1234567890abcdef.tar.gz',
-      generation: '1763548200123456',
+      generation: 9007199254740993n,
       deploymentAttrs: {
         cmd: ['node'],
         args: ['server.js'],
@@ -203,7 +203,7 @@ describe('Deployment Helpers', () => {
     assert.deepEqual(result.sourceCode.cloudStorageSource, {
       bucket: 'test-bucket',
       object: 'source/1700000000-deadbeef-1234567890abcdef.tar.gz',
-      generation: '1763548200123456',
+      generation: '9007199254740993',
     });
   });
 

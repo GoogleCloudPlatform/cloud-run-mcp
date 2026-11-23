@@ -552,7 +552,7 @@ describe('triggerCloudBuild', () => {
       'mock-token',
       () => {},
       undefined,
-      '1763548200123456'
+      9007199254740993n
     );
 
     assert.strictEqual(submitBuildMock.mock.callCount(), 1);
@@ -560,7 +560,7 @@ describe('triggerCloudBuild', () => {
     assert.deepStrictEqual(submitBuildRequest.storageSource, {
       bucket: 'mock-bucket',
       object: 'source/1700000000-hash-nonce.zip',
-      generation: '1763548200123456',
+      generation: '9007199254740993',
     });
   });
 });
