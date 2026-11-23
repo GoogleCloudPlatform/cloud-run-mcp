@@ -513,6 +513,56 @@ describe('triggerCloudBuild', () => {
     const service = createServiceMock.mock.calls[0].arguments[0].service;
     assert.strictEqual(service.ingress, 'INGRESS_TRAFFIC_INTERNAL_ONLY');
   });
+
+  it('should pin generation in storageSource for Dockerfile builds when sourceGeneration is provided', async () => {
+    const { triggerCloudBuild } = await getTriggerCloudBuild();
+    await triggerCloudBuild(
+      'mock-project',
+      'mock-location',
+      'mock-bucket',
+      'source/1700000000-hash-nonce.zip',
+      'mock-repo',
+      'gcr.io/mock-project/mock-image',
+      true,
+      'mock-token',
+      () => {},
+      undefined,
+      '1763548200123456'
+    );
+
+    assert.strictEqual(createBuildMock.mock.callCount(), 1);
+    const createBuildRequest = createBuildMock.mock.calls[0].arguments[0];
+    assert.deepStrictEqual(createBuildRequest.build.source.storageSource, {
+      bucket: 'mock-bucket',
+      object: 'source/1700000000-hash-nonce.zip',
+      generation: '1763548200123456',
+    });
+  });
+
+  it('should pin generation in storageSource for Buildpack submitBuild when sourceGeneration is provided', async () => {
+    const { triggerCloudBuild } = await getTriggerCloudBuild();
+    await triggerCloudBuild(
+      'mock-project',
+      'mock-location',
+      'mock-bucket',
+      'source/1700000000-hash-nonce.zip',
+      'mock-repo',
+      'gcr.io/mock-project/mock-image',
+      false,
+      'mock-token',
+      () => {},
+      undefined,
+      '1763548200123456'
+    );
+
+    assert.strictEqual(submitBuildMock.mock.callCount(), 1);
+    const submitBuildRequest = submitBuildMock.mock.calls[0].arguments[0];
+    assert.deepStrictEqual(submitBuildRequest.storageSource, {
+      bucket: 'mock-bucket',
+      object: 'source/1700000000-hash-nonce.zip',
+      generation: '1763548200123456',
+    });
+  });
 });
 
 describe('composeBuild', () => {
@@ -668,11 +718,14 @@ describe('composeBuild', () => {
     assert.strictEqual(ensureBucketCall.arguments[5], false);
     assert.strictEqual(uploadToBucketMock.mock.callCount(), 2);
 
-    // Verify archive name pattern source/{epoch}.{fingerprint}.tgz
+    // Verify archive name pattern source/{epoch}.{fingerprint}.tgz and generation precondition
     assert.match(
       uploadToBucketMock.mock.calls[0].arguments[2],
       /^source\/\d+\.mock-fingerprint\.tgz$/
     );
+    assert.deepStrictEqual(uploadToBucketMock.mock.calls[0].arguments[3], {
+      preconditionOpts: { ifGenerationMatch: 0 },
+    });
 
     assert.strictEqual(createBuildMock.mock.callCount(), 2);
   });

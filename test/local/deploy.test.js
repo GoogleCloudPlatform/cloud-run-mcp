@@ -406,3 +406,200 @@ describe('Deploy Compose', () => {
     );
   });
 });
+
+describe('Deploy Source Staging Hardening', () => {
+  const projectId = 'test-project';
+  const region = 'us-central1';
+  const serviceName = 'my-service';
+  const accessToken = 'test-token';
+
+  test('deployWithZip uploads unique content-hashed archive with ifGenerationMatch:0 and pins generation in Cloud Run', async () => {
+    const archiveBuffer = Buffer.from('targz-archive-bytes');
+    const uploadedGeneration = '1763548200111222';
+    const uploadToStorageBucketMock = mock.fn(async (bucket, buf, name) => ({
+      name,
+      metadata: { generation: uploadedGeneration },
+    }));
+    const createServiceMock = mock.fn(async () => [
+      {
+        promise: async () => [{ uri: 'https://my-service.a.run.app' }],
+      },
+    ]);
+    const runClientMock = {
+      locationPath: (p, l) => `projects/${p}/locations/${l}`,
+      servicePath: (p, l, s) => `projects/${p}/locations/${l}/services/${s}`,
+      createService: createServiceMock,
+      updateService: mock.fn(),
+    };
+
+    const { deploy } = await esmock('../../lib/deployment/deployer.js', {
+      '../../lib/cloud-api/helpers.js': {
+        ensureApisEnabled: mock.fn(async () => {}),
+        callWithRetry: (fn) => fn(),
+      },
+      '../../lib/deployment/source-processor.js': {
+        prepareSourceDirectory: mock.fn(async () => '/tmp/prepared-src'),
+        cleanupTempDirectory: mock.fn(async () => {}),
+      },
+      '../../lib/deployment/universal-maker.js': {
+        runUniversalMaker: mock.fn(async () => ({
+          runtime: 'nodejs22',
+          command: 'npm',
+          args: ['start'],
+        })),
+      },
+      '../../lib/util/archive.js': {
+        zipFiles: mock.fn(async () => archiveBuffer),
+      },
+      '../../lib/cloud-api/storage.js': {
+        ensureStorageBucketExists: mock.fn(async (p, b) => ({ name: b })),
+        uploadToStorageBucket: uploadToStorageBucketMock,
+      },
+      '../../lib/cloud-api/run.js': {
+        checkCloudRunServiceExists: mock.fn(async () => false),
+      },
+      '../../lib/clients.js': {
+        getRunClient: mock.fn(async () => runClientMock),
+      },
+      '../../lib/util/helpers.js': {
+        logAndProgress: mock.fn(async () => {}),
+      },
+      '../../lib/deployment/helpers.js': {
+        makeFileDeploymentMetadata: () => ({
+          hasDockerfile: false,
+          composeFilePath: null,
+          deploymentAttrs: {
+            runtime: 'nodejs',
+            baseImage: 'nodejs22',
+          },
+        }),
+        canDeployWithoutBuild: () => true,
+      },
+    });
+
+    await deploy({
+      projectId,
+      serviceName,
+      region,
+      files: ['/abs/path/to/app'],
+      accessToken,
+    });
+
+    assert.strictEqual(uploadToStorageBucketMock.mock.callCount(), 1);
+    const uploadArgs = uploadToStorageBucketMock.mock.calls[0].arguments;
+    const stagedObjectName = uploadArgs[2];
+    assert.notStrictEqual(stagedObjectName, 'source.tar.gz');
+    assert.match(
+      stagedObjectName,
+      /^source\/\d+-[0-9a-f]{64}-[0-9a-f]{16}\.tar\.gz$/
+    );
+    assert.deepStrictEqual(uploadArgs[3], {
+      preconditionOpts: { ifGenerationMatch: 0 },
+    });
+
+    // Both dry-run and actual createService calls receive pinned generation
+    assert.strictEqual(createServiceMock.mock.callCount(), 2);
+    const actualCreateArgs = createServiceMock.mock.calls[1].arguments[0];
+    assert.deepStrictEqual(
+      actualCreateArgs.service.template.containers[0].sourceCode
+        .cloudStorageSource,
+      {
+        bucket: `${projectId}-source-bucket`,
+        object: stagedObjectName,
+        generation: uploadedGeneration,
+      }
+    );
+  });
+
+  test('deployWithBuild uploads unique content-hashed archive with ifGenerationMatch:0 and passes generation to triggerCloudBuild', async () => {
+    const archiveBuffer = Buffer.from('zip-archive-bytes');
+    const uploadedGeneration = '1763548200333444';
+    const uploadToStorageBucketMock = mock.fn(async (bucket, buf, name) => ({
+      name,
+      metadata: { generation: uploadedGeneration },
+    }));
+    const triggerCloudBuildMock = mock.fn(async () => ({
+      results: {
+        images: [
+          {
+            name: 'us-central1-docker.pkg.dev/test-project/mcp-cloud-run-deployments/my-service@sha256:abc',
+          },
+        ],
+      },
+    }));
+    const createServiceMock = mock.fn(async () => [
+      {
+        promise: async () => [{ uri: 'https://my-service.a.run.app' }],
+      },
+    ]);
+    const runClientMock = {
+      locationPath: (p, l) => `projects/${p}/locations/${l}`,
+      servicePath: (p, l, s) => `projects/${p}/locations/${l}/services/${s}`,
+      createService: createServiceMock,
+      updateService: mock.fn(),
+    };
+
+    const { deploy } = await esmock('../../lib/deployment/deployer.js', {
+      '../../lib/cloud-api/helpers.js': {
+        ensureApisEnabled: mock.fn(async () => {}),
+        callWithRetry: (fn) => fn(),
+      },
+      '../../lib/util/archive.js': {
+        zipFiles: mock.fn(async () => archiveBuffer),
+      },
+      '../../lib/cloud-api/storage.js': {
+        ensureStorageBucketExists: mock.fn(async (p, b) => ({ name: b })),
+        uploadToStorageBucket: uploadToStorageBucketMock,
+      },
+      '../../lib/cloud-api/registry.js': {
+        ensureArtifactRegistryRepoExists: mock.fn(async () => {}),
+      },
+      '../../lib/cloud-api/build.js': {
+        triggerCloudBuild: triggerCloudBuildMock,
+      },
+      '../../lib/cloud-api/run.js': {
+        checkCloudRunServiceExists: mock.fn(async () => false),
+      },
+      '../../lib/clients.js': {
+        getRunClient: mock.fn(async () => runClientMock),
+      },
+      '../../lib/util/helpers.js': {
+        logAndProgress: mock.fn(async () => {}),
+      },
+      '../../lib/deployment/helpers.js': {
+        makeFileDeploymentMetadata: () => ({
+          hasDockerfile: true,
+          composeFilePath: null,
+          deploymentAttrs: {},
+        }),
+        canDeployWithoutBuild: () => false,
+      },
+    });
+
+    await deploy({
+      projectId,
+      serviceName,
+      region,
+      files: [{ filename: 'Dockerfile', content: 'FROM alpine' }],
+      accessToken,
+    });
+
+    assert.strictEqual(uploadToStorageBucketMock.mock.callCount(), 1);
+    const uploadArgs = uploadToStorageBucketMock.mock.calls[0].arguments;
+    const stagedObjectName = uploadArgs[2];
+    assert.notStrictEqual(stagedObjectName, 'source.zip');
+    assert.match(
+      stagedObjectName,
+      /^source\/\d+-[0-9a-f]{64}-[0-9a-f]{16}\.zip$/
+    );
+    assert.deepStrictEqual(uploadArgs[3], {
+      preconditionOpts: { ifGenerationMatch: 0 },
+    });
+
+    assert.strictEqual(triggerCloudBuildMock.mock.callCount(), 1);
+    const buildArgs = triggerCloudBuildMock.mock.calls[0].arguments;
+    assert.strictEqual(buildArgs[2], `${projectId}-source-bucket`);
+    assert.strictEqual(buildArgs[3], stagedObjectName);
+    assert.strictEqual(buildArgs[10], uploadedGeneration);
+  });
+});

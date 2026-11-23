@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import { describe, it, mock, beforeEach, afterEach } from 'node:test';
 import esmock from 'esmock';
 
@@ -212,7 +213,13 @@ describe('Storage API', () => {
       assert.strictEqual(mockStorage.createBucket.mock.callCount(), 1);
       const call = mockStorage.createBucket.mock.calls[0];
       assert.strictEqual(call.arguments[0], 'test-bucket');
-      assert.deepStrictEqual(call.arguments[1], { location: 'us-central1' });
+      assert.deepStrictEqual(call.arguments[1], {
+        location: 'us-central1',
+        iamConfiguration: {
+          uniformBucketLevelAccess: { enabled: true },
+        },
+        versioning: { enabled: true },
+      });
     });
 
     it('should create bucket with labels if provided', async () => {
@@ -237,6 +244,10 @@ describe('Storage API', () => {
       assert.strictEqual(call.arguments[0], 'test-bucket');
       assert.deepStrictEqual(call.arguments[1], {
         location: 'us-central1',
+        iamConfiguration: {
+          uniformBucketLevelAccess: { enabled: true },
+        },
+        versioning: { enabled: true },
         metadata: { labels: labels },
       });
     });
@@ -299,6 +310,10 @@ describe('Storage API', () => {
       const call = mockStorage.createBucket.mock.calls[0];
       assert.deepStrictEqual(call.arguments[1], {
         location: 'us-central1',
+        iamConfiguration: {
+          uniformBucketLevelAccess: { enabled: true },
+        },
+        versioning: { enabled: true },
         metadata: { labels: labels },
       });
     });
@@ -332,6 +347,10 @@ describe('Storage API', () => {
       const call = mockStorage.createBucket.mock.calls[0];
       assert.deepStrictEqual(call.arguments[1], {
         location: 'us-central1',
+        iamConfiguration: {
+          uniformBucketLevelAccess: { enabled: true },
+        },
+        versioning: { enabled: true },
         metadata: { labels: labels },
       });
     });
@@ -365,6 +384,10 @@ describe('Storage API', () => {
       const secondCall = mockStorage.createBucket.mock.calls[1];
       assert.deepStrictEqual(secondCall.arguments[1], {
         location: 'us-central1',
+        iamConfiguration: {
+          uniformBucketLevelAccess: { enabled: true },
+        },
+        versioning: { enabled: true },
         metadata: { labels: labels },
       });
     });
@@ -400,6 +423,104 @@ describe('Storage API', () => {
           true
         );
       }, /Security Error: Fallback bucket test-bucket belongs to project number 999999/);
+    });
+  });
+
+  describe('uploadToStorageBucket', () => {
+    it('forwards saveOptions (ifGenerationMatch: 0) and retains atomic upload metadata', async () => {
+      const buffer = Buffer.from('legitimate-archive-bytes');
+      const getMetadataMock = mock.fn(() =>
+        Promise.resolve([{ generation: '99999' }])
+      );
+      let fileObj;
+      const saveMock = mock.fn(async () => {
+        fileObj.metadata = { generation: '10001' };
+      });
+      fileObj = {
+        name: 'source/archive.zip',
+        save: saveMock,
+        getMetadata: getMetadataMock,
+      };
+      const testBucket = {
+        name: 'staging-bucket',
+        file: mock.fn(() => fileObj),
+      };
+
+      const uploaded = await storageApi.uploadToStorageBucket(
+        testBucket,
+        buffer,
+        'source/archive.zip',
+        { preconditionOpts: { ifGenerationMatch: 0 } },
+        undefined
+      );
+
+      assert.strictEqual(saveMock.mock.callCount(), 1);
+      assert.deepStrictEqual(saveMock.mock.calls[0].arguments, [
+        buffer,
+        { preconditionOpts: { ifGenerationMatch: 0 } },
+      ]);
+      // Does not issue an unpinned getMetadata call when save() already populated generation
+      assert.strictEqual(getMetadataMock.mock.callCount(), 0);
+      assert.strictEqual(uploaded.metadata.generation, '10001');
+    });
+
+    it('falls back to getMetadata when save does not populate metadata and verifies md5Hash', async () => {
+      const buffer = Buffer.from('legitimate-archive-bytes');
+      const expectedMd5 = crypto
+        .createHash('md5')
+        .update(buffer)
+        .digest('base64');
+      const getMetadataMock = mock.fn(() =>
+        Promise.resolve([{ generation: '20002', md5Hash: expectedMd5 }])
+      );
+      const saveMock = mock.fn(() => Promise.resolve());
+      const testBucket = {
+        name: 'staging-bucket',
+        file: mock.fn((blobName) => ({
+          name: blobName,
+          save: saveMock,
+          getMetadata: getMetadataMock,
+        })),
+      };
+
+      const uploaded = await storageApi.uploadToStorageBucket(
+        testBucket,
+        buffer,
+        'bind_mounts/web/config.json'
+      );
+
+      assert.strictEqual(saveMock.mock.callCount(), 1);
+      assert.deepStrictEqual(saveMock.mock.calls[0].arguments, [buffer]);
+      assert.strictEqual(getMetadataMock.mock.callCount(), 1);
+      assert.strictEqual(uploaded.metadata.generation, '20002');
+    });
+
+    it('rejects if fallback getMetadata returns tampered md5Hash', async () => {
+      const buffer = Buffer.from('legitimate-archive-bytes');
+      const tamperedMd5 = crypto
+        .createHash('md5')
+        .update(Buffer.from('attacker-archive-bytes'))
+        .digest('base64');
+      const testBucket = {
+        name: 'staging-bucket',
+        file: mock.fn((blobName) => ({
+          name: blobName,
+          save: mock.fn(() => Promise.resolve()),
+          getMetadata: mock.fn(() =>
+            Promise.resolve([{ generation: '20003', md5Hash: tamperedMd5 }])
+          ),
+        })),
+      };
+
+      await assert.rejects(
+        () =>
+          storageApi.uploadToStorageBucket(
+            testBucket,
+            buffer,
+            'source/archive.zip'
+          ),
+        /Integrity check failed/
+      );
     });
   });
 });

@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import crypto from 'node:crypto';
 import { test, describe, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import esmock from 'esmock';
@@ -180,6 +181,67 @@ describe('Deployment Helpers', () => {
     });
   });
 
+  test('createDirectSourceDeploymentContainer pins generation when provided', async () => {
+    const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
+      fs: fsMock,
+    });
+
+    const input = {
+      bucketName: 'test-bucket',
+      fileName: 'source/1700000000-deadbeef-1234567890abcdef.tar.gz',
+      generation: '1763548200123456',
+      deploymentAttrs: {
+        cmd: ['node'],
+        args: ['server.js'],
+        baseImage: 'nodejs22',
+      },
+    };
+
+    const result =
+      deploymentHelpers.createDirectSourceDeploymentContainer(input);
+
+    assert.deepEqual(result.sourceCode.cloudStorageSource, {
+      bucket: 'test-bucket',
+      object: 'source/1700000000-deadbeef-1234567890abcdef.tar.gz',
+      generation: '1763548200123456',
+    });
+  });
+
+  test('generateStagingArchiveName includes content hash and unique random nonce', async () => {
+    const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
+      fs: fsMock,
+    });
+
+    const archiveBuffer = Buffer.from('sample source archive content');
+    const expectedHash = crypto
+      .createHash('sha256')
+      .update(archiveBuffer)
+      .digest('hex');
+
+    const zipName1 = deploymentHelpers.generateStagingArchiveName(
+      archiveBuffer,
+      'zip'
+    );
+    const zipName2 = deploymentHelpers.generateStagingArchiveName(
+      archiveBuffer,
+      'zip'
+    );
+    const targzName = deploymentHelpers.generateStagingArchiveName(
+      archiveBuffer,
+      '.tar.gz'
+    );
+
+    assert.match(
+      zipName1,
+      new RegExp(`^source/\\d+-${expectedHash}-[0-9a-f]{16}\\.zip$`)
+    );
+    assert.notEqual(zipName1, zipName2);
+    assert.match(
+      targzName,
+      new RegExp(`^source/\\d+-${expectedHash}-[0-9a-f]{16}\\.tar\\.gz$`)
+    );
+  });
+
   test('uploadDirectory recursively uploads files', async () => {
     const uploadToStorageBucketMock = mock.fn(async () => ({}));
     const readFileMock = mock.fn(async () => Buffer.from('content'));
@@ -233,10 +295,14 @@ describe('Deployment Helpers', () => {
     // Verify first upload (root level)
     const call1 = uploadToStorageBucketMock.mock.calls[0];
     assert.ok(call1.arguments[2].endsWith('prefix/file1.txt'));
+    assert.strictEqual(call1.arguments[3], undefined);
+    assert.strictEqual(call1.arguments[4], progressCallback);
 
     // Verify second upload (subdir level)
     const call2 = uploadToStorageBucketMock.mock.calls[1];
     assert.ok(call2.arguments[2].endsWith('prefix/subdir/file2.txt'));
+    assert.strictEqual(call2.arguments[3], undefined);
+    assert.strictEqual(call2.arguments[4], progressCallback);
   });
 
   test('makeFileDeploymentMetadata correctly identifies compose file in folder', async () => {
