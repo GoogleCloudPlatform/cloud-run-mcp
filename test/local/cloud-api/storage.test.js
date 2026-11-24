@@ -218,7 +218,6 @@ describe('Storage API', () => {
         iamConfiguration: {
           uniformBucketLevelAccess: { enabled: true },
         },
-        versioning: { enabled: true },
       });
     });
 
@@ -247,7 +246,6 @@ describe('Storage API', () => {
         iamConfiguration: {
           uniformBucketLevelAccess: { enabled: true },
         },
-        versioning: { enabled: true },
         metadata: { labels: labels },
       });
     });
@@ -313,7 +311,6 @@ describe('Storage API', () => {
         iamConfiguration: {
           uniformBucketLevelAccess: { enabled: true },
         },
-        versioning: { enabled: true },
         metadata: { labels: labels },
       });
     });
@@ -350,7 +347,6 @@ describe('Storage API', () => {
         iamConfiguration: {
           uniformBucketLevelAccess: { enabled: true },
         },
-        versioning: { enabled: true },
         metadata: { labels: labels },
       });
     });
@@ -387,7 +383,6 @@ describe('Storage API', () => {
         iamConfiguration: {
           uniformBucketLevelAccess: { enabled: true },
         },
-        versioning: { enabled: true },
         metadata: { labels: labels },
       });
     });
@@ -433,7 +428,12 @@ describe('Storage API', () => {
         Promise.resolve([{ generation: '99999' }])
       );
       let fileObj;
-      const saveMock = mock.fn(async () => {
+      const saveMock = mock.fn(async (buf, opts) => {
+        // Simulate @google-cloud/storage mutating options in place
+        if (opts) {
+          opts.metadata = opts.metadata || {};
+          opts.metadata.contentType = 'application/zip';
+        }
         fileObj.metadata = { generation: '10001' };
       });
       fileObj = {
@@ -446,19 +446,29 @@ describe('Storage API', () => {
         file: mock.fn(() => fileObj),
       };
 
+      const callerSaveOptions = {
+        preconditionOpts: { ifGenerationMatch: 0 },
+        metadata: { customKey: 'customVal' },
+      };
       const uploaded = await storageApi.uploadToStorageBucket(
         testBucket,
         buffer,
         'source/archive.zip',
-        { preconditionOpts: { ifGenerationMatch: 0 } },
+        callerSaveOptions,
         undefined
       );
 
       assert.strictEqual(saveMock.mock.callCount(), 1);
-      assert.deepStrictEqual(saveMock.mock.calls[0].arguments, [
-        buffer,
-        { preconditionOpts: { ifGenerationMatch: 0 } },
-      ]);
+      assert.strictEqual(saveMock.mock.calls[0].arguments[0], buffer);
+      assert.deepStrictEqual(
+        saveMock.mock.calls[0].arguments[1].preconditionOpts,
+        { ifGenerationMatch: 0 }
+      );
+      // Caller's options object is not mutated in place by file.save()
+      assert.deepStrictEqual(callerSaveOptions, {
+        preconditionOpts: { ifGenerationMatch: 0 },
+        metadata: { customKey: 'customVal' },
+      });
       // Does not issue an unpinned getMetadata call when save() already populated generation
       assert.strictEqual(getMetadataMock.mock.callCount(), 0);
       assert.strictEqual(uploaded.metadata.generation, '10001');
@@ -508,6 +518,30 @@ describe('Storage API', () => {
           save: mock.fn(() => Promise.resolve()),
           getMetadata: mock.fn(() =>
             Promise.resolve([{ generation: '20003', md5Hash: tamperedMd5 }])
+          ),
+        })),
+      };
+
+      await assert.rejects(
+        () =>
+          storageApi.uploadToStorageBucket(
+            testBucket,
+            buffer,
+            'source/archive.zip'
+          ),
+        /Integrity check failed/
+      );
+    });
+
+    it('rejects if fallback getMetadata omits md5Hash (fail-closed)', async () => {
+      const buffer = Buffer.from('legitimate-archive-bytes');
+      const testBucket = {
+        name: 'staging-bucket',
+        file: mock.fn((blobName) => ({
+          name: blobName,
+          save: mock.fn(() => Promise.resolve()),
+          getMetadata: mock.fn(() =>
+            Promise.resolve([{ generation: '20004' }])
           ),
         })),
       };

@@ -205,6 +205,16 @@ describe('Deployment Helpers', () => {
       object: 'source/1700000000-deadbeef-1234567890abcdef.tar.gz',
       generation: '9007199254740993',
     });
+
+    const emptyGenResult =
+      deploymentHelpers.createDirectSourceDeploymentContainer({
+        ...input,
+        generation: '   ',
+      });
+    assert.deepEqual(emptyGenResult.sourceCode.cloudStorageSource, {
+      bucket: 'test-bucket',
+      object: 'source/1700000000-deadbeef-1234567890abcdef.tar.gz',
+    });
   });
 
   test('generateStagingArchiveName includes content hash and unique random nonce', async () => {
