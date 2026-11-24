@@ -4,8 +4,12 @@ on:
   release:
     types: [published]
 
-permissions:
-  contents: write
+permissions: {}
+
+# Serialize releases targeting the same ref without cancelling an in-flight run.
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   publish-npm:
@@ -14,58 +18,142 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - name: Checkout repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           persist-credentials: false
-      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+
+      - name: Set up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
-          node-version: 24
-      - run: npm ci
-      - name: Authenticate to Google Cloud for OSS Exit Gate
+          node-version: "24"
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Read and validate package metadata
+        id: pkg
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          PKG_NAME="$(jq -er '.name' package.json)"
+          PKG_VERSION="$(jq -er '.version' package.json)"
+          if [ -z "${PKG_NAME}" ] || [ -z "${PKG_VERSION}" ]; then
+            echo "::error::Failed to read name/version from package.json"
+            exit 1
+          fi
+          if [ "${EVENT_NAME}" = "release" ] && [ -n "${RELEASE_TAG}" ]; then
+            tag_ver="${RELEASE_TAG#v}"
+            if [ "${tag_ver}" != "${PKG_VERSION}" ]; then
+              echo "::error::Release tag '${RELEASE_TAG}' does not match package.json version '${PKG_VERSION}'"
+              exit 1
+            fi
+          fi
+          echo "name=${PKG_NAME}" >> "${GITHUB_OUTPUT}"
+          echo "version=${PKG_VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - name: Pack tarball before cloud authentication
+        id: pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          pack_dir="${RUNNER_TEMP}/npm-pack"
+          rm -rf "${pack_dir}"
+          mkdir -p "${pack_dir}"
+          npm pack --pack-destination "${pack_dir}" >/dev/null
+          shopt -s nullglob
+          tarballs=("${pack_dir}"/*.tgz)
+          if [ "${#tarballs[@]}" -ne 1 ]; then
+            echo "::error::Expected exactly 1 packed tarball in ${pack_dir}, found ${#tarballs[@]}"
+            exit 1
+          fi
+          tarball="${tarballs[0]}"
+          tar_entries="$(tar -tzf "${tarball}")"
+          if printf '%s\n' "${tar_entries}" | grep -Eq '(^|/)(gha-creds-[^/]*\.json|\.npmrc|manifest\.json)$'; then
+            echo "::error::Refusing to publish tarball containing credentials or manifest metadata: ${tarball}"
+            printf '%s\n' "${tar_entries}"
+            exit 1
+          fi
+          echo "Packed clean tarball: ${tarball}"
+          echo "tarball=${tarball}" >> "${GITHUB_OUTPUT}"
+
+      - name: Authenticate to Google Cloud (OSS Exit Gate)
         id: auth
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
-          token_format: 'access_token'
-          workload_identity_provider: 'projects/305452601764/locations/global/workloadIdentityPools/builders/providers/github'
+          workload_identity_provider: "projects/305452601764/locations/global/workloadIdentityPools/builders/providers/github"
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
 
-      - name: Clean up stale releases from staging repo
+      - name: Clean up incomplete staged version (if any)
+        shell: bash
+        env:
+          PKG_NAME: ${{ steps.pkg.outputs.name }}
+          PKG_VERSION: ${{ steps.pkg.outputs.version }}
         run: |
-          # clean up stale releases from staging repo
-          packages=$(gcloud artifacts packages list \
+          set -euo pipefail
+          existing="$(gcloud artifacts versions list \
+            --project="oss-exit-gate-prod" \
+            --location="us" \
+            --repository="cloud-run-mcp--npm" \
+            --package="${PKG_NAME}" \
+            --format="value(name)" 2>/dev/null | awk -F/ '{print $NF}' | grep -Fx "${PKG_VERSION}" || true)"
+          if [ -n "${existing}" ]; then
+            echo "Deleting previous staged version ${PKG_NAME}@${PKG_VERSION} before re-upload..."
+            gcloud artifacts versions delete "${PKG_VERSION}" \
+              --package="${PKG_NAME}" \
               --project="oss-exit-gate-prod" \
               --location="us" \
               --repository="cloud-run-mcp--npm" \
-              --format="value(name)" 2>/dev/null)
+              --delete-tags \
+              --quiet
+          fi
 
-          echo "${packages}" | xargs -r -I {} sh -c '
-              package_name=$(basename "{}")
-              echo "Deleting package: $package_name..."
-              gcloud artifacts packages delete "{}" \
-                  --project="oss-exit-gate-prod" \
-                  --location="us" \
-                  --repository="cloud-run-mcp--npm" \
-                  --quiet
-          '
-
-      - name: Stage to Artifact Registry and trigger OSS Exit Gate
+      - name: Stage package to Artifact Registry and submit OSS Exit Gate manifest
+        shell: bash
         env:
-          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          PKG_NAME: ${{ steps.pkg.outputs.name }}
+          PKG_VERSION: ${{ steps.pkg.outputs.version }}
           RUN_ID: ${{ github.run_id }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
+          TARBALL: ${{ steps.pack.outputs.tarball }}
         run: |
-          cat << 'NPMRC' > "$HOME/.npmrc"
+          set -euo pipefail
+          if [ ! -f "${TARBALL}" ]; then
+            echo "::error::Packed tarball not found: ${TARBALL}"
+            exit 1
+          fi
+
+          ACCESS_TOKEN="$(gcloud auth print-access-token)"
+          echo "::add-mask::${ACCESS_TOKEN}"
+
+          npmrc_path="${RUNNER_TEMP}/exit-gate.npmrc"
+          manifest_path="${RUNNER_TEMP}/manifest.json"
+          trap 'rm -f "${npmrc_path}" "${manifest_path}" "${TARBALL}"' EXIT
+          umask 077
+          cat > "${npmrc_path}" <<NPMRC
           registry=https://us-npm.pkg.dev/oss-exit-gate-prod/cloud-run-mcp--npm/
           //us-npm.pkg.dev/oss-exit-gate-prod/cloud-run-mcp--npm/:always-auth=true
           //us-npm.pkg.dev/oss-exit-gate-prod/cloud-run-mcp--npm/:_authToken=${ACCESS_TOKEN}
           NPMRC
-          trap 'rm -f "$HOME/.npmrc"' EXIT
-          npm publish --access public --registry="https://us-npm.pkg.dev/oss-exit-gate-prod/cloud-run-mcp--npm/"
-          cat << 'MANIFEST' > manifest.json
-          {
-            "publish_all": true
-          }
-          MANIFEST
-          gcloud storage cp manifest.json "gs://oss-exit-gate-prod-projects-bucket/cloud-run-mcp/npm/manifests/manifest-${RUN_ID}-${RUN_ATTEMPT}.json"
+
+          NPM_CONFIG_USERCONFIG="${npmrc_path}" npm publish "${TARBALL}" --access public \
+            --registry="https://us-npm.pkg.dev/oss-exit-gate-prod/cloud-run-mcp--npm/"
+
+          jq -n \
+            --arg name "${PKG_NAME}" \
+            --arg ver "${PKG_VERSION}" \
+            '{
+              publish_all: false,
+              publishing_groups: [
+                {
+                  packages: [{ name: $name, version: $ver }]
+                }
+              ]
+            }' > "${manifest_path}"
+
+          manifest_uri="gs://oss-exit-gate-prod-projects-bucket/cloud-run-mcp/npm/manifests/manifest-${PKG_VERSION}-${RUN_ID}-${RUN_ATTEMPT}.json"
+          gcloud storage cp --if-generation-match=0 "${manifest_path}" "${manifest_uri}"
