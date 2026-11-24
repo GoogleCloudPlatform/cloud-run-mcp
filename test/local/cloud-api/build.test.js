@@ -818,4 +818,52 @@ describe('composeBuild', () => {
 
     assert.strictEqual(context.buildsClient.submitBuild.mock.callCount(), 1);
   });
+
+  it('should reject build context with relative path traversal', async () => {
+    const resourcesConfig = {
+      source_builds: {
+        web: { context: '../../../.config/gcloud' },
+      },
+    };
+    const { composeBuild } = await getBuildModule();
+
+    await assert.rejects(
+      composeBuild(
+        resourcesConfig,
+        'mock-token',
+        'mock-project',
+        'us-central1',
+        '/folder',
+        () => {}
+      ),
+      /resolves outside the project directory/
+    );
+    assert.strictEqual(zipFilesMock.mock.callCount(), 0);
+    assert.strictEqual(uploadToBucketMock.mock.callCount(), 0);
+    assert.strictEqual(createBuildMock.mock.callCount(), 0);
+  });
+
+  it('should reject build context with absolute path', async () => {
+    const resourcesConfig = {
+      source_builds: {
+        web: { context: '/etc' },
+      },
+    };
+    const { composeBuild } = await getBuildModule();
+
+    await assert.rejects(
+      composeBuild(
+        resourcesConfig,
+        'mock-token',
+        'mock-project',
+        'us-central1',
+        '/folder',
+        () => {}
+      ),
+      /must be a relative path/
+    );
+    assert.strictEqual(zipFilesMock.mock.callCount(), 0);
+    assert.strictEqual(uploadToBucketMock.mock.callCount(), 0);
+    assert.strictEqual(createBuildMock.mock.callCount(), 0);
+  });
 });

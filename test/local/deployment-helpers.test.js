@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 import crypto from 'node:crypto';
+import path from 'node:path';
 import { test, describe, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import esmock from 'esmock';
@@ -313,6 +314,89 @@ describe('Deployment Helpers', () => {
     assert.ok(call2.arguments[2].endsWith('prefix/subdir/file2.txt'));
     assert.strictEqual(call2.arguments[3], undefined);
     assert.strictEqual(call2.arguments[4], progressCallback);
+  });
+
+  test('uploadDirectory rejects symlinks resolving outside rootDir', async () => {
+    const fsReal = await import('fs');
+    const os = await import('os');
+    const uploadToStorageBucketMock = mock.fn(async () => ({}));
+
+    const tmpRoot = await fsReal.promises.mkdtemp(
+      path.join(os.tmpdir(), 'cloud-run-mcp-upload-test-')
+    );
+    const projectDir = path.join(tmpRoot, 'project');
+    const dataDir = path.join(projectDir, 'data');
+    const outsideFile = path.join(tmpRoot, 'secret.txt');
+    await fsReal.promises.mkdir(dataDir, { recursive: true });
+    await fsReal.promises.writeFile(outsideFile, 'top-secret');
+    await fsReal.promises.symlink(outsideFile, path.join(dataDir, 'leak.txt'));
+
+    try {
+      const deploymentHelpers = await esmock(
+        '../../lib/deployment/helpers.js',
+        {
+          '../../lib/cloud-api/storage.js': {
+            uploadToStorageBucket: uploadToStorageBucketMock,
+          },
+        }
+      );
+
+      await assert.rejects(
+        deploymentHelpers.uploadDirectory(
+          { name: 'test-bucket' },
+          dataDir,
+          'bind_mounts/web/data',
+          mock.fn(),
+          projectDir
+        ),
+        /symlink resolving outside the project directory/
+      );
+      assert.strictEqual(uploadToStorageBucketMock.mock.callCount(), 0);
+    } finally {
+      await fsReal.promises.rm(tmpRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('uploadDirectory allows symlinks resolving inside rootDir', async () => {
+    const fsReal = await import('fs');
+    const os = await import('os');
+    const uploadToStorageBucketMock = mock.fn(async () => ({}));
+
+    const tmpRoot = await fsReal.promises.mkdtemp(
+      path.join(os.tmpdir(), 'cloud-run-mcp-upload-ok-')
+    );
+    const projectDir = path.join(tmpRoot, 'project');
+    const dataDir = path.join(projectDir, 'data');
+    const sharedFile = path.join(projectDir, 'shared.txt');
+    await fsReal.promises.mkdir(dataDir, { recursive: true });
+    await fsReal.promises.writeFile(sharedFile, 'shared-content');
+    await fsReal.promises.symlink(sharedFile, path.join(dataDir, 'linked.txt'));
+
+    try {
+      const deploymentHelpers = await esmock(
+        '../../lib/deployment/helpers.js',
+        {
+          '../../lib/cloud-api/storage.js': {
+            uploadToStorageBucket: uploadToStorageBucketMock,
+          },
+        }
+      );
+
+      await deploymentHelpers.uploadDirectory(
+        { name: 'test-bucket' },
+        dataDir,
+        'bind_mounts/web/data',
+        mock.fn(),
+        projectDir
+      );
+      assert.strictEqual(uploadToStorageBucketMock.mock.callCount(), 1);
+      assert.strictEqual(
+        uploadToStorageBucketMock.mock.calls[0].arguments[2],
+        'bind_mounts/web/data/linked.txt'
+      );
+    } finally {
+      await fsReal.promises.rm(tmpRoot, { recursive: true, force: true });
+    }
   });
 
   test('makeFileDeploymentMetadata correctly identifies compose file in folder', async () => {

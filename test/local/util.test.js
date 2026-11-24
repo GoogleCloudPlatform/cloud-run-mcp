@@ -358,4 +358,108 @@ describe('Utility Helpers', () => {
       assert.equal(sanitizeLabelValue(false), 'false');
     });
   });
+
+  describe('isPathContained and resolveContainedPath', () => {
+    test('isPathContained correctly checks path containment', async () => {
+      const { isPathContained } = await import('../../lib/util/helpers.js');
+
+      assert.strictEqual(isPathContained('/tmp/app', '/tmp/app'), true);
+      assert.strictEqual(
+        isPathContained('/tmp/app', '/tmp/app/sub/file.txt'),
+        true
+      );
+      assert.strictEqual(
+        isPathContained('/tmp/app', '/tmp/app/..hidden'),
+        true
+      );
+      assert.strictEqual(isPathContained('/tmp/app', '/tmp'), false);
+      assert.strictEqual(
+        isPathContained('/tmp/app', '/tmp/app-other/file.txt'),
+        false
+      );
+      assert.strictEqual(isPathContained('/tmp/app', '/etc/passwd'), false);
+    });
+
+    test('resolveContainedPath resolves valid relative paths and rejects traversal', async () => {
+      const { resolveContainedPath } =
+        await import('../../lib/util/helpers.js');
+      const os = await import('os');
+      const tmpRoot = await fs.promises.mkdtemp(
+        path.join(os.tmpdir(), 'cloud-run-mcp-path-test-')
+      );
+      const projectDir = path.join(tmpRoot, 'project');
+      const outsideDir = path.join(tmpRoot, 'project-other');
+      await fs.promises.mkdir(path.join(projectDir, 'sub'), {
+        recursive: true,
+      });
+      await fs.promises.mkdir(outsideDir, { recursive: true });
+
+      const insideFile = path.join(projectDir, 'sub', 'ok.txt');
+      const outsideFile = path.join(outsideDir, 'secret.txt');
+      await fs.promises.writeFile(insideFile, 'ok');
+      await fs.promises.writeFile(outsideFile, 'secret');
+      await fs.promises.symlink(
+        outsideFile,
+        path.join(projectDir, 'escape-link')
+      );
+      await fs.promises.symlink(insideFile, path.join(projectDir, 'safe-link'));
+
+      try {
+        const realProjectDir = await fs.promises.realpath(projectDir);
+        const realInsideFile = await fs.promises.realpath(insideFile);
+
+        assert.strictEqual(
+          await resolveContainedPath(projectDir, '.'),
+          realProjectDir
+        );
+        assert.strictEqual(
+          await resolveContainedPath(projectDir, './sub/ok.txt'),
+          realInsideFile
+        );
+        assert.strictEqual(
+          await resolveContainedPath(projectDir, 'sub/../sub/ok.txt'),
+          realInsideFile
+        );
+        assert.strictEqual(
+          await resolveContainedPath(projectDir, 'safe-link'),
+          realInsideFile
+        );
+        // Non-existent path inside project returns lexical path for caller ENOENT handling
+        assert.strictEqual(
+          await resolveContainedPath(projectDir, './missing.txt'),
+          path.resolve(projectDir, 'missing.txt')
+        );
+
+        // Rejects invalid / empty / null-byte paths
+        await assert.rejects(
+          resolveContainedPath(projectDir, ''),
+          /must be a non-empty string/
+        );
+        await assert.rejects(
+          resolveContainedPath(projectDir, 'ok\0.txt'),
+          /invalid null bytes/
+        );
+
+        // Rejects absolute paths
+        await assert.rejects(
+          resolveContainedPath(projectDir, outsideFile),
+          /must be a relative path/
+        );
+
+        // Rejects parent traversal
+        await assert.rejects(
+          resolveContainedPath(projectDir, '../project-other/secret.txt'),
+          /resolves outside the project directory/
+        );
+
+        // Rejects symlink escaping projectDir
+        await assert.rejects(
+          resolveContainedPath(projectDir, 'escape-link'),
+          /resolves outside the project directory/
+        );
+      } finally {
+        await fs.promises.rm(tmpRoot, { recursive: true, force: true });
+      }
+    });
+  });
 });
