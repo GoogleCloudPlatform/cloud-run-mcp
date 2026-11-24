@@ -399,6 +399,70 @@ describe('Deployment Helpers', () => {
     }
   });
 
+  test('uploadDirectory uploads sibling symlinks to same directory and avoids loops', async () => {
+    const fsReal = await import('fs');
+    const os = await import('os');
+    const uploadToStorageBucketMock = mock.fn(async () => ({}));
+
+    const tmpRoot = await fsReal.promises.mkdtemp(
+      path.join(os.tmpdir(), 'cloud-run-mcp-upload-siblings-')
+    );
+    const projectDir = path.join(tmpRoot, 'project');
+    const sharedDir = path.join(projectDir, 'shared');
+    const dataDir = path.join(projectDir, 'data');
+    await fsReal.promises.mkdir(sharedDir, { recursive: true });
+    await fsReal.promises.mkdir(path.join(dataDir, 'branch1'), {
+      recursive: true,
+    });
+    await fsReal.promises.mkdir(path.join(dataDir, 'branch2'), {
+      recursive: true,
+    });
+    await fsReal.promises.writeFile(
+      path.join(sharedDir, 'item.txt'),
+      'shared-item'
+    );
+    // Two sibling symlinks pointing to the same target directory inside projectDir
+    await fsReal.promises.symlink(
+      sharedDir,
+      path.join(dataDir, 'branch1', 'link')
+    );
+    await fsReal.promises.symlink(
+      sharedDir,
+      path.join(dataDir, 'branch2', 'link')
+    );
+    // Symlink loop inside sharedDir pointing back to sharedDir
+    await fsReal.promises.symlink(sharedDir, path.join(sharedDir, 'self'));
+
+    try {
+      const deploymentHelpers = await esmock(
+        '../../lib/deployment/helpers.js',
+        {
+          '../../lib/cloud-api/storage.js': {
+            uploadToStorageBucket: uploadToStorageBucketMock,
+          },
+        }
+      );
+
+      await deploymentHelpers.uploadDirectory(
+        { name: 'test-bucket' },
+        dataDir,
+        'bind_mounts/web/data',
+        mock.fn(),
+        projectDir
+      );
+
+      const uploadedPaths = uploadToStorageBucketMock.mock.calls
+        .map((c) => c.arguments[2])
+        .sort();
+      assert.deepStrictEqual(uploadedPaths, [
+        'bind_mounts/web/data/branch1/link/item.txt',
+        'bind_mounts/web/data/branch2/link/item.txt',
+      ]);
+    } finally {
+      await fsReal.promises.rm(tmpRoot, { recursive: true, force: true });
+    }
+  });
+
   test('makeFileDeploymentMetadata correctly identifies compose file in folder', async () => {
     const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
       fs: fsMock,
