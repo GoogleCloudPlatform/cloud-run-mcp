@@ -513,6 +513,74 @@ describe('Deployment Helpers', () => {
     );
   });
 
+  test('uploadDirectory reports broken symlinks with a clear error', async () => {
+    const uploadToStorageBucketMock = mock.fn(async () => ({}));
+
+    await withTempDir('cloud-run-mcp-upload-dangling-', async (tmpRoot) => {
+      const projectDir = path.join(tmpRoot, 'project');
+      const dataDir = path.join(projectDir, 'data');
+      await fs.promises.mkdir(dataDir, { recursive: true });
+      await fs.promises.symlink(
+        path.join(projectDir, 'does-not-exist.txt'),
+        path.join(dataDir, 'broken.txt')
+      );
+
+      const deploymentHelpers = await esmock(
+        '../../lib/deployment/helpers.js',
+        {
+          '../../lib/cloud-api/storage.js': {
+            uploadToStorageBucket: uploadToStorageBucketMock,
+          },
+        }
+      );
+
+      await assert.rejects(
+        deploymentHelpers.uploadDirectory(
+          { name: 'test-bucket' },
+          dataDir,
+          'bind_mounts/web/data',
+          mock.fn(),
+          projectDir
+        ),
+        /is a broken symlink/
+      );
+      assert.strictEqual(uploadToStorageBucketMock.mock.callCount(), 0);
+    });
+  });
+
+  test('uploadDirectory rejects localPath resolving outside rootDir', async () => {
+    const uploadToStorageBucketMock = mock.fn(async () => ({}));
+
+    await withTempDir('cloud-run-mcp-upload-outside-root-', async (tmpRoot) => {
+      const projectDir = path.join(tmpRoot, 'project');
+      const outsideDir = path.join(tmpRoot, 'outside');
+      await fs.promises.mkdir(projectDir, { recursive: true });
+      await fs.promises.mkdir(outsideDir, { recursive: true });
+      await fs.promises.writeFile(path.join(outsideDir, 'secret.txt'), 'nope');
+
+      const deploymentHelpers = await esmock(
+        '../../lib/deployment/helpers.js',
+        {
+          '../../lib/cloud-api/storage.js': {
+            uploadToStorageBucket: uploadToStorageBucketMock,
+          },
+        }
+      );
+
+      await assert.rejects(
+        deploymentHelpers.uploadDirectory(
+          { name: 'test-bucket' },
+          outsideDir,
+          'bind_mounts/web/outside',
+          mock.fn(),
+          projectDir
+        ),
+        /resolves outside the project directory/
+      );
+      assert.strictEqual(uploadToStorageBucketMock.mock.callCount(), 0);
+    });
+  });
+
   test('makeFileDeploymentMetadata correctly identifies compose file in folder', async () => {
     const deploymentHelpers = await esmock('../../lib/deployment/helpers.js', {
       fs: fsMock,

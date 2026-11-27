@@ -780,5 +780,53 @@ describe('Compose Deployment', () => {
       assert.strictEqual(addSecretVersionMock.mock.callCount(), 0);
       assert.strictEqual(fsPromisesMock.readFile.mock.callCount(), 0);
     });
+
+    test('should reject secret file symlink resolving outside project directory', async () => {
+      const tmpRoot = await fs.promises.mkdtemp(
+        path.join(os.tmpdir(), 'cloud-run-mcp-secret-link-')
+      );
+      const projectDir = path.join(tmpRoot, 'project');
+      const outsideFile = path.join(tmpRoot, 'id_rsa');
+      await fs.promises.mkdir(projectDir, { recursive: true });
+      await fs.promises.writeFile(outsideFile, 'private-key');
+      await fs.promises.symlink(
+        outsideFile,
+        path.join(projectDir, 'leaked.txt')
+      );
+
+      try {
+        const compose = await setupCompose();
+        createSecretMock.mock.resetCalls();
+        addSecretVersionMock.mock.resetCalls();
+        fsPromisesMock.readFile.mock.resetCalls();
+
+        const resourcesConfig = {
+          project: 'my-project',
+          secrets: {
+            'stolen-link': {
+              name: 'stolen-link',
+              file: './leaked.txt',
+              mount: 'stolen-link',
+            },
+          },
+        };
+
+        await assert.rejects(
+          compose.composeSecrets(
+            resourcesConfig,
+            'token',
+            'project-id',
+            projectDir,
+            mock.fn()
+          ),
+          /resolves outside the project directory/
+        );
+        assert.strictEqual(createSecretMock.mock.callCount(), 0);
+        assert.strictEqual(addSecretVersionMock.mock.callCount(), 0);
+        assert.strictEqual(fsPromisesMock.readFile.mock.callCount(), 0);
+      } finally {
+        await fs.promises.rm(tmpRoot, { recursive: true, force: true });
+      }
+    });
   });
 });

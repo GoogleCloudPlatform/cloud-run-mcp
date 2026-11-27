@@ -202,6 +202,73 @@ describe('Deploy Compose', () => {
     );
   });
 
+  test('rejects translated yamlPath escaping the project directory', async () => {
+    const prepareSourceDirectoryMock = mock.fn(async () => '/tmp/temp-dir');
+    const downloadRunComposeMock = mock.fn(async () => '/bin/run-compose');
+    const resourceComposeMock = mock.fn(async () => JSON.stringify({}));
+    const translateComposeMock = mock.fn(async () =>
+      JSON.stringify({
+        services: {
+          web: '../../etc/passwd',
+        },
+      })
+    );
+    const getProjectNumberMock = mock.fn(async () => '123456');
+    const cleanupTempDirectoryMock = mock.fn();
+    const readFileMock = mock.fn();
+    const replaceServiceMock = mock.fn();
+    const createServiceMock = mock.fn();
+
+    const { deployCompose } = await esmock('../../lib/deployment/deployer.js', {
+      '../../lib/deployment/source-processor.js': {
+        prepareSourceDirectory: prepareSourceDirectoryMock,
+        cleanupTempDirectory: cleanupTempDirectoryMock,
+      },
+      '../../lib/util/helpers.js': {
+        getProjectNumber: getProjectNumberMock,
+        logAndProgress: mock.fn(),
+      },
+      '../../lib/deployment/compose.js': {
+        runCompose: downloadRunComposeMock,
+        resourceCompose: resourceComposeMock,
+        translateCompose: translateComposeMock,
+        composeVolumes: mock.fn(async (rc) => rc),
+        composeSecrets: mock.fn(async (rc) => rc),
+      },
+      '../../lib/clients.js': {
+        getRunV1Client: mock.fn(async () => ({
+          namespaces: {
+            services: {
+              replaceService: replaceServiceMock,
+              create: createServiceMock,
+            },
+          },
+        })),
+      },
+      fs: {
+        promises: {
+          readFile: readFileMock,
+        },
+      },
+    });
+
+    await assert.rejects(
+      deployCompose({
+        projectId,
+        region,
+        files,
+        composeFilePath,
+        accessToken,
+        progressCallback: mock.fn(),
+      }),
+      /resolves outside the project directory/
+    );
+    assert.strictEqual(readFileMock.mock.callCount(), 0);
+    assert.strictEqual(replaceServiceMock.mock.callCount(), 0);
+    assert.strictEqual(createServiceMock.mock.callCount(), 0);
+    assert.strictEqual(cleanupTempDirectoryMock.mock.callCount(), 1);
+  });
+
   test('calls composeSecrets during deployment', async () => {
     const composeSecretsMock = mock.fn(
       async (resourcesConfig) => resourcesConfig

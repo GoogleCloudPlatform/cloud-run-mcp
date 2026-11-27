@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, it, mock, beforeEach, afterEach } from 'node:test';
 import esmock from 'esmock';
 
@@ -868,5 +871,44 @@ describe('composeBuild', () => {
     assert.strictEqual(zipFilesMock.mock.callCount(), 0);
     assert.strictEqual(uploadToBucketMock.mock.callCount(), 0);
     assert.strictEqual(createBuildMock.mock.callCount(), 0);
+  });
+
+  it('should reject build context symlink resolving outside project directory', async () => {
+    const tmpRoot = await fs.promises.mkdtemp(
+      path.join(os.tmpdir(), 'cloud-run-mcp-build-link-')
+    );
+    const projectDir = path.join(tmpRoot, 'project');
+    const outsideDir = path.join(tmpRoot, 'outside');
+    await fs.promises.mkdir(projectDir, { recursive: true });
+    await fs.promises.mkdir(outsideDir, { recursive: true });
+    await fs.promises.symlink(outsideDir, path.join(projectDir, 'ctx-link'));
+
+    try {
+      const resourcesConfig = {
+        source_builds: {
+          web: { context: './ctx-link' },
+        },
+      };
+      const { composeBuild } = await getBuildModule();
+
+      await assert.rejects(
+        composeBuild(
+          resourcesConfig,
+          'mock-token',
+          'mock-project',
+          'us-central1',
+          projectDir,
+          () => {}
+        ),
+        /resolves outside the project directory/
+      );
+      assert.strictEqual(ensureARMock.mock.callCount(), 0);
+      assert.strictEqual(ensureBucketMock.mock.callCount(), 0);
+      assert.strictEqual(zipFilesMock.mock.callCount(), 0);
+      assert.strictEqual(uploadToBucketMock.mock.callCount(), 0);
+      assert.strictEqual(createBuildMock.mock.callCount(), 0);
+    } finally {
+      await fs.promises.rm(tmpRoot, { recursive: true, force: true });
+    }
   });
 });
