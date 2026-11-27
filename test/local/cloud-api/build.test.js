@@ -819,10 +819,11 @@ describe('composeBuild', () => {
     assert.strictEqual(context.buildsClient.submitBuild.mock.callCount(), 1);
   });
 
-  it('should reject build context with relative path traversal', async () => {
+  it('should reject build context with relative path traversal and fail fast before any uploads', async () => {
     const resourcesConfig = {
       source_builds: {
-        web: { context: '../../../.config/gcloud' },
+        web: { context: 'web_dir' },
+        api: { context: '../../../.config/gcloud' },
       },
     };
     const { composeBuild } = await getBuildModule();
@@ -838,6 +839,8 @@ describe('composeBuild', () => {
       ),
       /resolves outside the project directory/
     );
+    assert.strictEqual(ensureARMock.mock.callCount(), 0);
+    assert.strictEqual(ensureBucketMock.mock.callCount(), 0);
     assert.strictEqual(zipFilesMock.mock.callCount(), 0);
     assert.strictEqual(uploadToBucketMock.mock.callCount(), 0);
     assert.strictEqual(createBuildMock.mock.callCount(), 0);

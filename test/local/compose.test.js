@@ -17,6 +17,8 @@ limitations under the License.
 import { test, describe, mock, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import esmock from 'esmock';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'path';
 
 describe('Compose Deployment', () => {
@@ -547,6 +549,48 @@ describe('Compose Deployment', () => {
       );
       assert.strictEqual(uploadDirectoryMock.mock.callCount(), 0);
       assert.strictEqual(uploadToStorageBucketMock.mock.callCount(), 0);
+    });
+
+    test('should preserve compose-file basename for intra-project symlink bind mounts', async () => {
+      const tmpRoot = await fs.promises.mkdtemp(
+        path.join(os.tmpdir(), 'cloud-run-mcp-compose-link-')
+      );
+      const prodDir = path.join(tmpRoot, 'configs', 'prod');
+      await fs.promises.mkdir(prodDir, { recursive: true });
+      await fs.promises.symlink(prodDir, path.join(tmpRoot, 'config-link'));
+
+      try {
+        const compose = await setupCompose();
+        fsPromisesMock.access.mock.mockImplementation(async () => {});
+        fsPromisesMock.stat.mock.mockImplementation(async () => ({
+          isDirectory: () => true,
+        }));
+
+        const resourcesConfig = {
+          project: 'my-project',
+          volumes: {
+            bind_mount: {
+              web: [{ source: './config-link', target: '/app/config' }],
+            },
+          },
+        };
+
+        const result = await compose.composeVolumes(
+          resourcesConfig,
+          'token',
+          'project-id',
+          'us-central1',
+          tmpRoot,
+          mock.fn()
+        );
+
+        assert.strictEqual(
+          result.volumes.bind_mount.web[0].mount_source,
+          'bind_mounts/web/config-link'
+        );
+      } finally {
+        await fs.promises.rm(tmpRoot, { recursive: true, force: true });
+      }
     });
   });
 

@@ -15,6 +15,8 @@ limitations under the License.
 */
 
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { test, describe, mock } from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,6 +30,7 @@ describe('Deployment Helpers', () => {
     promises: {
       readdir: mock.fn(),
       readFile: mock.fn(),
+      realpath: mock.fn(async (p) => p),
     },
   };
 
@@ -253,6 +256,15 @@ describe('Deployment Helpers', () => {
     );
   });
 
+  async function withTempDir(prefix, fn) {
+    const tmpRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), prefix));
+    try {
+      return await fn(tmpRoot);
+    } finally {
+      await fs.promises.rm(tmpRoot, { recursive: true, force: true });
+    }
+  }
+
   test('uploadDirectory recursively uploads files', async () => {
     const uploadToStorageBucketMock = mock.fn(async () => ({}));
     const readFileMock = mock.fn(async () => Buffer.from('content'));
@@ -261,11 +273,25 @@ describe('Deployment Helpers', () => {
     fsMock.promises.readdir.mock.resetCalls();
     fsMock.promises.readdir.mock.mockImplementation(async (p) => {
       if (p.endsWith('subdir')) {
-        return [{ name: 'file2.txt', isDirectory: () => false }];
+        return [
+          {
+            name: 'file2.txt',
+            isDirectory: () => false,
+            isSymbolicLink: () => false,
+          },
+        ];
       }
       return [
-        { name: 'file1.txt', isDirectory: () => false },
-        { name: 'subdir', isDirectory: () => true },
+        {
+          name: 'file1.txt',
+          isDirectory: () => false,
+          isSymbolicLink: () => false,
+        },
+        {
+          name: 'subdir',
+          isDirectory: () => true,
+          isSymbolicLink: () => false,
+        },
       ];
     });
 
@@ -317,21 +343,16 @@ describe('Deployment Helpers', () => {
   });
 
   test('uploadDirectory rejects symlinks resolving outside rootDir', async () => {
-    const fsReal = await import('fs');
-    const os = await import('os');
     const uploadToStorageBucketMock = mock.fn(async () => ({}));
 
-    const tmpRoot = await fsReal.promises.mkdtemp(
-      path.join(os.tmpdir(), 'cloud-run-mcp-upload-test-')
-    );
-    const projectDir = path.join(tmpRoot, 'project');
-    const dataDir = path.join(projectDir, 'data');
-    const outsideFile = path.join(tmpRoot, 'secret.txt');
-    await fsReal.promises.mkdir(dataDir, { recursive: true });
-    await fsReal.promises.writeFile(outsideFile, 'top-secret');
-    await fsReal.promises.symlink(outsideFile, path.join(dataDir, 'leak.txt'));
+    await withTempDir('cloud-run-mcp-upload-test-', async (tmpRoot) => {
+      const projectDir = path.join(tmpRoot, 'project');
+      const dataDir = path.join(projectDir, 'data');
+      const outsideFile = path.join(tmpRoot, 'secret.txt');
+      await fs.promises.mkdir(dataDir, { recursive: true });
+      await fs.promises.writeFile(outsideFile, 'top-secret');
+      await fs.promises.symlink(outsideFile, path.join(dataDir, 'leak.txt'));
 
-    try {
       const deploymentHelpers = await esmock(
         '../../lib/deployment/helpers.js',
         {
@@ -352,27 +373,20 @@ describe('Deployment Helpers', () => {
         /symlink resolving outside the project directory/
       );
       assert.strictEqual(uploadToStorageBucketMock.mock.callCount(), 0);
-    } finally {
-      await fsReal.promises.rm(tmpRoot, { recursive: true, force: true });
-    }
+    });
   });
 
   test('uploadDirectory allows symlinks resolving inside rootDir', async () => {
-    const fsReal = await import('fs');
-    const os = await import('os');
     const uploadToStorageBucketMock = mock.fn(async () => ({}));
 
-    const tmpRoot = await fsReal.promises.mkdtemp(
-      path.join(os.tmpdir(), 'cloud-run-mcp-upload-ok-')
-    );
-    const projectDir = path.join(tmpRoot, 'project');
-    const dataDir = path.join(projectDir, 'data');
-    const sharedFile = path.join(projectDir, 'shared.txt');
-    await fsReal.promises.mkdir(dataDir, { recursive: true });
-    await fsReal.promises.writeFile(sharedFile, 'shared-content');
-    await fsReal.promises.symlink(sharedFile, path.join(dataDir, 'linked.txt'));
+    await withTempDir('cloud-run-mcp-upload-ok-', async (tmpRoot) => {
+      const projectDir = path.join(tmpRoot, 'project');
+      const dataDir = path.join(projectDir, 'data');
+      const sharedFile = path.join(projectDir, 'shared.txt');
+      await fs.promises.mkdir(dataDir, { recursive: true });
+      await fs.promises.writeFile(sharedFile, 'shared-content');
+      await fs.promises.symlink(sharedFile, path.join(dataDir, 'linked.txt'));
 
-    try {
       const deploymentHelpers = await esmock(
         '../../lib/deployment/helpers.js',
         {
@@ -394,46 +408,39 @@ describe('Deployment Helpers', () => {
         uploadToStorageBucketMock.mock.calls[0].arguments[2],
         'bind_mounts/web/data/linked.txt'
       );
-    } finally {
-      await fsReal.promises.rm(tmpRoot, { recursive: true, force: true });
-    }
+    });
   });
 
   test('uploadDirectory uploads sibling symlinks to same directory and avoids loops', async () => {
-    const fsReal = await import('fs');
-    const os = await import('os');
     const uploadToStorageBucketMock = mock.fn(async () => ({}));
 
-    const tmpRoot = await fsReal.promises.mkdtemp(
-      path.join(os.tmpdir(), 'cloud-run-mcp-upload-siblings-')
-    );
-    const projectDir = path.join(tmpRoot, 'project');
-    const sharedDir = path.join(projectDir, 'shared');
-    const dataDir = path.join(projectDir, 'data');
-    await fsReal.promises.mkdir(sharedDir, { recursive: true });
-    await fsReal.promises.mkdir(path.join(dataDir, 'branch1'), {
-      recursive: true,
-    });
-    await fsReal.promises.mkdir(path.join(dataDir, 'branch2'), {
-      recursive: true,
-    });
-    await fsReal.promises.writeFile(
-      path.join(sharedDir, 'item.txt'),
-      'shared-item'
-    );
-    // Two sibling symlinks pointing to the same target directory inside projectDir
-    await fsReal.promises.symlink(
-      sharedDir,
-      path.join(dataDir, 'branch1', 'link')
-    );
-    await fsReal.promises.symlink(
-      sharedDir,
-      path.join(dataDir, 'branch2', 'link')
-    );
-    // Symlink loop inside sharedDir pointing back to sharedDir
-    await fsReal.promises.symlink(sharedDir, path.join(sharedDir, 'self'));
+    await withTempDir('cloud-run-mcp-upload-siblings-', async (tmpRoot) => {
+      const projectDir = path.join(tmpRoot, 'project');
+      const sharedDir = path.join(projectDir, 'shared');
+      const dataDir = path.join(projectDir, 'data');
+      await fs.promises.mkdir(sharedDir, { recursive: true });
+      await fs.promises.mkdir(path.join(dataDir, 'branch1'), {
+        recursive: true,
+      });
+      await fs.promises.mkdir(path.join(dataDir, 'branch2'), {
+        recursive: true,
+      });
+      await fs.promises.writeFile(
+        path.join(sharedDir, 'item.txt'),
+        'shared-item'
+      );
+      // Two sibling symlinks pointing to the same target directory inside projectDir
+      await fs.promises.symlink(
+        sharedDir,
+        path.join(dataDir, 'branch1', 'link')
+      );
+      await fs.promises.symlink(
+        sharedDir,
+        path.join(dataDir, 'branch2', 'link')
+      );
+      // Symlink loop inside sharedDir pointing back to sharedDir
+      await fs.promises.symlink(sharedDir, path.join(sharedDir, 'self'));
 
-    try {
       const deploymentHelpers = await esmock(
         '../../lib/deployment/helpers.js',
         {
@@ -458,9 +465,52 @@ describe('Deployment Helpers', () => {
         'bind_mounts/web/data/branch1/link/item.txt',
         'bind_mounts/web/data/branch2/link/item.txt',
       ]);
-    } finally {
-      await fsReal.promises.rm(tmpRoot, { recursive: true, force: true });
-    }
+    });
+  });
+
+  test('uploadDirectory skips symlink pointing back to root or normal ancestor immediately', async () => {
+    const uploadToStorageBucketMock = mock.fn(async () => ({}));
+
+    await withTempDir(
+      'cloud-run-mcp-upload-ancestor-loop-',
+      async (tmpRoot) => {
+        const projectDir = path.join(tmpRoot, 'project');
+        const dataDir = path.join(projectDir, 'data');
+        const subDir = path.join(dataDir, 'sub');
+        await fs.promises.mkdir(subDir, { recursive: true });
+        await fs.promises.writeFile(path.join(dataDir, 'x.txt'), 'root-file');
+        await fs.promises.writeFile(path.join(subDir, 'y.txt'), 'sub-file');
+        // Symlink pointing directly back to the root being uploaded
+        await fs.promises.symlink(dataDir, path.join(dataDir, 'self'));
+        // Symlink inside normal subdirectory pointing back to its ancestor
+        await fs.promises.symlink(dataDir, path.join(subDir, 'up'));
+
+        const deploymentHelpers = await esmock(
+          '../../lib/deployment/helpers.js',
+          {
+            '../../lib/cloud-api/storage.js': {
+              uploadToStorageBucket: uploadToStorageBucketMock,
+            },
+          }
+        );
+
+        await deploymentHelpers.uploadDirectory(
+          { name: 'test-bucket' },
+          dataDir,
+          'bind_mounts/web/data',
+          mock.fn(),
+          projectDir
+        );
+
+        const uploadedPaths = uploadToStorageBucketMock.mock.calls
+          .map((c) => c.arguments[2])
+          .sort();
+        assert.deepStrictEqual(uploadedPaths, [
+          'bind_mounts/web/data/sub/y.txt',
+          'bind_mounts/web/data/x.txt',
+        ]);
+      }
+    );
   });
 
   test('makeFileDeploymentMetadata correctly identifies compose file in folder', async () => {
