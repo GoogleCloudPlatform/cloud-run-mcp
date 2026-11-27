@@ -17,6 +17,8 @@ limitations under the License.
 import { test, describe, mock, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import esmock from 'esmock';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'path';
 
 describe('Compose Deployment', () => {
@@ -490,6 +492,106 @@ describe('Compose Deployment', () => {
         'run-compose-project': 'my-project',
       });
     });
+
+    test('should reject bind mount with relative path traversal', async () => {
+      const compose = await setupCompose();
+      const resourcesConfig = {
+        project: 'my-project',
+        volumes: {
+          bind_mount: {
+            web: [
+              {
+                source:
+                  '../../../../root/.config/gcloud/application_default_credentials.json',
+                target: '/x',
+              },
+            ],
+          },
+        },
+      };
+
+      await assert.rejects(
+        compose.composeVolumes(
+          resourcesConfig,
+          'token',
+          'project-id',
+          'us-central1',
+          '/app-dir',
+          mock.fn()
+        ),
+        /resolves outside the project directory/
+      );
+      assert.strictEqual(uploadDirectoryMock.mock.callCount(), 0);
+      assert.strictEqual(uploadToStorageBucketMock.mock.callCount(), 0);
+    });
+
+    test('should reject bind mount with absolute path', async () => {
+      const compose = await setupCompose();
+      const resourcesConfig = {
+        project: 'my-project',
+        volumes: {
+          bind_mount: {
+            web: [{ source: '/root/.ssh/id_rsa', target: '/x' }],
+          },
+        },
+      };
+
+      await assert.rejects(
+        compose.composeVolumes(
+          resourcesConfig,
+          'token',
+          'project-id',
+          'us-central1',
+          '/app-dir',
+          mock.fn()
+        ),
+        /must be a relative path/
+      );
+      assert.strictEqual(uploadDirectoryMock.mock.callCount(), 0);
+      assert.strictEqual(uploadToStorageBucketMock.mock.callCount(), 0);
+    });
+
+    test('should preserve compose-file basename for intra-project symlink bind mounts', async () => {
+      const tmpRoot = await fs.promises.mkdtemp(
+        path.join(os.tmpdir(), 'cloud-run-mcp-compose-link-')
+      );
+      const prodDir = path.join(tmpRoot, 'configs', 'prod');
+      await fs.promises.mkdir(prodDir, { recursive: true });
+      await fs.promises.symlink(prodDir, path.join(tmpRoot, 'config-link'));
+
+      try {
+        const compose = await setupCompose();
+        fsPromisesMock.access.mock.mockImplementation(async () => {});
+        fsPromisesMock.stat.mock.mockImplementation(async () => ({
+          isDirectory: () => true,
+        }));
+
+        const resourcesConfig = {
+          project: 'my-project',
+          volumes: {
+            bind_mount: {
+              web: [{ source: './config-link', target: '/app/config' }],
+            },
+          },
+        };
+
+        const result = await compose.composeVolumes(
+          resourcesConfig,
+          'token',
+          'project-id',
+          'us-central1',
+          tmpRoot,
+          mock.fn()
+        );
+
+        assert.strictEqual(
+          result.volumes.bind_mount.web[0].mount_source,
+          'bind_mounts/web/config-link'
+        );
+      } finally {
+        await fs.promises.rm(tmpRoot, { recursive: true, force: true });
+      }
+    });
   });
 
   describe('composeSecrets', () => {
@@ -613,6 +715,118 @@ describe('Compose Deployment', () => {
         undefined
       );
       assert.strictEqual(ensureApisEnabledMock.mock.callCount(), 1);
+    });
+
+    test('should reject secret file with relative path traversal', async () => {
+      const compose = await setupCompose();
+      createSecretMock.mock.resetCalls();
+      addSecretVersionMock.mock.resetCalls();
+      fsPromisesMock.readFile.mock.resetCalls();
+
+      const resourcesConfig = {
+        project: 'my-project',
+        secrets: {
+          'stolen-adc': {
+            name: 'stolen-adc',
+            file: '../../../../root/.ssh/id_rsa',
+            mount: 'stolen-adc',
+          },
+        },
+      };
+
+      await assert.rejects(
+        compose.composeSecrets(
+          resourcesConfig,
+          'token',
+          'project-id',
+          '/app-dir',
+          mock.fn()
+        ),
+        /resolves outside the project directory/
+      );
+      assert.strictEqual(createSecretMock.mock.callCount(), 0);
+      assert.strictEqual(addSecretVersionMock.mock.callCount(), 0);
+      assert.strictEqual(fsPromisesMock.readFile.mock.callCount(), 0);
+    });
+
+    test('should reject secret file with absolute path', async () => {
+      const compose = await setupCompose();
+      createSecretMock.mock.resetCalls();
+      addSecretVersionMock.mock.resetCalls();
+      fsPromisesMock.readFile.mock.resetCalls();
+
+      const resourcesConfig = {
+        project: 'my-project',
+        secrets: {
+          'stolen-key': {
+            name: 'stolen-key',
+            file: '/etc/passwd',
+            mount: 'stolen-key',
+          },
+        },
+      };
+
+      await assert.rejects(
+        compose.composeSecrets(
+          resourcesConfig,
+          'token',
+          'project-id',
+          '/app-dir',
+          mock.fn()
+        ),
+        /must be a relative path/
+      );
+      assert.strictEqual(createSecretMock.mock.callCount(), 0);
+      assert.strictEqual(addSecretVersionMock.mock.callCount(), 0);
+      assert.strictEqual(fsPromisesMock.readFile.mock.callCount(), 0);
+    });
+
+    test('should reject secret file symlink resolving outside project directory', async () => {
+      const tmpRoot = await fs.promises.mkdtemp(
+        path.join(os.tmpdir(), 'cloud-run-mcp-secret-link-')
+      );
+      const projectDir = path.join(tmpRoot, 'project');
+      const outsideFile = path.join(tmpRoot, 'id_rsa');
+      await fs.promises.mkdir(projectDir, { recursive: true });
+      await fs.promises.writeFile(outsideFile, 'private-key');
+      await fs.promises.symlink(
+        outsideFile,
+        path.join(projectDir, 'leaked.txt')
+      );
+
+      try {
+        const compose = await setupCompose();
+        createSecretMock.mock.resetCalls();
+        addSecretVersionMock.mock.resetCalls();
+        fsPromisesMock.readFile.mock.resetCalls();
+
+        const resourcesConfig = {
+          project: 'my-project',
+          secrets: {
+            'stolen-link': {
+              name: 'stolen-link',
+              file: './leaked.txt',
+              mount: 'stolen-link',
+            },
+          },
+        };
+
+        await assert.rejects(
+          compose.composeSecrets(
+            resourcesConfig,
+            'token',
+            'project-id',
+            projectDir,
+            mock.fn()
+          ),
+          /resolves outside the project directory/
+        );
+        assert.strictEqual(createSecretMock.mock.callCount(), 0);
+        assert.strictEqual(addSecretVersionMock.mock.callCount(), 0);
+        assert.strictEqual(fsPromisesMock.readFile.mock.callCount(), 0);
+      } finally {
+        await fs.promises.rm(tmpRoot, { recursive: true, force: true });
+      }
     });
   });
 });
